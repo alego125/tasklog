@@ -560,9 +560,9 @@ export default function App() {
                 {/* New task form */}
                 {newTaskFor===project.id && (
                   <div style={{ background:'#1e293b',padding:'12px 16px',display:'flex',gap:8,flexWrap:'wrap',borderBottom:'1px solid #334155',alignItems:'center' }}>
-                    <input placeholder="Título *" value={newTask.title} onChange={e=>setNewTask(p=>({...p,title:e.target.value}))} style={{ ...S.input,flex:'2 1 160px' }} autoFocus />
-                    <input placeholder="Responsable (opcional)" value={newTask.responsible} onChange={e=>setNewTask(p=>({...p,responsible:e.target.value}))} style={{ ...S.input,flex:'1 1 140px' }} />
-                    <input type="date" value={newTask.due_date} onChange={e=>setNewTask(p=>({...p,due_date:e.target.value}))} title="Vencimiento (opcional)" style={{ ...S.input,flex:'0 1 148px' }} />
+                    <input placeholder="Título *" value={newTask.title} onChange={e=>setNewTask(p=>({...p,title:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&newTask.title&&doAddTask(project.id)} style={{ ...S.input,flex:'2 1 160px' }} autoFocus />
+                    <input placeholder="Responsable (opcional)" value={newTask.responsible} onChange={e=>setNewTask(p=>({...p,responsible:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&newTask.title&&doAddTask(project.id)} style={{ ...S.input,flex:'1 1 140px' }} />
+                    <input type="date" value={newTask.due_date} onChange={e=>setNewTask(p=>({...p,due_date:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&newTask.title&&doAddTask(project.id)} title="Vencimiento (opcional)" style={{ ...S.input,flex:'0 1 148px' }} />
                     <button onClick={()=>doAddTask(project.id)} style={S.btnPrimary} disabled={!newTask.title}>Agregar</button>
                     <button onClick={()=>setNewTaskFor(null)} style={S.btnSecondary}>✕</button>
                   </div>
