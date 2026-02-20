@@ -7,23 +7,18 @@ const fs      = require('fs')
 const app  = express()
 const PORT = process.env.PORT || 3001
 
-// ── Crear carpeta data si no existe ──────────────────────────────
 const dataDir = path.join(__dirname, '..', 'data')
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true })
   console.log('📁 Carpeta data/ creada automáticamente')
 }
 
-// ── Fix Windows: backslashes → forward slashes ───────────────────
 const dbPath = path.join(dataDir, 'tasklog.db').replace(/\\/g, '/')
 
-// ── Cliente DB: Turso en producción, SQLite local en desarrollo ──
 let db
 async function getDb() {
   if (db) return db
-
   if (process.env.TURSO_DATABASE_URL) {
-    // PRODUCCIÓN: Turso cloud vía HTTP (sin binarios nativos)
     const { createClient } = require('@libsql/client/http')
     db = createClient({
       url: process.env.TURSO_DATABASE_URL.replace('libsql://', 'https://'),
@@ -31,7 +26,6 @@ async function getDb() {
     })
     console.log('🌐 Conectado a Turso cloud')
   } else {
-    // DESARROLLO LOCAL: SQLite archivo local
     const { createClient } = require('@libsql/client')
     db = createClient({ url: `file:${dbPath}` })
     console.log(`🗄️  BD local: ${dbPath}`)
@@ -39,10 +33,8 @@ async function getDb() {
   return db
 }
 
-// ── Schema ───────────────────────────────────────────────────────
 async function initDB() {
   const db = await getDb()
-
   await db.executeMultiple(`
     CREATE TABLE IF NOT EXISTS projects (
       id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,7 +48,7 @@ async function initDB() {
       title        TEXT    NOT NULL,
       responsible  TEXT,
       created_at   TEXT    NOT NULL DEFAULT (datetime('now')),
-      due_date     TEXT    NOT NULL,
+      due_date     TEXT,
       done         INTEGER NOT NULL DEFAULT 0,
       done_at      TEXT,
       FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
@@ -69,13 +61,21 @@ async function initDB() {
       created_at TEXT    NOT NULL DEFAULT (datetime('now')),
       FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
     );
-    CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project_id);
-    CREATE INDEX IF NOT EXISTS idx_tasks_due     ON tasks(due_date);
-    CREATE INDEX IF NOT EXISTS idx_tasks_done    ON tasks(done);
-    CREATE INDEX IF NOT EXISTS idx_comments_task ON task_comments(task_id);
+    CREATE TABLE IF NOT EXISTS project_notes (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER NOT NULL,
+      text       TEXT    NOT NULL,
+      author     TEXT,
+      created_at TEXT    NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_tasks_project  ON tasks(project_id);
+    CREATE INDEX IF NOT EXISTS idx_tasks_due      ON tasks(due_date);
+    CREATE INDEX IF NOT EXISTS idx_tasks_done     ON tasks(done);
+    CREATE INDEX IF NOT EXISTS idx_comments_task  ON task_comments(task_id);
+    CREATE INDEX IF NOT EXISTS idx_notes_project  ON project_notes(project_id);
   `)
 
-  // Seed si está vacío
   const count = await db.execute('SELECT COUNT(*) as n FROM projects')
   if (Number(count.rows[0].n) === 0) {
     const p1 = await db.execute({ sql: 'INSERT INTO projects (name,color) VALUES (?,?)', args: ['Rediseño Web','#6366f1'] })
@@ -86,17 +86,17 @@ async function initDB() {
     await db.execute({ sql: 'INSERT INTO task_comments (task_id,author,text) VALUES (?,?,?)', args: [t1.lastInsertRowid,'Ana García','Empezando con los bocetos iniciales.'] })
     await db.execute({ sql: 'INSERT INTO task_comments (task_id,author,text) VALUES (?,?,?)', args: [t3.lastInsertRowid,'Martina Ruiz','Revisé la doc de Stripe, lista para integrar.'] })
     await db.execute({ sql: 'INSERT INTO tasks (project_id,title,responsible,due_date,created_at,done,done_at) VALUES (?,?,?,?,?,1,?)', args: [p2.lastInsertRowid,'Testing de regresión','Juan Pérez','2026-02-10','2026-01-20','2026-02-09'] })
+    await db.execute({ sql: 'INSERT INTO project_notes (project_id,author,text) VALUES (?,?,?)', args: [p1.lastInsertRowid,'Admin','Nota inicial del proyecto de rediseño.'] })
     console.log('✅ Datos de ejemplo insertados')
   }
 }
 
-// ── Helper: proyecto completo ─────────────────────────────────────
 async function getFullProject(id) {
   const db = await getDb()
   const pRes = await db.execute({ sql: 'SELECT * FROM projects WHERE id = ?', args: [id] })
   if (!pRes.rows.length) return null
   const project = { ...pRes.rows[0] }
-  const tRes = await db.execute({ sql: 'SELECT * FROM tasks WHERE project_id = ? ORDER BY id', args: [id] })
+  const tRes = await db.execute({ sql: 'SELECT * FROM tasks WHERE project_id = ? ORDER BY created_at ASC', args: [id] })
   const tasks = []
   for (const row of tRes.rows) {
     const task = { ...row, done: Boolean(row.done) }
@@ -105,15 +105,15 @@ async function getFullProject(id) {
     tasks.push(task)
   }
   project.tasks = tasks
+  const nRes = await db.execute({ sql: 'SELECT * FROM project_notes WHERE project_id = ? ORDER BY created_at ASC', args: [id] })
+  project.notes = nRes.rows.map(r => ({ ...r }))
   return project
 }
 
-// ── Middlewares ───────────────────────────────────────────────────
 app.use(cors({ origin: process.env.FRONTEND_URL || '*' }))
 app.use(express.json())
 
-
-// ── PROJECTS ──────────────────────────────────────────────────────
+// PROJECTS
 app.get('/api/projects', async (req, res) => {
   try {
     const db = await getDb()
@@ -133,6 +133,16 @@ app.post('/api/projects', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }) }
 })
 
+app.put('/api/projects/:id', async (req, res) => {
+  try {
+    const db = await getDb()
+    const { name, color } = req.body
+    if (!name) return res.status(400).json({ error: 'name requerido' })
+    await db.execute({ sql: 'UPDATE projects SET name=?, color=? WHERE id=?', args: [name, color, req.params.id] })
+    res.json(await getFullProject(req.params.id))
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
 app.delete('/api/projects/:id', async (req, res) => {
   try {
     const db = await getDb()
@@ -141,14 +151,17 @@ app.delete('/api/projects/:id', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }) }
 })
 
-// ── TASKS ─────────────────────────────────────────────────────────
+// TASKS
 app.post('/api/tasks', async (req, res) => {
   try {
     const db = await getDb()
     const { project_id, title, responsible, due_date } = req.body
-    if (!project_id || !title || !due_date) return res.status(400).json({ error: 'Faltan campos' })
+    if (!project_id || !title) return res.status(400).json({ error: 'Faltan campos' })
     const today = new Date().toISOString().split('T')[0]
-    const r = await db.execute({ sql: 'INSERT INTO tasks (project_id,title,responsible,due_date,created_at) VALUES (?,?,?,?,?)', args: [project_id, title, responsible||'', due_date, today] })
+    const r = await db.execute({
+      sql: 'INSERT INTO tasks (project_id,title,responsible,due_date,created_at) VALUES (?,?,?,?,?)',
+      args: [project_id, title, responsible||'', due_date||null, today]
+    })
     const tRes = await db.execute({ sql: 'SELECT * FROM tasks WHERE id = ?', args: [r.lastInsertRowid] })
     res.json({ ...tRes.rows[0], done: false, comments: [] })
   } catch(e) { res.status(500).json({ error: e.message }) }
@@ -158,7 +171,7 @@ app.put('/api/tasks/:id', async (req, res) => {
   try {
     const db = await getDb()
     const { title, responsible, due_date } = req.body
-    await db.execute({ sql: 'UPDATE tasks SET title=?,responsible=?,due_date=? WHERE id=?', args: [title, responsible, due_date, req.params.id] })
+    await db.execute({ sql: 'UPDATE tasks SET title=?,responsible=?,due_date=? WHERE id=?', args: [title, responsible, due_date||null, req.params.id] })
     const tRes = await db.execute({ sql: 'SELECT * FROM tasks WHERE id = ?', args: [req.params.id] })
     const task = { ...tRes.rows[0], done: Boolean(tRes.rows[0].done) }
     const cRes = await db.execute({ sql: 'SELECT * FROM task_comments WHERE task_id=? ORDER BY id', args: [task.id] })
@@ -192,15 +205,14 @@ app.delete('/api/tasks/:id', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }) }
 })
 
-// ── COMMENTS ──────────────────────────────────────────────────────
+// TASK COMMENTS
 app.post('/api/comments', async (req, res) => {
   try {
     const db = await getDb()
     const { task_id, author = 'Yo', text } = req.body
     if (!task_id || !text) return res.status(400).json({ error: 'Faltan campos' })
     const r = await db.execute({ sql: 'INSERT INTO task_comments (task_id,author,text) VALUES (?,?,?)', args: [task_id, author, text] })
-    const comment = (await db.execute({ sql: 'SELECT * FROM task_comments WHERE id=?', args: [r.lastInsertRowid] })).rows[0]
-    res.json({ ...comment })
+    res.json({ ...(await db.execute({ sql: 'SELECT * FROM task_comments WHERE id=?', args: [r.lastInsertRowid] })).rows[0] })
   } catch(e) { res.status(500).json({ error: e.message }) }
 })
 
@@ -208,8 +220,7 @@ app.put('/api/comments/:id', async (req, res) => {
   try {
     const db = await getDb()
     await db.execute({ sql: 'UPDATE task_comments SET text=? WHERE id=?', args: [req.body.text, req.params.id] })
-    const comment = (await db.execute({ sql: 'SELECT * FROM task_comments WHERE id=?', args: [req.params.id] })).rows[0]
-    res.json({ ...comment })
+    res.json({ ...(await db.execute({ sql: 'SELECT * FROM task_comments WHERE id=?', args: [req.params.id] })).rows[0] })
   } catch(e) { res.status(500).json({ error: e.message }) }
 })
 
@@ -221,8 +232,63 @@ app.delete('/api/comments/:id', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }) }
 })
 
+// PROJECT NOTES
+app.post('/api/project-notes', async (req, res) => {
+  try {
+    const db = await getDb()
+    const { project_id, author = 'Yo', text } = req.body
+    if (!project_id || !text) return res.status(400).json({ error: 'Faltan campos' })
+    const r = await db.execute({ sql: 'INSERT INTO project_notes (project_id,author,text) VALUES (?,?,?)', args: [project_id, author, text] })
+    res.json({ ...(await db.execute({ sql: 'SELECT * FROM project_notes WHERE id=?', args: [r.lastInsertRowid] })).rows[0] })
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
 
-// ── Arrancar ──────────────────────────────────────────────────────
+app.put('/api/project-notes/:id', async (req, res) => {
+  try {
+    const db = await getDb()
+    await db.execute({ sql: 'UPDATE project_notes SET text=? WHERE id=?', args: [req.body.text, req.params.id] })
+    res.json({ ...(await db.execute({ sql: 'SELECT * FROM project_notes WHERE id=?', args: [req.params.id] })).rows[0] })
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
+app.delete('/api/project-notes/:id', async (req, res) => {
+  try {
+    const db = await getDb()
+    await db.execute({ sql: 'DELETE FROM project_notes WHERE id=?', args: [req.params.id] })
+    res.json({ ok: true })
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
+// MOVER nota de proyecto → comentario de tarea
+app.post('/api/project-notes/:id/move-to-task', async (req, res) => {
+  try {
+    const db = await getDb()
+    const { task_id } = req.body
+    if (!task_id) return res.status(400).json({ error: 'task_id requerido' })
+    const note = (await db.execute({ sql: 'SELECT * FROM project_notes WHERE id=?', args: [req.params.id] })).rows[0]
+    if (!note) return res.status(404).json({ error: 'Nota no encontrada' })
+    const r = await db.execute({ sql: 'INSERT INTO task_comments (task_id,author,text,created_at) VALUES (?,?,?,?)', args: [task_id, note.author, note.text, note.created_at] })
+    await db.execute({ sql: 'DELETE FROM project_notes WHERE id=?', args: [req.params.id] })
+    const comment = (await db.execute({ sql: 'SELECT * FROM task_comments WHERE id=?', args: [r.lastInsertRowid] })).rows[0]
+    res.json({ comment: { ...comment }, deletedNoteId: Number(req.params.id) })
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
+// MOVER comentario de tarea → nota de proyecto
+app.post('/api/comments/:id/move-to-project', async (req, res) => {
+  try {
+    const db = await getDb()
+    const { project_id } = req.body
+    if (!project_id) return res.status(400).json({ error: 'project_id requerido' })
+    const comment = (await db.execute({ sql: 'SELECT * FROM task_comments WHERE id=?', args: [req.params.id] })).rows[0]
+    if (!comment) return res.status(404).json({ error: 'Comentario no encontrado' })
+    const r = await db.execute({ sql: 'INSERT INTO project_notes (project_id,author,text,created_at) VALUES (?,?,?,?)', args: [project_id, comment.author, comment.text, comment.created_at] })
+    await db.execute({ sql: 'DELETE FROM task_comments WHERE id=?', args: [req.params.id] })
+    const note = (await db.execute({ sql: 'SELECT * FROM project_notes WHERE id=?', args: [r.lastInsertRowid] })).rows[0]
+    res.json({ note: { ...note }, deletedCommentId: Number(req.params.id) })
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
 initDB().then(() => {
   app.listen(PORT, () => {
     console.log(`✅ TaskLog API corriendo en http://localhost:${PORT}`)
