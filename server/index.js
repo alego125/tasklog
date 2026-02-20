@@ -76,19 +76,7 @@ async function initDB() {
     CREATE INDEX IF NOT EXISTS idx_notes_project  ON project_notes(project_id);
   `)
 
-  const count = await db.execute('SELECT COUNT(*) as n FROM projects')
-  if (Number(count.rows[0].n) === 0) {
-    const p1 = await db.execute({ sql: 'INSERT INTO projects (name,color) VALUES (?,?)', args: ['Rediseño Web','#6366f1'] })
-    const p2 = await db.execute({ sql: 'INSERT INTO projects (name,color) VALUES (?,?)', args: ['App Móvil v2','#f59e0b'] })
-    const t1 = await db.execute({ sql: 'INSERT INTO tasks (project_id,title,responsible,due_date,created_at) VALUES (?,?,?,?,?)', args: [p1.lastInsertRowid,'Diseñar wireframes homepage','Ana García','2026-02-28','2026-02-01'] })
-    const t3 = await db.execute({ sql: 'INSERT INTO tasks (project_id,title,responsible,due_date,created_at) VALUES (?,?,?,?,?)', args: [p2.lastInsertRowid,'Integrar API de pagos','Martina Ruiz','2026-03-10','2026-02-10'] })
-    await db.execute({ sql: 'INSERT INTO tasks (project_id,title,responsible,due_date,created_at) VALUES (?,?,?,?,?)', args: [p1.lastInsertRowid,'Revisar paleta de colores','Carlos López','2026-03-15','2026-02-03'] })
-    await db.execute({ sql: 'INSERT INTO task_comments (task_id,author,text) VALUES (?,?,?)', args: [t1.lastInsertRowid,'Ana García','Empezando con los bocetos iniciales.'] })
-    await db.execute({ sql: 'INSERT INTO task_comments (task_id,author,text) VALUES (?,?,?)', args: [t3.lastInsertRowid,'Martina Ruiz','Revisé la doc de Stripe, lista para integrar.'] })
-    await db.execute({ sql: 'INSERT INTO tasks (project_id,title,responsible,due_date,created_at,done,done_at) VALUES (?,?,?,?,?,1,?)', args: [p2.lastInsertRowid,'Testing de regresión','Juan Pérez','2026-02-10','2026-01-20','2026-02-09'] })
-    await db.execute({ sql: 'INSERT INTO project_notes (project_id,author,text) VALUES (?,?,?)', args: [p1.lastInsertRowid,'Admin','Nota inicial del proyecto de rediseño.'] })
-    console.log('✅ Datos de ejemplo insertados')
-  }
+  console.log('✅ Schema verificado — BD lista')
 }
 
 async function getFullProject(id) {
