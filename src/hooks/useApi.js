@@ -4,6 +4,9 @@ const BASE = import.meta.env.VITE_API_URL
   ? `${import.meta.env.VITE_API_URL}/api`
   : '/api'
 
+console.log('API BASE URL:', BASE)
+console.log('VITE_API_URL:', import.meta.env.VITE_API_URL)
+
 async function request(method, path, body) {
   const res = await fetch(`${BASE}${path}`, {
     method,
