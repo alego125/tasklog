@@ -112,9 +112,6 @@ async function getFullProject(id) {
 app.use(cors({ origin: process.env.FRONTEND_URL || '*' }))
 app.use(express.json())
 
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '..', 'dist')))
-}
 
 // ── PROJECTS ──────────────────────────────────────────────────────
 app.get('/api/projects', async (req, res) => {
@@ -224,12 +221,6 @@ app.delete('/api/comments/:id', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }) }
 })
 
-// Catch-all para React en producción
-if (process.env.NODE_ENV === 'production') {
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'))
-  })
-}
 
 // ── Arrancar ──────────────────────────────────────────────────────
 initDB().then(() => {
