@@ -3,32 +3,46 @@ const express = require('express')
 const cors    = require('cors')
 const path    = require('path')
 const fs      = require('fs')
-const { createClient } = require('@libsql/client')
 
 const app  = express()
 const PORT = process.env.PORT || 3001
 
-// ── Crear carpeta data si no existe (fix Windows) ────────────────
+// ── Crear carpeta data si no existe ──────────────────────────────
 const dataDir = path.join(__dirname, '..', 'data')
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true })
   console.log('📁 Carpeta data/ creada automáticamente')
 }
 
-// ── Fix Windows: backslashes → forward slashes en la ruta ────────
+// ── Fix Windows: backslashes → forward slashes ───────────────────
 const dbPath = path.join(dataDir, 'tasklog.db').replace(/\\/g, '/')
 
-// ── Turso / SQLite client ────────────────────────────────────────
-// Sin variables de entorno → usa archivo local (desarrollo)
-// Con variables de entorno → usa Turso cloud (producción)
-const db = createClient(
-  process.env.TURSO_DATABASE_URL
-    ? { url: process.env.TURSO_DATABASE_URL, authToken: process.env.TURSO_AUTH_TOKEN }
-    : { url: `file:${dbPath}` }
-)
+// ── Cliente DB: Turso en producción, SQLite local en desarrollo ──
+let db
+async function getDb() {
+  if (db) return db
+
+  if (process.env.TURSO_DATABASE_URL) {
+    // PRODUCCIÓN: Turso cloud vía HTTP (sin binarios nativos)
+    const { createClient } = require('@libsql/client/http')
+    db = createClient({
+      url: process.env.TURSO_DATABASE_URL.replace('libsql://', 'https://'),
+      authToken: process.env.TURSO_AUTH_TOKEN
+    })
+    console.log('🌐 Conectado a Turso cloud')
+  } else {
+    // DESARROLLO LOCAL: SQLite archivo local
+    const { createClient } = require('@libsql/client')
+    db = createClient({ url: `file:${dbPath}` })
+    console.log(`🗄️  BD local: ${dbPath}`)
+  }
+  return db
+}
 
 // ── Schema ───────────────────────────────────────────────────────
 async function initDB() {
+  const db = await getDb()
+
   await db.executeMultiple(`
     CREATE TABLE IF NOT EXISTS projects (
       id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -76,12 +90,12 @@ async function initDB() {
   }
 }
 
-// ── Helper: proyecto completo con tareas y comentarios ───────────
+// ── Helper: proyecto completo ─────────────────────────────────────
 async function getFullProject(id) {
+  const db = await getDb()
   const pRes = await db.execute({ sql: 'SELECT * FROM projects WHERE id = ?', args: [id] })
   if (!pRes.rows.length) return null
   const project = { ...pRes.rows[0] }
-
   const tRes = await db.execute({ sql: 'SELECT * FROM tasks WHERE project_id = ? ORDER BY id', args: [id] })
   const tasks = []
   for (const row of tRes.rows) {
@@ -94,7 +108,7 @@ async function getFullProject(id) {
   return project
 }
 
-// ── Middlewares ──────────────────────────────────────────────────
+// ── Middlewares ───────────────────────────────────────────────────
 app.use(cors({ origin: process.env.FRONTEND_URL || '*' }))
 app.use(express.json())
 
@@ -102,9 +116,10 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '..', 'dist')))
 }
 
-// ── PROJECTS ─────────────────────────────────────────────────────
+// ── PROJECTS ──────────────────────────────────────────────────────
 app.get('/api/projects', async (req, res) => {
   try {
+    const db = await getDb()
     const result = await db.execute('SELECT * FROM projects ORDER BY id')
     const projects = await Promise.all(result.rows.map(p => getFullProject(p.id)))
     res.json(projects)
@@ -113,6 +128,7 @@ app.get('/api/projects', async (req, res) => {
 
 app.post('/api/projects', async (req, res) => {
   try {
+    const db = await getDb()
     const { name, color = '#6366f1' } = req.body
     if (!name) return res.status(400).json({ error: 'name requerido' })
     const r = await db.execute({ sql: 'INSERT INTO projects (name,color) VALUES (?,?)', args: [name, color] })
@@ -122,26 +138,28 @@ app.post('/api/projects', async (req, res) => {
 
 app.delete('/api/projects/:id', async (req, res) => {
   try {
+    const db = await getDb()
     await db.execute({ sql: 'DELETE FROM projects WHERE id = ?', args: [req.params.id] })
     res.json({ ok: true })
   } catch(e) { res.status(500).json({ error: e.message }) }
 })
 
-// ── TASKS ────────────────────────────────────────────────────────
+// ── TASKS ─────────────────────────────────────────────────────────
 app.post('/api/tasks', async (req, res) => {
   try {
+    const db = await getDb()
     const { project_id, title, responsible, due_date } = req.body
     if (!project_id || !title || !due_date) return res.status(400).json({ error: 'Faltan campos' })
     const today = new Date().toISOString().split('T')[0]
     const r = await db.execute({ sql: 'INSERT INTO tasks (project_id,title,responsible,due_date,created_at) VALUES (?,?,?,?,?)', args: [project_id, title, responsible||'', due_date, today] })
     const tRes = await db.execute({ sql: 'SELECT * FROM tasks WHERE id = ?', args: [r.lastInsertRowid] })
-    const task = { ...tRes.rows[0], done: false, comments: [] }
-    res.json(task)
+    res.json({ ...tRes.rows[0], done: false, comments: [] })
   } catch(e) { res.status(500).json({ error: e.message }) }
 })
 
 app.put('/api/tasks/:id', async (req, res) => {
   try {
+    const db = await getDb()
     const { title, responsible, due_date } = req.body
     await db.execute({ sql: 'UPDATE tasks SET title=?,responsible=?,due_date=? WHERE id=?', args: [title, responsible, due_date, req.params.id] })
     const tRes = await db.execute({ sql: 'SELECT * FROM tasks WHERE id = ?', args: [req.params.id] })
@@ -154,6 +172,7 @@ app.put('/api/tasks/:id', async (req, res) => {
 
 app.patch('/api/tasks/:id/toggle', async (req, res) => {
   try {
+    const db = await getDb()
     const tRes = await db.execute({ sql: 'SELECT * FROM tasks WHERE id=?', args: [req.params.id] })
     if (!tRes.rows.length) return res.status(404).json({ error: 'No encontrada' })
     const task    = tRes.rows[0]
@@ -170,14 +189,16 @@ app.patch('/api/tasks/:id/toggle', async (req, res) => {
 
 app.delete('/api/tasks/:id', async (req, res) => {
   try {
+    const db = await getDb()
     await db.execute({ sql: 'DELETE FROM tasks WHERE id=?', args: [req.params.id] })
     res.json({ ok: true })
   } catch(e) { res.status(500).json({ error: e.message }) }
 })
 
-// ── COMMENTS ─────────────────────────────────────────────────────
+// ── COMMENTS ──────────────────────────────────────────────────────
 app.post('/api/comments', async (req, res) => {
   try {
+    const db = await getDb()
     const { task_id, author = 'Yo', text } = req.body
     if (!task_id || !text) return res.status(400).json({ error: 'Faltan campos' })
     const r = await db.execute({ sql: 'INSERT INTO task_comments (task_id,author,text) VALUES (?,?,?)', args: [task_id, author, text] })
@@ -188,6 +209,7 @@ app.post('/api/comments', async (req, res) => {
 
 app.put('/api/comments/:id', async (req, res) => {
   try {
+    const db = await getDb()
     await db.execute({ sql: 'UPDATE task_comments SET text=? WHERE id=?', args: [req.body.text, req.params.id] })
     const comment = (await db.execute({ sql: 'SELECT * FROM task_comments WHERE id=?', args: [req.params.id] })).rows[0]
     res.json({ ...comment })
@@ -196,6 +218,7 @@ app.put('/api/comments/:id', async (req, res) => {
 
 app.delete('/api/comments/:id', async (req, res) => {
   try {
+    const db = await getDb()
     await db.execute({ sql: 'DELETE FROM task_comments WHERE id=?', args: [req.params.id] })
     res.json({ ok: true })
   } catch(e) { res.status(500).json({ error: e.message }) }
@@ -208,11 +231,10 @@ if (process.env.NODE_ENV === 'production') {
   })
 }
 
-// ── Arrancar ─────────────────────────────────────────────────────
+// ── Arrancar ──────────────────────────────────────────────────────
 initDB().then(() => {
   app.listen(PORT, () => {
     console.log(`✅ TaskLog API corriendo en http://localhost:${PORT}`)
-    console.log(`🗄️  BD: ${process.env.TURSO_DATABASE_URL ? 'Turso cloud' : dbPath}`)
   })
 }).catch(err => {
   console.error('❌ Error iniciando BD:', err.message)
