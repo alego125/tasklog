@@ -150,16 +150,43 @@ export default function App() {
 
   const filtered = useMemo(() => allTasks.filter(t => {
     const st = getStatus(t.due_date, t.done)
-    const matchSearch = t.title.toLowerCase().includes(search.toLowerCase()) ||
-      t.projectName.toLowerCase().includes(search.toLowerCase()) ||
-      (t.responsible||'').toLowerCase().includes(search.toLowerCase())
-    const matchStatus  = filterStatus==='all' || st===filterStatus
-    const matchProject = filterProject==='all' || t.projectId===parseInt(filterProject)
-    const matchDone    = showDone || !t.done
+    const q  = search.toLowerCase()
+    const matchSearch = !q ||
+      t.title.toLowerCase().includes(q) ||
+      t.projectName.toLowerCase().includes(q) ||
+      (t.responsible||'').toLowerCase().includes(q) ||
+      t.comments.some(c => c.text.toLowerCase().includes(q) || (c.author||'').toLowerCase().includes(q))
+    const matchStatus   = filterStatus==='all' || st===filterStatus
+    const matchProject  = filterProject==='all' || t.projectId===parseInt(filterProject)
+    const matchDone     = showDone || !t.done
     const matchDateFrom = !filterDateFrom || (t.created_at && t.created_at >= filterDateFrom)
     const matchDateTo   = !filterDateTo   || (t.created_at && t.created_at <= filterDateTo + 'T99')
     return matchSearch && matchStatus && matchProject && matchDone && matchDateFrom && matchDateTo
   }), [allTasks, search, filterStatus, filterProject, showDone, filterDateFrom, filterDateTo])
+
+  // Notas de proyecto que coinciden con la búsqueda (con contexto del proyecto)
+  const filteredProjectNotes = useMemo(() => {
+    if (!search.trim()) return []
+    const q = search.toLowerCase()
+    return projects
+      .filter(p => filterProject==='all' || p.id===parseInt(filterProject))
+      .flatMap(p => (p.notes||[])
+        .filter(n => n.text.toLowerCase().includes(q) || (n.author||'').toLowerCase().includes(q))
+        .map(n => ({ ...n, projectId:p.id, projectName:p.name, projectColor:p.color }))
+      )
+  }, [projects, search, filterProject])
+
+  // Para cada tarea en resultados: qué comentarios matchean la búsqueda
+  const matchingComments = useMemo(() => {
+    if (!search.trim()) return {}
+    const q = search.toLowerCase()
+    const result = {}
+    allTasks.forEach(t => {
+      const hits = t.comments.filter(c => c.text.toLowerCase().includes(q) || (c.author||'').toLowerCase().includes(q))
+      if (hits.length) result[t.id] = hits
+    })
+    return result
+  }, [allTasks, search])
 
   // Ordenar proyectos: primero los que tienen tareas vencidas
   const sortedProjects = useMemo(() => [...projects].sort((a, b) => {
@@ -402,6 +429,74 @@ export default function App() {
               </div>
               <button onClick={doAddProject} style={S.btnPrimary}>Crear</button>
               <button onClick={()=>setNewProjOpen(false)} style={S.btnSecondary}>Cancelar</button>
+            </div>
+          )}
+
+          {/* RESULTADOS DE BÚSQUEDA EN BITÁCORAS */}
+          {search.trim() && (filteredProjectNotes.length > 0 || Object.keys(matchingComments).length > 0) && (
+            <div style={{ background:'#0d1829',border:'1px solid #4338ca44',borderRadius:12,marginBottom:18,overflow:'hidden' }}>
+              <div style={{ padding:'12px 16px',borderBottom:'1px solid #1e293b',background:'#1e1b4b44',display:'flex',alignItems:'center',gap:8 }}>
+                <span style={{ fontSize:13,fontWeight:700,color:'#818cf8' }}>🔍 Resultados en bitácoras</span>
+                <span style={{ fontSize:12,color:'#4338ca',background:'#1e1b4b',border:'1px solid #4338ca',borderRadius:20,padding:'1px 8px' }}>
+                  {filteredProjectNotes.length + Object.values(matchingComments).flat().length} resultado{(filteredProjectNotes.length + Object.values(matchingComments).flat().length)!==1?'s':''}
+                </span>
+              </div>
+
+              {/* Notas de proyecto que matchean */}
+              {filteredProjectNotes.map(note => (
+                <div key={`pnote-${note.id}`} style={{ padding:'10px 16px',borderBottom:'1px solid #1e293b22',display:'flex',alignItems:'flex-start',gap:12 }}>
+                  <div style={{ flexShrink:0,marginTop:2 }}>
+                    <div style={{ width:8,height:8,borderRadius:'50%',background:note.projectColor,marginBottom:4 }} />
+                  </div>
+                  <div style={{ flex:1,minWidth:0 }}>
+                    <div style={{ fontSize:11,color:'#64748b',marginBottom:3,display:'flex',gap:8,alignItems:'center' }}>
+                      <span style={{ color:note.projectColor,fontWeight:600 }}>📁 {note.projectName}</span>
+                      <span>·</span>
+                      <span style={{ background:'#1e1b4b',color:'#818cf8',padding:'1px 7px',borderRadius:10,fontSize:10 }}>Bitácora de proyecto</span>
+                      <span>·</span>
+                      <span>{note.author||'—'} · {fmtDate(note.created_at)}</span>
+                    </div>
+                    <div style={{ fontSize:13,color:'#cbd5e1',lineHeight:1.5 }}>{note.text}</div>
+                  </div>
+                  <button
+                    onClick={()=>setExpandedNotes(n=>({...n,[note.projectId]:true}))}
+                    style={{ ...S.btnSecondary,padding:'4px 10px',fontSize:11,flexShrink:0 }}
+                    title="Ir al proyecto">
+                    Ver proyecto ↓
+                  </button>
+                </div>
+              ))}
+
+              {/* Comentarios de tareas que matchean */}
+              {Object.entries(matchingComments).map(([taskId, comments]) => {
+                const task = allTasks.find(t => t.id===parseInt(taskId))
+                if (!task) return null
+                return comments.map(c => (
+                  <div key={`tcomm-${c.id}`} style={{ padding:'10px 16px',borderBottom:'1px solid #1e293b22',display:'flex',alignItems:'flex-start',gap:12 }}>
+                    <div style={{ flexShrink:0,marginTop:2 }}>
+                      <div style={{ width:8,height:8,borderRadius:'50%',background:task.projectColor,marginBottom:4 }} />
+                    </div>
+                    <div style={{ flex:1,minWidth:0 }}>
+                      <div style={{ fontSize:11,color:'#64748b',marginBottom:3,display:'flex',gap:8,alignItems:'center',flexWrap:'wrap' }}>
+                        <span style={{ color:task.projectColor,fontWeight:600 }}>📁 {task.projectName}</span>
+                        <span>›</span>
+                        <span style={{ color:'#94a3b8',fontWeight:600 }}>📌 {task.title}</span>
+                        <span>·</span>
+                        <span style={{ background:'#0f2a1e',color:'#4ade80',padding:'1px 7px',borderRadius:10,fontSize:10 }}>Bitácora de tarea</span>
+                        <span>·</span>
+                        <span>{c.author||'—'} · {fmtDate(c.created_at)}</span>
+                      </div>
+                      <div style={{ fontSize:13,color:'#cbd5e1',lineHeight:1.5 }}>{c.text}</div>
+                    </div>
+                    <button
+                      onClick={()=>setExpanded(parseInt(taskId))}
+                      style={{ ...S.btnSecondary,padding:'4px 10px',fontSize:11,flexShrink:0 }}
+                      title="Ir a la tarea">
+                      Ver tarea ↓
+                    </button>
+                  </div>
+                ))
+              })}
             </div>
           )}
 
