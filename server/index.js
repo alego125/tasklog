@@ -148,7 +148,7 @@ app.post('/api/tasks', async (req, res) => {
     const today = new Date().toISOString().split('T')[0]
     const r = await db.execute({
       sql: 'INSERT INTO tasks (project_id,title,responsible,due_date,created_at) VALUES (?,?,?,?,?)',
-      args: [project_id, title, responsible||'', due_date||null, today]
+      args: [project_id, title, responsible||'', (due_date && due_date.trim()) ? due_date : null, today]
     })
     const tRes = await db.execute({ sql: 'SELECT * FROM tasks WHERE id = ?', args: [r.lastInsertRowid] })
     res.json({ ...tRes.rows[0], done: false, comments: [] })
