@@ -7,8 +7,10 @@ import SchemaView from './components/SchemaView.jsx'
 const getStatus = (due, done) => {
   if (done) return 'done'
   if (!due) return 'ok'
-  const diff = (new Date(due) - new Date()) / 86400000
-  if (diff < 0) return 'overdue'
+  const today = new Date()
+  const todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0')
+  if (due < todayStr) return 'overdue'
+  const diff = (new Date(due + 'T12:00:00') - new Date(todayStr + 'T12:00:00')) / 86400000
   if (diff <= 3) return 'warning'
   return 'ok'
 }
