@@ -24,7 +24,18 @@ const STATUS = {
 
 const COLORS = ['#6366f1','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4','#f59e0b','#22c55e']
 
-const fmtDate = d => d ? d.split('T')[0] : ''
+// Convierte fecha UTC de la BD a hora Argentina (UTC-3) para mostrar
+const fmtDate = d => {
+  if (!d) return ''
+  // Si tiene hora (datetime completo), convertir a Argentina
+  if (d.includes(' ') || d.includes('T')) {
+    const date = new Date(d.replace(' ', 'T') + (d.includes('Z') ? '' : 'Z'))
+    date.setHours(date.getHours() - 3)
+    return date.toISOString().slice(0, 16).replace('T', ' ')
+  }
+  // Solo fecha (YYYY-MM-DD), mostrar tal cual
+  return d
+}
 
 // ── Styles ────────────────────────────────────────────────────────
 const S = {

@@ -40,14 +40,14 @@ async function initDB() {
       id         INTEGER PRIMARY KEY AUTOINCREMENT,
       name       TEXT    NOT NULL,
       color      TEXT    NOT NULL DEFAULT '#6366f1',
-      created_at TEXT    NOT NULL DEFAULT (datetime('now', '-3 hours'))
+      created_at TEXT    NOT NULL DEFAULT (datetime('now'))
     );
     CREATE TABLE IF NOT EXISTS tasks (
       id           INTEGER PRIMARY KEY AUTOINCREMENT,
       project_id   INTEGER NOT NULL,
       title        TEXT    NOT NULL,
       responsible  TEXT,
-      created_at   TEXT    NOT NULL DEFAULT (datetime('now', '-3 hours')),
+      created_at   TEXT    NOT NULL DEFAULT (datetime('now')),
       due_date     TEXT,
       done         INTEGER NOT NULL DEFAULT 0,
       done_at      TEXT,
@@ -58,7 +58,7 @@ async function initDB() {
       task_id    INTEGER NOT NULL,
       author     TEXT,
       text       TEXT    NOT NULL,
-      created_at TEXT    NOT NULL DEFAULT (datetime('now', '-3 hours')),
+      created_at TEXT    NOT NULL DEFAULT (datetime('now')),
       FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
     );
     CREATE TABLE IF NOT EXISTS project_notes (
@@ -66,7 +66,7 @@ async function initDB() {
       project_id INTEGER NOT NULL,
       text       TEXT    NOT NULL,
       author     TEXT,
-      created_at TEXT    NOT NULL DEFAULT (datetime('now', '-3 hours')),
+      created_at TEXT    NOT NULL DEFAULT (datetime('now')),
       FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
     );
     CREATE INDEX IF NOT EXISTS idx_tasks_project  ON tasks(project_id);
@@ -145,9 +145,7 @@ app.post('/api/tasks', async (req, res) => {
     const db = await getDb()
     const { project_id, title, responsible, due_date } = req.body
     if (!project_id || !title) return res.status(400).json({ error: 'Faltan campos' })
-    const now = new Date()
-    now.setHours(now.getHours() - 3)
-    const today = now.toISOString().split('T')[0]
+    const today = new Date().toISOString().split('T')[0]
     const r = await db.execute({
       sql: 'INSERT INTO tasks (project_id,title,responsible,due_date,created_at) VALUES (?,?,?,?,?)',
       args: [project_id, title, responsible||'', due_date||null, today]
@@ -177,8 +175,7 @@ app.patch('/api/tasks/:id/toggle', async (req, res) => {
     if (!tRes.rows.length) return res.status(404).json({ error: 'No encontrada' })
     const task    = tRes.rows[0]
     const newDone = task.done ? 0 : 1
-    const nowAR = new Date(); nowAR.setHours(nowAR.getHours() - 3)
-    const doneAt  = newDone ? nowAR.toISOString().split('T')[0] : null
+    const doneAt  = newDone ? new Date().toISOString().split('T')[0] : null
     await db.execute({ sql: 'UPDATE tasks SET done=?,done_at=? WHERE id=?', args: [newDone, doneAt, task.id] })
     const updated = (await db.execute({ sql: 'SELECT * FROM tasks WHERE id=?', args: [task.id] })).rows[0]
     updated.done = Boolean(updated.done)
