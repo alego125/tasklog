@@ -128,6 +128,7 @@ export default function App() {
   const [showDone, setShowDone]             = useState(false)
   const [expanded, setExpanded]             = useState(null)        // task comments
   const [expandedNotes, setExpandedNotes]   = useState({})          // project notes per project
+  const [collapsedProjects, setCollapsedProjects] = useState({})   // collapsed task list per project
   const [newComment, setNewComment]         = useState({})
   const [newProjNote, setNewProjNote]       = useState({})
   const [newTaskFor, setNewTaskFor]         = useState(null)
@@ -516,57 +517,45 @@ export default function App() {
           {/* PROYECTOS */}
           {sortedProjects.map(project => {
             if (filterProject!=='all' && project.id!==parseInt(filterProject)) return null
-            const ptasks   = filtered.filter(t => t.projectId===project.id)
+            const ptasks     = filtered.filter(t => t.projectId===project.id)
             const hasOverdue = project.tasks.some(t => getStatus(t.due_date,t.done)==='overdue')
-            const notesOpen  = expandedNotes[project.id] || false
+            const isCollapsed = collapsedProjects[project.id] || false
+
+            // Mezclar tareas y notas del proyecto ordenadas por created_at
+            const mixedItems = [
+              ...ptasks.map(t => ({ ...t, _type:'task' })),
+              ...(project.notes||[]).map(n => ({ ...n, _type:'note', projectId:project.id }))
+            ].sort((a,b) => (a.created_at||'') > (b.created_at||'') ? 1 : -1)
 
             return (
               <div key={project.id} style={{ background:'#0f172a',border:`1px solid ${hasOverdue?'#dc262644':'#1e293b'}`,borderRadius:14,marginBottom:16,overflow:'hidden' }}>
 
                 {/* Project header */}
                 <div style={{ borderLeft:`4px solid ${project.color}`,padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',background:`linear-gradient(90deg,${project.color}11,transparent)` }}>
-                  <div style={{ display:'flex',alignItems:'center',gap:10 }}>
-                    <div style={{ width:9,height:9,borderRadius:'50%',background:project.color }} />
+                  <div style={{ display:'flex',alignItems:'center',gap:10,flexWrap:'wrap' }}>
+                    <div style={{ width:9,height:9,borderRadius:'50%',background:project.color,flexShrink:0 }} />
                     <span style={{ fontWeight:700,fontSize:15 }}>{project.name}</span>
                     <span style={{ background:'#1e293b',border:'1px solid #334155',borderRadius:20,padding:'1px 9px',fontSize:11,color:'#64748b' }}>
-                      {project.tasks.length} tarea{project.tasks.length!==1?'s':''}
+                      {project.tasks.length} tarea{project.tasks.length!==1?'s':''} · {project.notes?.length||0} nota{(project.notes?.length||0)!==1?'s':''}
                     </span>
                     {hasOverdue && <span style={{ background:'#2d0a0a',border:'1px solid #dc2626',borderRadius:20,padding:'1px 9px',fontSize:11,color:'#ef4444',fontWeight:600 }}>⚠ Tareas vencidas</span>}
-                    <span style={{ background:'#1e1b4b',border:'1px solid #4338ca',borderRadius:20,padding:'1px 9px',fontSize:11,color:'#818cf8',cursor:'pointer' }}
-                      onClick={()=>setExpandedNotes(n=>({...n,[project.id]:!n[project.id]}))}>
-                      📝 {project.notes?.length||0} nota{(project.notes?.length||0)!==1?'s':''}  {notesOpen?'▲':'▼'}
-                    </span>
                   </div>
                   <div style={{ display:'flex',gap:7 }}>
                     <button onClick={()=>setNewTaskFor(project.id)} style={{ background:'transparent',border:`1px solid ${project.color}`,color:project.color,padding:'5px 12px',borderRadius:7,cursor:'pointer',fontSize:12,fontWeight:600 }}>+ Tarea</button>
+                    <button onClick={()=>setNewProjNote(n=>({...n,[project.id+'_open']:!(n[project.id+'_open'])}))} style={{ background:'transparent',border:'1px solid #4338ca',color:'#818cf8',padding:'5px 12px',borderRadius:7,cursor:'pointer',fontSize:12,fontWeight:600 }}>+ Nota</button>
+                    <button onClick={()=>setCollapsedProjects(c=>({...c,[project.id]:!c[project.id]}))} title={isCollapsed?'Expandir':'Colapsar'} style={{ ...S.iconBtn,borderColor:`${project.color}44`,color:'#94a3b8' }}>{isCollapsed?'▼':'▲'}</button>
                     <button onClick={()=>setEditProject(project)} title="Editar proyecto" style={{ ...S.iconBtn,borderColor:`${project.color}66`,color:project.color }}>✏️</button>
                     <button onClick={()=>setConfirm({msg:`¿Eliminar "${project.name}" y TODAS sus tareas y notas?`,action:()=>doDeleteProject(project.id)})}
                       style={{ ...S.iconBtn,borderColor:'#dc262633',color:'#ef4444',fontSize:15 }} title="Eliminar proyecto">🗑</button>
                   </div>
                 </div>
 
-                {/* Project Notes panel */}
-                {notesOpen && (
-                  <div style={{ background:'#0d1829',borderBottom:'1px solid #1e293b',padding:'12px 16px' }}>
-                    <div style={{ fontSize:11,color:'#818cf8',fontWeight:700,marginBottom:10,textTransform:'uppercase',letterSpacing:1 }}>📝 Bitácora del Proyecto</div>
-                    {(project.notes||[]).length===0 && <div style={{ fontSize:13,color:'#475569',marginBottom:10 }}>Sin notas del proyecto aún.</div>}
-                    {(project.notes||[]).map(note=>(
-                      <div key={note.id} style={{ background:'#1e293b',border:'1px solid #2d3748',borderRadius:8,padding:'9px 12px',marginBottom:7,display:'flex',gap:10,alignItems:'flex-start' }}>
-                        <div style={{ flex:1 }}>
-                          <div style={{ fontSize:11,color:'#64748b',marginBottom:3 }}>{note.author||'—'} · {fmtDate(note.created_at)}</div>
-                          <div style={{ fontSize:13,color:'#cbd5e1' }}>{note.text}</div>
-                        </div>
-                        <div style={{ display:'flex',gap:4 }}>
-                          <button onClick={()=>setMoveNote({note,pId:project.id})} title="Mover a tarea" style={{ ...S.iconBtn,borderColor:'#6366f133',color:'#818cf8' }}>🔀</button>
-                          <button onClick={()=>setEditNote({pId:project.id,note})} style={S.iconBtn} title="Editar">✏️</button>
-                          <button onClick={()=>setConfirm({msg:'¿Eliminar esta nota?',action:()=>doDeleteProjectNote(project.id,note.id)})} style={{ ...S.iconBtn,borderColor:'#dc262633' }} title="Eliminar">🗑️</button>
-                        </div>
-                      </div>
-                    ))}
-                    <div style={{ display:'flex',gap:8,marginTop:6 }}>
-                      <input placeholder="Agregar nota al proyecto..." value={newProjNote[project.id]||''} onChange={e=>setNewProjNote(n=>({...n,[project.id]:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&doAddProjectNote(project.id)} style={{ ...S.input,flex:1 }} />
-                      <button onClick={()=>doAddProjectNote(project.id)} style={S.btnPrimary}>Agregar</button>
-                    </div>
+                {/* Nueva nota rápida */}
+                {newProjNote[project.id+'_open'] && (
+                  <div style={{ background:'#0d1829',borderBottom:'1px solid #1e293b',padding:'10px 16px',display:'flex',gap:8 }}>
+                    <input placeholder="Agregar nota al proyecto..." value={newProjNote[project.id]||''} onChange={e=>setNewProjNote(n=>({...n,[project.id]:e.target.value}))} onKeyDown={e=>{ if(e.key==='Enter'){ doAddProjectNote(project.id); setNewProjNote(n=>({...n,[project.id+'_open']:false})) } }} style={{ ...S.input,flex:1 }} autoFocus />
+                    <button onClick={()=>{ doAddProjectNote(project.id); setNewProjNote(n=>({...n,[project.id+'_open']:false})) }} style={S.btnPrimary}>Agregar</button>
+                    <button onClick={()=>setNewProjNote(n=>({...n,[project.id+'_open']:false}))} style={S.btnSecondary}>✕</button>
                   </div>
                 )}
 
@@ -581,70 +570,102 @@ export default function App() {
                   </div>
                 )}
 
-                {/* Tasks */}
-                <div>
-                  {ptasks.length===0 && (
-                    <div style={{ padding:'16px',textAlign:'center',color:'#475569',fontSize:13 }}>
-                      {project.tasks.length===0?'Sin tareas aún. ¡Agrega la primera!':'Ninguna tarea coincide con los filtros.'}
-                    </div>
-                  )}
-                  {ptasks.map((task,idx)=>{
-                    const status = getStatus(task.due_date, task.done)
-                    const cfg    = STATUS[status]
-                    const isExp  = expanded===task.id
-                    return (
-                      <div key={task.id} style={{ borderTop:idx===0?'none':'1px solid #1e293b',background:isExp?cfg.bg:'transparent',transition:'background .2s' }}>
-                        <div style={{ padding:'11px 16px',display:'flex',alignItems:'center',gap:10,borderLeft:`3px solid ${cfg.border}` }}>
-                          {/* Checkbox */}
-                          <div onClick={()=>doToggle(task.id)} style={{ width:21,height:21,borderRadius:5,border:`2px solid ${cfg.badge}`,background:task.done?cfg.badge:'transparent',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0,fontSize:12,color:'#0f172a',fontWeight:900,transition:'all .15s' }}>{task.done&&'✓'}</div>
-                          {/* Info */}
-                          <div style={{ flex:1,minWidth:0 }}>
-                            <div style={{ fontWeight:600,fontSize:14,textDecoration:task.done?'line-through':'none',color:task.done?'#475569':'#e2e8f0',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis' }}>{task.title}</div>
-                            <div style={{ fontSize:11,color:'#64748b',marginTop:2,display:'flex',gap:10,flexWrap:'wrap' }}>
-                              {task.responsible && <span>👤 {task.responsible}</span>}
-                              {task.due_date    && <span>📅 Vence: {task.due_date}</span>}
-                              <span>🗓 Registro: {fmtDate(task.created_at)}</span>
-                              <span>💬 {task.comments.length} nota{task.comments.length!==1?'s':''}</span>
-                            </div>
-                          </div>
-                          {/* Badge */}
-                          <div style={{ background:`${cfg.badge}22`,border:`1px solid ${cfg.badge}55`,color:cfg.badge,padding:'3px 9px',borderRadius:20,fontSize:11,fontWeight:600,whiteSpace:'nowrap',flexShrink:0 }}>● {cfg.label}</div>
-                          {/* Actions */}
-                          <div style={{ display:'flex',gap:5,flexShrink:0 }}>
-                            <button onClick={()=>setEditTask({pId:task.projectId,task})} style={S.iconBtn} title="Editar">✏️</button>
-                            <button onClick={()=>setConfirm({msg:`¿Eliminar "${task.title}"?`,action:()=>doDeleteTask(task.projectId,task.id)})} style={{ ...S.iconBtn,borderColor:'#dc262633' }} title="Eliminar">🗑️</button>
-                            <button onClick={()=>setExpanded(isExp?null:task.id)} style={{ ...S.iconBtn,fontSize:11 }}>{isExp?'▲':'▼'}</button>
-                          </div>
-                        </div>
-
-                        {/* Task comments */}
-                        {isExp && (
-                          <div style={{ padding:'0 16px 14px 50px',borderLeft:`3px solid ${cfg.border}` }}>
-                            <div style={{ fontSize:11,color:'#94a3b8',fontWeight:700,marginBottom:8,textTransform:'uppercase',letterSpacing:1 }}>💬 Bitácora de la tarea</div>
-                            {task.comments.length===0 && <div style={{ fontSize:13,color:'#475569',marginBottom:10 }}>Sin notas aún.</div>}
-                            {task.comments.map(c=>(
-                              <div key={c.id} style={{ background:'#1e293b',border:'1px solid #334155',borderRadius:8,padding:'9px 12px',marginBottom:7,display:'flex',gap:10,alignItems:'flex-start' }}>
-                                <div style={{ flex:1 }}>
-                                  <div style={{ fontSize:11,color:'#64748b',marginBottom:3 }}>{c.author||'—'} · {fmtDate(c.created_at)}</div>
-                                  <div style={{ fontSize:13,color:'#cbd5e1' }}>{c.text}</div>
-                                </div>
-                                <div style={{ display:'flex',gap:4 }}>
-                                  <button onClick={()=>setMoveComment({comment:c,pId:task.projectId,tId:task.id})} title="Mover a proyecto" style={{ ...S.iconBtn,borderColor:'#6366f133',color:'#818cf8' }}>🔀</button>
-                                  <button onClick={()=>setEditComment({pId:task.projectId,tId:task.id,comment:c})} style={S.iconBtn} title="Editar">✏️</button>
-                                  <button onClick={()=>setConfirm({msg:'¿Eliminar esta nota?',action:()=>doDeleteComment(task.projectId,task.id,c.id)})} style={{ ...S.iconBtn,borderColor:'#dc262633' }} title="Eliminar">🗑️</button>
-                                </div>
-                              </div>
-                            ))}
-                            <div style={{ display:'flex',gap:8,marginTop:6 }}>
-                              <input placeholder="Agregar nota..." value={newComment[task.id]||''} onChange={e=>setNewComment(p=>({...p,[task.id]:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&doAddComment(task.projectId,task.id)} style={{ ...S.input,flex:1 }} />
-                              <button onClick={()=>doAddComment(task.projectId,task.id)} style={S.btnPrimary}>Agregar</button>
-                            </div>
-                          </div>
-                        )}
+                {/* Lista mixta: tareas + notas ordenadas por fecha */}
+                {!isCollapsed && (
+                  <div>
+                    {mixedItems.length===0 && (
+                      <div style={{ padding:'16px',textAlign:'center',color:'#475569',fontSize:13 }}>
+                        Sin tareas ni notas aún.
                       </div>
-                    )
-                  })}
-                </div>
+                    )}
+                    {mixedItems.map((item, idx) => {
+                      if (item._type === 'note') {
+                        // NOTA DE PROYECTO
+                        return (
+                          <div key={`note-${item.id}`} style={{ borderTop:idx===0?'none':'1px solid #1e293b',borderLeft:'3px solid #4338ca' }}>
+                            <div style={{ padding:'10px 16px',display:'flex',alignItems:'flex-start',gap:10,background:'#0d182922' }}>
+                              <div style={{ flexShrink:0,marginTop:3 }}>
+                                <span style={{ background:'#1e1b4b',border:'1px solid #4338ca',color:'#818cf8',padding:'2px 7px',borderRadius:10,fontSize:10,fontWeight:700 }}>📝 NOTA</span>
+                              </div>
+                              <div style={{ flex:1,minWidth:0 }}>
+                                <div style={{ fontSize:11,color:'#64748b',marginBottom:3 }}>{item.author||'—'} · {fmtDate(item.created_at)}</div>
+                                <div style={{ fontSize:13,color:'#cbd5e1',lineHeight:1.5 }}>{item.text}</div>
+                              </div>
+                              <div style={{ display:'flex',gap:4,flexShrink:0 }}>
+                                <button onClick={()=>setMoveNote({note:item,pId:project.id})} title="Mover a tarea" style={{ ...S.iconBtn,borderColor:'#6366f133',color:'#818cf8' }}>🔀</button>
+                                <button onClick={()=>setEditNote({pId:project.id,note:item})} style={S.iconBtn} title="Editar">✏️</button>
+                                <button onClick={()=>setConfirm({msg:'¿Eliminar esta nota?',action:()=>doDeleteProjectNote(project.id,item.id)})} style={{ ...S.iconBtn,borderColor:'#dc262633' }} title="Eliminar">🗑️</button>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      }
+
+                      // TAREA
+                      const task   = item
+                      const status = getStatus(task.due_date, task.done)
+                      const cfg    = STATUS[status]
+                      const isExp  = expanded===task.id
+                      return (
+                        <div key={`task-${task.id}`} style={{ borderTop:idx===0?'none':'1px solid #1e293b',background:isExp?cfg.bg:'transparent',transition:'background .2s' }}>
+                          <div style={{ padding:'11px 16px',display:'flex',alignItems:'center',gap:10,borderLeft:`3px solid ${cfg.border}` }}>
+                            <div onClick={()=>doToggle(task.id)} style={{ width:21,height:21,borderRadius:5,border:`2px solid ${cfg.badge}`,background:task.done?cfg.badge:'transparent',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0,fontSize:12,color:'#0f172a',fontWeight:900,transition:'all .15s' }}>{task.done&&'✓'}</div>
+                            <div style={{ flex:1,minWidth:0 }}>
+                              <div style={{ fontWeight:600,fontSize:14,textDecoration:task.done?'line-through':'none',color:task.done?'#475569':'#e2e8f0',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis' }}>{task.title}</div>
+                              <div style={{ fontSize:11,color:'#64748b',marginTop:2,display:'flex',gap:10,flexWrap:'wrap' }}>
+                                {task.responsible && <span>👤 {task.responsible}</span>}
+                                {task.due_date    && <span>📅 Vence: {task.due_date}</span>}
+                                <span>🗓 Registro: {fmtDate(task.created_at)}</span>
+                                <span>💬 {task.comments.length} nota{task.comments.length!==1?'s':''}</span>
+                              </div>
+                            </div>
+                            <div style={{ background:`${cfg.badge}22`,border:`1px solid ${cfg.badge}55`,color:cfg.badge,padding:'3px 9px',borderRadius:20,fontSize:11,fontWeight:600,whiteSpace:'nowrap',flexShrink:0 }}>● {cfg.label}</div>
+                            <div style={{ display:'flex',gap:5,flexShrink:0 }}>
+                              <button onClick={()=>setEditTask({pId:task.projectId,task})} style={S.iconBtn} title="Editar">✏️</button>
+                              <button onClick={()=>setConfirm({msg:`¿Eliminar "${task.title}"?`,action:()=>doDeleteTask(task.projectId,task.id)})} style={{ ...S.iconBtn,borderColor:'#dc262633' }} title="Eliminar">🗑️</button>
+                              <button onClick={()=>setExpanded(isExp?null:task.id)} style={{ ...S.iconBtn,fontSize:11 }}>{isExp?'▲':'▼'}</button>
+                            </div>
+                          </div>
+
+                          {/* Task comments */}
+                          {isExp && (
+                            <div style={{ padding:'0 16px 14px 50px',borderLeft:`3px solid ${cfg.border}` }}>
+                              <div style={{ fontSize:11,color:'#94a3b8',fontWeight:700,marginBottom:8,textTransform:'uppercase',letterSpacing:1 }}>💬 Bitácora de la tarea</div>
+                              {task.comments.length===0 && <div style={{ fontSize:13,color:'#475569',marginBottom:10 }}>Sin notas aún.</div>}
+                              {task.comments.map(c=>(
+                                <div key={c.id} style={{ background:'#1e293b',border:'1px solid #334155',borderRadius:8,padding:'9px 12px',marginBottom:7,display:'flex',gap:10,alignItems:'flex-start' }}>
+                                  <div style={{ flex:1 }}>
+                                    <div style={{ fontSize:11,color:'#64748b',marginBottom:3 }}>{c.author||'—'} · {fmtDate(c.created_at)}</div>
+                                    <div style={{ fontSize:13,color:'#cbd5e1' }}>{c.text}</div>
+                                  </div>
+                                  <div style={{ display:'flex',gap:4 }}>
+                                    <button onClick={()=>setMoveComment({comment:c,pId:task.projectId,tId:task.id})} title="Mover a proyecto" style={{ ...S.iconBtn,borderColor:'#6366f133',color:'#818cf8' }}>🔀</button>
+                                    <button onClick={()=>setEditComment({pId:task.projectId,tId:task.id,comment:c})} style={S.iconBtn} title="Editar">✏️</button>
+                                    <button onClick={()=>setConfirm({msg:'¿Eliminar esta nota?',action:()=>doDeleteComment(task.projectId,task.id,c.id)})} style={{ ...S.iconBtn,borderColor:'#dc262633' }} title="Eliminar">🗑️</button>
+                                  </div>
+                                </div>
+                              ))}
+                              <div style={{ display:'flex',gap:8,marginTop:6 }}>
+                                <input placeholder="Agregar nota..." value={newComment[task.id]||''} onChange={e=>setNewComment(p=>({...p,[task.id]:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&doAddComment(task.projectId,task.id)} style={{ ...S.input,flex:1 }} />
+                                <button onClick={()=>doAddComment(task.projectId,task.id)} style={S.btnPrimary}>Agregar</button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Resumen cuando está colapsado */}
+                {isCollapsed && (
+                  <div style={{ padding:'10px 16px',borderTop:'1px solid #1e293b',display:'flex',gap:16,fontSize:12,color:'#475569' }}>
+                    <span>📌 {project.tasks.filter(t=>!t.done).length} pendiente{project.tasks.filter(t=>!t.done).length!==1?'s':''}</span>
+                    <span>✅ {project.tasks.filter(t=>t.done).length} completada{project.tasks.filter(t=>t.done).length!==1?'s':''}</span>
+                    <span>📝 {project.notes?.length||0} nota{(project.notes?.length||0)!==1?'s':''}</span>
+                    {hasOverdue && <span style={{color:'#ef4444'}}>⚠ {project.tasks.filter(t=>getStatus(t.due_date,t.done)==='overdue').length} vencida{project.tasks.filter(t=>getStatus(t.due_date,t.done)==='overdue').length!==1?'s':''}</span>}
+                  </div>
+                )}
               </div>
             )
           })}
