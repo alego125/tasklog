@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { api } from './hooks/useApi.js'
 import { Confirm, EditProject, EditTask, EditComment, MoveNoteModal, MoveCommentModal } from './components/Modals.jsx'
-import SchemaView from './components/SchemaView.jsx'
 
 // ── Helpers ──────────────────────────────────────────────────────
 const getStatus = (due, done) => {
@@ -136,7 +135,6 @@ export default function App() {
   const [newProjOpen, setNewProjOpen]       = useState(false)
   const [newProjName, setNewProjName]       = useState('')
   const [newProjColor, setNewProjColor]     = useState('#6366f1')
-  const [schemaView, setSchemaView]         = useState(false)
   const [archiveView, setArchiveView]       = useState(false)
   const [archivedProjects, setArchivedProjects] = useState([])
   const [loadingArchived, setLoadingArchived]   = useState(false)
@@ -392,25 +390,23 @@ export default function App() {
           </div>
         </div>
         <div style={{ display:'flex',gap:8,flexWrap:'wrap' }}>
-          {!schemaView && !archiveView && (
+          {!archiveView && (
             <button onClick={()=>exportExcel(projects)} style={{ background:'#065f46',border:'1px solid #059669',color:'#34d399',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:600 }}>
               ⬇ Exportar Excel
             </button>
           )}
-          {!schemaView && (
+          {(
             <button onClick={()=>{ if(!archiveView){ loadArchived() } setArchiveView(v=>!v) }}
               style={{ background:archiveView?'#78350f':'#1e293b',border:`1px solid ${archiveView?'#d97706':'#334155'}`,color:archiveView?'#fbbf24':'#94a3b8',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontSize:13 }}>
               {archiveView?'← Volver':'📦 Archivados'}
             </button>
           )}
-          <button onClick={()=>setSchemaView(v=>!v)} style={{ background:schemaView?'#6366f1':'#1e293b',border:'1px solid #334155',color:'#e2e8f0',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontSize:13 }}>
-            {schemaView?'← Ver App':'🗄️ Esquema BD'}
-          </button>
-          {!schemaView && !archiveView && <button onClick={()=>setNewProjOpen(true)} style={S.btnPrimary}>+ Nuevo Proyecto</button>}
+
+          {!archiveView && <button onClick={()=>setNewProjOpen(true)} style={S.btnPrimary}>+ Nuevo Proyecto</button>}
         </div>
       </div>
 
-      {schemaView ? <SchemaView /> : archiveView ? (
+      {archiveView ? (
         <div style={{ maxWidth:1200,margin:'0 auto',padding:'28px 20px' }}>
           <div style={{ display:'flex',alignItems:'center',gap:12,marginBottom:20 }}>
             <span style={{ fontSize:18,fontWeight:700,color:'#fbbf24' }}>📦 Proyectos Archivados</span>
