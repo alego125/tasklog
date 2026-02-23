@@ -20,14 +20,15 @@ function Backdrop({ onClose, children }) {
   )
 }
 
-export function Confirm({ msg, onOk, onCancel }) {
+export function Confirm({ msg, onOk, onCancel, title, okLabel, okColor }) {
+  const btnStyle = { ...S.btnDanger, background: okColor || '#dc2626' }
   return (
     <Backdrop onClose={onCancel}>
-      <div style={{ fontSize:16, fontWeight:700, marginBottom:8 }}>⚠️ Confirmar eliminación</div>
+      <div style={{ fontSize:16, fontWeight:700, marginBottom:8 }}>{title || '⚠️ Confirmar eliminación'}</div>
       <div style={{ fontSize:14, color:'#94a3b8', marginBottom:24 }}>{msg}</div>
       <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
         <button onClick={onCancel} style={S.btnSecondary}>Cancelar</button>
-        <button onClick={onOk} style={S.btnDanger}>Eliminar</button>
+        <button onClick={onOk} style={btnStyle}>{okLabel || 'Eliminar'}</button>
       </div>
     </Backdrop>
   )

@@ -374,7 +374,7 @@ export default function App() {
     <div style={{ minHeight:'100vh', background:'#070d1a', fontFamily:"'DM Sans','Segoe UI',sans-serif", color:'#e2e8f0' }}>
 
       {/* MODALS */}
-      {confirm      && <Confirm msg={confirm.msg} onOk={()=>{confirm.action();setConfirm(null)}} onCancel={()=>setConfirm(null)} />}
+      {confirm      && <Confirm msg={confirm.msg} onOk={()=>{confirm.action();setConfirm(null)}} onCancel={()=>setConfirm(null)} title={confirm.title} okLabel={confirm.okLabel} okColor={confirm.okColor} />}
       {editProject  && <EditProject project={editProject} onSave={doSaveEditProject} onClose={()=>setEditProject(null)} />}
       {editTask     && <EditTask task={editTask.task} onSave={doSaveEditTask} onClose={()=>setEditTask(null)} />}
       {editComment  && <EditComment comment={editComment.comment} onSave={doSaveEditComment} onClose={()=>setEditComment(null)} />}
@@ -432,7 +432,7 @@ export default function App() {
                   <span style={{ background:'#451a03',border:'1px solid #92400e',borderRadius:20,padding:'1px 9px',fontSize:11,color:'#fbbf24' }}>📦 Archivado</span>
                 </div>
                 <div style={{ display:'flex',gap:7 }}>
-                  <button onClick={()=>setConfirm({msg:`¿Restaurar "${project.name}" a la pantalla principal?`,action:()=>doUnarchiveProject(project.id)})}
+                  <button onClick={()=>setConfirm({msg:`¿Restaurar "${project.name}" a la pantalla principal?`,action:()=>doUnarchiveProject(project.id),title:'↩ Confirmar restauración',okLabel:'Restaurar',okColor:'#059669'})}
                     style={{ background:'#065f46',border:'1px solid #059669',color:'#34d399',padding:'6px 14px',borderRadius:7,cursor:'pointer',fontSize:12,fontWeight:600 }}>
                     ↩ Restaurar
                   </button>
@@ -614,7 +614,7 @@ export default function App() {
                     <button onClick={()=>setNewProjNote(n=>({...n,[project.id+'_open']:!(n[project.id+'_open'])}))} style={{ background:'transparent',border:'1px solid #4338ca',color:'#818cf8',padding:'5px 12px',borderRadius:7,cursor:'pointer',fontSize:12,fontWeight:600 }}>+ Nota</button>
                     <button onClick={()=>setCollapsedProjects(c=>({...c,[project.id]:!c[project.id]}))} title={isCollapsed?'Expandir':'Colapsar'} style={{ ...S.iconBtn,borderColor:`${project.color}44`,color:'#94a3b8' }}>{isCollapsed?'▼':'▲'}</button>
                     <button onClick={()=>setEditProject(project)} title="Editar proyecto" style={{ ...S.iconBtn,borderColor:`${project.color}66`,color:project.color }}>✏️</button>
-                    <button onClick={()=>setConfirm({msg:`¿Archivar "${project.name}"? Podrás recuperarlo desde "Archivados".`,action:()=>doArchiveProject(project.id)})}
+                    <button onClick={()=>setConfirm({msg:`¿Archivar "${project.name}"? Podrás recuperarlo desde "Archivados".`,action:()=>doArchiveProject(project.id),title:'📦 Confirmar archivado',okLabel:'Archivar',okColor:'#d97706'})}
                       title="Archivar proyecto" style={{ ...S.iconBtn,borderColor:'#d9770633',color:'#f59e0b' }}>📦</button>
                     <button onClick={()=>setConfirm({msg:`¿Eliminar "${project.name}" y TODAS sus tareas y notas?`,action:()=>doDeleteProject(project.id)})}
                       style={{ ...S.iconBtn,borderColor:'#dc262633',color:'#ef4444',fontSize:15 }} title="Eliminar proyecto">🗑</button>
