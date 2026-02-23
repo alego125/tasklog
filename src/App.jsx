@@ -137,6 +137,9 @@ export default function App() {
   const [newProjName, setNewProjName]       = useState('')
   const [newProjColor, setNewProjColor]     = useState('#6366f1')
   const [schemaView, setSchemaView]         = useState(false)
+  const [archiveView, setArchiveView]       = useState(false)
+  const [archivedProjects, setArchivedProjects] = useState([])
+  const [loadingArchived, setLoadingArchived]   = useState(false)
   const [editProject, setEditProject]       = useState(null)
   const [editTask, setEditTask]             = useState(null)
   const [editComment, setEditComment]       = useState(null)
@@ -234,6 +237,27 @@ export default function App() {
   const doDeleteProject = async pId => {
     await api.deleteProject(pId)
     setProjects(prev => prev.filter(p => p.id !== pId))
+  }
+
+  const doArchiveProject = async pId => {
+    await api.archiveProject(pId)
+    setProjects(prev => prev.filter(p => p.id !== pId))
+  }
+
+  const doUnarchiveProject = async pId => {
+    const project = await api.unarchiveProject(pId)
+    setArchivedProjects(prev => prev.filter(p => p.id !== pId))
+    setProjects(prev => [...prev, project])
+  }
+
+  const loadArchived = async () => {
+    setLoadingArchived(true)
+    try {
+      const data = await api.getArchivedProjects()
+      setArchivedProjects(data)
+    } finally {
+      setLoadingArchived(false)
+    }
   }
 
   // Tasks
@@ -368,19 +392,64 @@ export default function App() {
           </div>
         </div>
         <div style={{ display:'flex',gap:8,flexWrap:'wrap' }}>
-          {!schemaView && (
+          {!schemaView && !archiveView && (
             <button onClick={()=>exportExcel(projects)} style={{ background:'#065f46',border:'1px solid #059669',color:'#34d399',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:600 }}>
               ⬇ Exportar Excel
+            </button>
+          )}
+          {!schemaView && (
+            <button onClick={()=>{ if(!archiveView){ loadArchived() } setArchiveView(v=>!v) }}
+              style={{ background:archiveView?'#78350f':'#1e293b',border:`1px solid ${archiveView?'#d97706':'#334155'}`,color:archiveView?'#fbbf24':'#94a3b8',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontSize:13 }}>
+              {archiveView?'← Volver':'📦 Archivados'}
             </button>
           )}
           <button onClick={()=>setSchemaView(v=>!v)} style={{ background:schemaView?'#6366f1':'#1e293b',border:'1px solid #334155',color:'#e2e8f0',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontSize:13 }}>
             {schemaView?'← Ver App':'🗄️ Esquema BD'}
           </button>
-          {!schemaView && <button onClick={()=>setNewProjOpen(true)} style={S.btnPrimary}>+ Nuevo Proyecto</button>}
+          {!schemaView && !archiveView && <button onClick={()=>setNewProjOpen(true)} style={S.btnPrimary}>+ Nuevo Proyecto</button>}
         </div>
       </div>
 
-      {schemaView ? <SchemaView /> : (
+      {schemaView ? <SchemaView /> : archiveView ? (
+        <div style={{ maxWidth:1200,margin:'0 auto',padding:'28px 20px' }}>
+          <div style={{ display:'flex',alignItems:'center',gap:12,marginBottom:20 }}>
+            <span style={{ fontSize:18,fontWeight:700,color:'#fbbf24' }}>📦 Proyectos Archivados</span>
+            {loadingArchived && <span style={{ fontSize:13,color:'#64748b' }}>Cargando...</span>}
+            {!loadingArchived && <span style={{ fontSize:13,color:'#64748b' }}>{archivedProjects.length} proyecto{archivedProjects.length!==1?'s':''}</span>}
+          </div>
+          {!loadingArchived && archivedProjects.length===0 && (
+            <div style={{ textAlign:'center',color:'#475569',fontSize:14,padding:40 }}>No hay proyectos archivados.</div>
+          )}
+          {archivedProjects.map(project => (
+            <div key={project.id} style={{ background:'#0f172a',border:'1px solid #334155',borderRadius:14,marginBottom:12,overflow:'hidden',opacity:0.85 }}>
+              <div style={{ borderLeft:`4px solid ${project.color}`,padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',background:`linear-gradient(90deg,${project.color}11,transparent)` }}>
+                <div style={{ display:'flex',alignItems:'center',gap:10 }}>
+                  <div style={{ width:9,height:9,borderRadius:'50%',background:project.color }} />
+                  <span style={{ fontWeight:700,fontSize:15,color:'#94a3b8' }}>{project.name}</span>
+                  <span style={{ background:'#1e293b',border:'1px solid #334155',borderRadius:20,padding:'1px 9px',fontSize:11,color:'#475569' }}>
+                    {project.tasks.length} tarea{project.tasks.length!==1?'s':''} · {project.notes?.length||0} nota{(project.notes?.length||0)!==1?'s':''}
+                  </span>
+                  <span style={{ background:'#451a03',border:'1px solid #92400e',borderRadius:20,padding:'1px 9px',fontSize:11,color:'#fbbf24' }}>📦 Archivado</span>
+                </div>
+                <div style={{ display:'flex',gap:7 }}>
+                  <button onClick={()=>setConfirm({msg:`¿Restaurar "${project.name}" a la pantalla principal?`,action:()=>doUnarchiveProject(project.id)})}
+                    style={{ background:'#065f46',border:'1px solid #059669',color:'#34d399',padding:'6px 14px',borderRadius:7,cursor:'pointer',fontSize:12,fontWeight:600 }}>
+                    ↩ Restaurar
+                  </button>
+                  <button onClick={()=>setConfirm({msg:`¿Eliminar "${project.name}" y TODAS sus tareas y notas? Esta acción no se puede deshacer.`,action:()=>doDeleteProject(project.id)})}
+                    style={{ ...S.iconBtn,borderColor:'#dc262633',color:'#ef4444' }} title="Eliminar permanentemente">🗑</button>
+                </div>
+              </div>
+              {/* Resumen de tareas archivadas */}
+              <div style={{ padding:'8px 16px',fontSize:12,color:'#475569',display:'flex',gap:16,borderTop:'1px solid #1e293b' }}>
+                <span>📌 {project.tasks.filter(t=>!t.done).length} pendiente{project.tasks.filter(t=>!t.done).length!==1?'s':''}</span>
+                <span>✅ {project.tasks.filter(t=>t.done).length} completada{project.tasks.filter(t=>t.done).length!==1?'s':''}</span>
+                <span>📝 {project.notes?.length||0} nota{(project.notes?.length||0)!==1?'s':''}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
         <div style={{ maxWidth:1200,margin:'0 auto',padding:'28px 20px' }}>
 
           {/* FILTROS */}
@@ -545,6 +614,8 @@ export default function App() {
                     <button onClick={()=>setNewProjNote(n=>({...n,[project.id+'_open']:!(n[project.id+'_open'])}))} style={{ background:'transparent',border:'1px solid #4338ca',color:'#818cf8',padding:'5px 12px',borderRadius:7,cursor:'pointer',fontSize:12,fontWeight:600 }}>+ Nota</button>
                     <button onClick={()=>setCollapsedProjects(c=>({...c,[project.id]:!c[project.id]}))} title={isCollapsed?'Expandir':'Colapsar'} style={{ ...S.iconBtn,borderColor:`${project.color}44`,color:'#94a3b8' }}>{isCollapsed?'▼':'▲'}</button>
                     <button onClick={()=>setEditProject(project)} title="Editar proyecto" style={{ ...S.iconBtn,borderColor:`${project.color}66`,color:project.color }}>✏️</button>
+                    <button onClick={()=>setConfirm({msg:`¿Archivar "${project.name}"? Podrás recuperarlo desde "Archivados".`,action:()=>doArchiveProject(project.id)})}
+                      title="Archivar proyecto" style={{ ...S.iconBtn,borderColor:'#d9770633',color:'#f59e0b' }}>📦</button>
                     <button onClick={()=>setConfirm({msg:`¿Eliminar "${project.name}" y TODAS sus tareas y notas?`,action:()=>doDeleteProject(project.id)})}
                       style={{ ...S.iconBtn,borderColor:'#dc262633',color:'#ef4444',fontSize:15 }} title="Eliminar proyecto">🗑</button>
                   </div>

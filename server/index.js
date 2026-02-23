@@ -40,14 +40,15 @@ async function initDB() {
       id         INTEGER PRIMARY KEY AUTOINCREMENT,
       name       TEXT    NOT NULL,
       color      TEXT    NOT NULL DEFAULT '#6366f1',
-      created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+      archived   INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT    NOT NULL DEFAULT (datetime('now', '-3 hours'))
     );
     CREATE TABLE IF NOT EXISTS tasks (
       id           INTEGER PRIMARY KEY AUTOINCREMENT,
       project_id   INTEGER NOT NULL,
       title        TEXT    NOT NULL,
       responsible  TEXT,
-      created_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+      created_at   TEXT    NOT NULL DEFAULT (datetime('now', '-3 hours')),
       due_date     TEXT,
       done         INTEGER NOT NULL DEFAULT 0,
       done_at      TEXT,
@@ -58,7 +59,7 @@ async function initDB() {
       task_id    INTEGER NOT NULL,
       author     TEXT,
       text       TEXT    NOT NULL,
-      created_at TEXT    NOT NULL DEFAULT (datetime('now')),
+      created_at TEXT    NOT NULL DEFAULT (datetime('now', '-3 hours')),
       FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
     );
     CREATE TABLE IF NOT EXISTS project_notes (
@@ -66,7 +67,7 @@ async function initDB() {
       project_id INTEGER NOT NULL,
       text       TEXT    NOT NULL,
       author     TEXT,
-      created_at TEXT    NOT NULL DEFAULT (datetime('now')),
+      created_at TEXT    NOT NULL DEFAULT (datetime('now', '-3 hours')),
       FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
     );
     CREATE INDEX IF NOT EXISTS idx_tasks_project  ON tasks(project_id);
@@ -75,6 +76,14 @@ async function initDB() {
     CREATE INDEX IF NOT EXISTS idx_comments_task  ON task_comments(task_id);
     CREATE INDEX IF NOT EXISTS idx_notes_project  ON project_notes(project_id);
   `)
+
+  // Migración: agregar columna archived si no existe
+  try {
+    await db.execute("ALTER TABLE projects ADD COLUMN archived INTEGER NOT NULL DEFAULT 0")
+    console.log('📦 Columna archived agregada a projects')
+  } catch(e) {
+    // Ya existe, ignorar
+  }
 
   console.log('✅ Schema verificado — BD lista')
 }
@@ -105,7 +114,16 @@ app.use(express.json())
 app.get('/api/projects', async (req, res) => {
   try {
     const db = await getDb()
-    const result = await db.execute('SELECT * FROM projects ORDER BY id')
+    const result = await db.execute('SELECT * FROM projects WHERE archived = 0 ORDER BY id')
+    const projects = await Promise.all(result.rows.map(p => getFullProject(p.id)))
+    res.json(projects)
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
+app.get('/api/projects/archived', async (req, res) => {
+  try {
+    const db = await getDb()
+    const result = await db.execute('SELECT * FROM projects WHERE archived = 1 ORDER BY id')
     const projects = await Promise.all(result.rows.map(p => getFullProject(p.id)))
     res.json(projects)
   } catch(e) { res.status(500).json({ error: e.message }) }
@@ -131,6 +149,22 @@ app.put('/api/projects/:id', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }) }
 })
 
+app.patch('/api/projects/:id/archive', async (req, res) => {
+  try {
+    const db = await getDb()
+    await db.execute({ sql: 'UPDATE projects SET archived = 1 WHERE id = ?', args: [req.params.id] })
+    res.json({ ok: true })
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
+app.patch('/api/projects/:id/unarchive', async (req, res) => {
+  try {
+    const db = await getDb()
+    await db.execute({ sql: 'UPDATE projects SET archived = 0 WHERE id = ?', args: [req.params.id] })
+    res.json(await getFullProject(req.params.id))
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
 app.delete('/api/projects/:id', async (req, res) => {
   try {
     const db = await getDb()
@@ -145,10 +179,12 @@ app.post('/api/tasks', async (req, res) => {
     const db = await getDb()
     const { project_id, title, responsible, due_date } = req.body
     if (!project_id || !title) return res.status(400).json({ error: 'Faltan campos' })
-    const today = new Date().toISOString().split('T')[0]
+    const now = new Date()
+    now.setHours(now.getHours() - 3)
+    const today = now.toISOString().split('T')[0]
     const r = await db.execute({
       sql: 'INSERT INTO tasks (project_id,title,responsible,due_date,created_at) VALUES (?,?,?,?,?)',
-      args: [project_id, title, responsible||'', (due_date && due_date.trim()) ? due_date : null, today]
+      args: [project_id, title, responsible||'', due_date||null, today]
     })
     const tRes = await db.execute({ sql: 'SELECT * FROM tasks WHERE id = ?', args: [r.lastInsertRowid] })
     res.json({ ...tRes.rows[0], done: false, comments: [] })
@@ -175,7 +211,8 @@ app.patch('/api/tasks/:id/toggle', async (req, res) => {
     if (!tRes.rows.length) return res.status(404).json({ error: 'No encontrada' })
     const task    = tRes.rows[0]
     const newDone = task.done ? 0 : 1
-    const doneAt  = newDone ? new Date().toISOString().split('T')[0] : null
+    const nowAR = new Date(); nowAR.setHours(nowAR.getHours() - 3)
+    const doneAt  = newDone ? nowAR.toISOString().split('T')[0] : null
     await db.execute({ sql: 'UPDATE tasks SET done=?,done_at=? WHERE id=?', args: [newDone, doneAt, task.id] })
     const updated = (await db.execute({ sql: 'SELECT * FROM tasks WHERE id=?', args: [task.id] })).rows[0]
     updated.done = Boolean(updated.done)

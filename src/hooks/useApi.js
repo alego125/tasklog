@@ -20,7 +20,10 @@ export const api = {
   getProjects:   ()               => request('GET',    '/projects'),
   createProject: (name, color)    => request('POST',   '/projects', { name, color }),
   updateProject: (id, name, color)=> request('PUT',    `/projects/${id}`, { name, color }),
-  deleteProject: (id)             => request('DELETE', `/projects/${id}`),
+  archiveProject:   (id) => request('PATCH',  `/projects/${id}/archive`),
+  unarchiveProject: (id) => request('PATCH',  `/projects/${id}/unarchive`),
+  getArchivedProjects: () => request('GET', '/projects/archived'),
+  deleteProject:    (id) => request('DELETE', `/projects/${id}`),
   // Tasks
   createTask:    (data)           => request('POST',   '/tasks', data),
   updateTask:    (id, data)       => request('PUT',    `/tasks/${id}`, data),
