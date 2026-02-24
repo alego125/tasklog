@@ -6,10 +6,11 @@ import { Confirm, EditProject, EditTask, EditComment, MoveNoteModal, MoveComment
 const getStatus = (due, done) => {
   if (done) return 'done'
   if (!due) return 'ok'
+  const dueStr = String(due).slice(0, 10)  // normalizar a YYYY-MM-DD
   const today = new Date()
   const todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0')
-  if (due < todayStr) return 'overdue'
-  const diff = (new Date(due + 'T12:00:00') - new Date(todayStr + 'T12:00:00')) / 86400000
+  if (dueStr < todayStr) return 'overdue'
+  const diff = (new Date(dueStr + 'T12:00:00') - new Date(todayStr + 'T12:00:00')) / 86400000
   if (diff <= 3) return 'warning'
   return 'ok'
 }
@@ -24,16 +25,22 @@ const STATUS = {
 const COLORS = ['#6366f1','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4','#f59e0b','#22c55e']
 
 // Convierte fecha UTC de la BD a hora Argentina (UTC-3) para mostrar
+// Formatea datetime completo → fecha y hora en Argentina (UTC-3)
 const fmtDate = d => {
   if (!d) return ''
-  // Si tiene hora (datetime completo), convertir a Argentina
   if (d.includes(' ') || d.includes('T')) {
     const date = new Date(d.replace(' ', 'T') + (d.includes('Z') ? '' : 'Z'))
     date.setHours(date.getHours() - 3)
     return date.toISOString().slice(0, 16).replace('T', ' ')
   }
-  // Solo fecha (YYYY-MM-DD), mostrar tal cual
   return d
+}
+
+// Formatea solo fecha (DATE de PostgreSQL puede venir como ISO string)
+const fmtSimpleDate = d => {
+  if (!d) return ''
+  // Extraer solo YYYY-MM-DD sin importar el formato
+  return String(d).slice(0, 10)
 }
 
 // ── Styles ────────────────────────────────────────────────────────
@@ -70,7 +77,7 @@ function exportExcel(projects) {
     row([cell('ID'),cell('Proyecto'),cell('Título'),cell('Responsable'),cell('Fecha registro'),cell('Vencimiento'),cell('Estado'),cell('Completada'),cell('Fecha completado'),cell('Comentarios')]),
     ...projects.flatMap(p => p.tasks.map(t => row([
       cell(t.id,'Number'), cell(p.name), cell(t.title), cell(t.responsible||''),
-      cell(fmtDate(t.created_at)), cell(t.due_date||''),
+      cell(fmtDate(t.created_at)), cell(fmtSimpleDate(t.due_date)),
       cell(STATUS[getStatus(t.due_date,t.done)].label),
       cell(t.done?'Sí':'No'), cell(t.done_at||''),
       cell(t.comments.length,'Number')
@@ -681,7 +688,7 @@ export default function App() {
                               <div style={{ fontWeight:600,fontSize:14,textDecoration:task.done?'line-through':'none',color:task.done?'#475569':'#e2e8f0',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis' }}>{task.title}</div>
                               <div style={{ fontSize:11,color:'#64748b',marginTop:2,display:'flex',gap:10,flexWrap:'wrap' }}>
                                 {task.responsible && <span>👤 {task.responsible}</span>}
-                                {task.due_date    && <span>📅 Vence: {task.due_date}</span>}
+                                {task.due_date    && <span>📅 Vence: {fmtSimpleDate(task.due_date)}</span>}
                                 <span>🗓 Registro: {fmtDate(task.created_at)}</span>
                                 <span>💬 {task.comments.length} nota{task.comments.length!==1?'s':''}</span>
                               </div>
