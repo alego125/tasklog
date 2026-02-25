@@ -216,7 +216,7 @@ export default function App() {
     const hasOverdueB = b.tasks.some(t => getStatus(t.due_date, t.done) === 'overdue')
     if (hasOverdueA && !hasOverdueB) return -1
     if (!hasOverdueA && hasOverdueB) return 1
-    return a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
+    return b.name.localeCompare(a.name, 'es', { sensitivity: 'base' })
   }), [projects])
 
   const doneTasks = allTasks.filter(t => t.done)
