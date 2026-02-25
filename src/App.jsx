@@ -361,7 +361,7 @@ export default function App() {
   // ── Loading / Error ───────────────────────────────────────────
   if (loading) return (
     <div style={{ minHeight:'100vh', background:'#070d1a', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:16, color:'#64748b', fontFamily:'sans-serif' }}>
-      <div style={{ width:42,height:42,borderRadius:10,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22 }}>📋</div>
+      <img src="/logo.png" alt="FlowTracker" style={{ width:64,height:64,borderRadius:14,objectFit:'cover' }} />
       <div>Conectando con la base de datos...</div>
     </div>
   )
@@ -390,10 +390,10 @@ export default function App() {
       {/* HEADER */}
       <div style={{ background:'linear-gradient(135deg,#0f172a,#1e1b4b)', borderBottom:'1px solid #1e293b', padding:'18px 28px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100, flexWrap:'wrap', gap:10 }}>
         <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-          <div style={{ width:38,height:38,borderRadius:9,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:19 }}>📋</div>
+          <img src="/logo.png" alt="FlowTracker" style={{ width:38,height:38,borderRadius:9,objectFit:'cover' }} />
           <div>
             <div style={{ fontSize:19,fontWeight:700,letterSpacing:'-0.5px' }}>FlowTracker</div>
-            <div style={{ fontSize:11,color:'#64748b' }}><span style={{color:'#22c55e'}}>● SQLite</span> · Datos persistentes en la nube</div>
+            <div style={{ fontSize:11,color:'#64748b' }}><span style={{color:'#22c55e'}}>● PostgreSQL</span> · Datos persistentes en la nube</div>
           </div>
         </div>
         <div style={{ display:'flex',gap:8,flexWrap:'wrap' }}>
