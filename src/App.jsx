@@ -575,7 +575,17 @@ export default function App() {
                       <div style={{ fontSize:13,color:'#cbd5e1',lineHeight:1.5 }}>{c.text}</div>
                     </div>
                     <button
-                      onClick={()=>setExpanded(parseInt(taskId))}
+                      onClick={()=>{
+                        const t = allTasks.find(t => t.id===parseInt(taskId))
+                        if (t) {
+                          setCollapsedProjects(c=>({...c,[t.projectId]:false}))
+                          setExpanded(parseInt(taskId))
+                          setTimeout(()=>{
+                            const el = document.getElementById('task-'+taskId)
+                            if (el) el.scrollIntoView({ behavior:'smooth', block:'center' })
+                          }, 100)
+                        }
+                      }}
                       style={{ ...S.btnSecondary,padding:'4px 10px',fontSize:11,flexShrink:0 }}
                       title="Ir a la tarea">
                       Ver tarea ↓
@@ -590,13 +600,18 @@ export default function App() {
           {sortedProjects.map(project => {
             if (filterProject!=='all' && project.id!==parseInt(filterProject)) return null
             const ptasks     = filtered.filter(t => t.projectId===project.id)
+            // Ocultar proyecto si tiene filtro activo y no hay tareas que coincidan
+            const showNotes = filterStatus === 'all' && (showDone || true)
+            if (filterStatus!=='all' && ptasks.length===0) return null
+            if (search.trim() && ptasks.length===0 && !(project.notes||[]).some(n=>n.text.toLowerCase().includes(search.toLowerCase()))) return null
             const hasOverdue = project.tasks.some(t => getStatus(t.due_date,t.done)==='overdue')
             const isCollapsed = collapsedProjects[project.id] || false
 
             // Mezclar tareas y notas del proyecto ordenadas por created_at
+            // Las notas solo se muestran cuando no hay filtro de estado activo
             const mixedItems = [
               ...ptasks.map(t => ({ ...t, _type:'task' })),
-              ...(project.notes||[]).map(n => ({ ...n, _type:'note', projectId:project.id }))
+              ...(showNotes ? (project.notes||[]).map(n => ({ ...n, _type:'note', projectId:project.id })) : [])
             ].sort((a,b) => (a.created_at||'') > (b.created_at||'') ? 1 : -1)
 
             return (
@@ -681,7 +696,7 @@ export default function App() {
                       const cfg    = STATUS[status]
                       const isExp  = expanded===task.id
                       return (
-                        <div key={`task-${task.id}`} style={{ borderTop:idx===0?'none':'1px solid #1e293b',background:isExp?cfg.bg:'transparent',transition:'background .2s' }}>
+                        <div key={`task-${task.id}`} id={`task-${task.id}`} style={{ borderTop:idx===0?'none':'1px solid #1e293b',background:isExp?cfg.bg:'transparent',transition:'background .2s' }}>
                           <div style={{ padding:'11px 16px',display:'flex',alignItems:'center',gap:10,borderLeft:`3px solid ${cfg.border}` }}>
                             <div onClick={()=>doToggle(task.id)} style={{ width:21,height:21,borderRadius:5,border:`2px solid ${cfg.badge}`,background:task.done?cfg.badge:'transparent',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0,fontSize:12,color:'#0f172a',fontWeight:900,transition:'all .15s' }}>{task.done&&'✓'}</div>
                             <div style={{ flex:1,minWidth:0 }}>
