@@ -392,7 +392,6 @@ export default function App() {
         <div style={{ display:'flex', alignItems:'center', gap:12 }}>
           <div style={{ width:38,height:38,borderRadius:9,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:19 }}>📋</div>
           <div>
-            <img src="/logo.png" alt="FlowTracker" style={{ width:32,height:32,borderRadius:8,objectFit:'cover' }} />
             <div style={{ fontSize:19,fontWeight:700,letterSpacing:'-0.5px' }}>FlowTracker</div>
             <div style={{ fontSize:11,color:'#64748b' }}><span style={{color:'#22c55e'}}>● SQLite</span> · Datos persistentes en la nube</div>
           </div>
