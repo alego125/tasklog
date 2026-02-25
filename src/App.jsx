@@ -360,9 +360,11 @@ export default function App() {
 
   // ── Loading / Error ───────────────────────────────────────────
   if (loading) return (
-    <div style={{ minHeight:'100vh', background:'#070d1a', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:16, color:'#64748b', fontFamily:'sans-serif' }}>
-      <img src="/logo.png" alt="FlowTracker" style={{ width:64,height:64,borderRadius:14,objectFit:'cover' }} />
-      <div>Conectando con la base de datos...</div>
+    <div style={{ minHeight:'100vh', backgroundImage:'url(/splash.png)', backgroundSize:'cover', backgroundPosition:'center', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:16, color:'#94a3b8', fontFamily:'sans-serif' }}>
+      <div style={{ background:'#00000066', borderRadius:12, padding:'18px 32px', display:'flex', flexDirection:'column', alignItems:'center', gap:10, backdropFilter:'blur(6px)' }}>
+        <div style={{ width:10,height:10,borderRadius:'50%',background:'#6366f1',animation:'pulse 1.2s infinite' }} />
+        <div style={{ fontSize:14, color:'#cbd5e1' }}>Conectando con la base de datos...</div>
+      </div>
     </div>
   )
 
