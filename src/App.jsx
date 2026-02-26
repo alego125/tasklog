@@ -371,11 +371,21 @@ export default function App() {
   // ── Loading / Error ───────────────────────────────────────────
   if (loading) return (
     <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#070d1a 0%,#0f172a 50%,#1e1b4b 100%)', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:20, fontFamily:'sans-serif' }}>
+      <style>{`
+        @keyframes flowbar {
+          0%   { transform: translateX(-100%) }
+          100% { transform: translateX(400%) }
+        }
+        @keyframes bounceDot {
+          0%, 80%, 100% { transform: scale(0.6); opacity: 0.3 }
+          40%            { transform: scale(1.2); opacity: 1   }
+        }
+      `}</style>
       <img src="/logo.png" alt="FlowTracker" style={{ width:80,height:80,borderRadius:20,objectFit:'cover',boxShadow:'0 0 40px #6366f155' }} />
       <div style={{ fontSize:20,fontWeight:700,color:'#e2e8f0',letterSpacing:'-0.5px' }}>FlowTracker</div>
       <div style={{ fontSize:13,color:'#64748b' }}>Conectando con la base de datos...</div>
-      <div style={{ display:'flex',gap:6,marginTop:4 }}>
-        {[0,1,2].map(i => <div key={i} style={{ width:7,height:7,borderRadius:'50%',background:'#6366f1',opacity:0.4+i*0.3 }} />)}
+      <div style={{ width:160,height:4,background:'#1e293b',borderRadius:999,overflow:'hidden',marginTop:4 }}>
+        <div style={{ width:'40%',height:'100%',background:'linear-gradient(90deg,#6366f1,#8b5cf6)',borderRadius:999,animation:'flowbar 1.2s ease-in-out infinite' }} />
       </div>
     </div>
   )
@@ -472,7 +482,12 @@ export default function App() {
           {/* FILTROS */}
           <div style={{ background:'#0f172a',border:'1px solid #1e293b',borderRadius:12,padding:'14px 16px',marginBottom:18 }}>
             <div style={{ display:'flex',gap:10,flexWrap:'wrap',alignItems:'center',marginBottom:10 }}>
-              <input placeholder="🔍 Buscar por tarea, proyecto o responsable..." value={search} onChange={e=>setSearch(e.target.value)} style={{ flex:'1 1 220px',...S.input }} />
+              <div style={{ position:'relative', flex:'1 1 220px', display:'flex', alignItems:'center' }}>
+                <input placeholder="🔍 Buscar por tarea, proyecto o responsable..." value={search} onChange={e=>setSearch(e.target.value)} style={{ ...S.input, width:'100%', paddingRight: search ? '32px' : '12px' }} />
+                {search && (
+                  <button onClick={()=>setSearch('')} style={{ position:'absolute',right:8,background:'none',border:'none',color:'#64748b',cursor:'pointer',fontSize:16,lineHeight:1,padding:'2px 4px',display:'flex',alignItems:'center' }} title="Limpiar búsqueda">✕</button>
+                )}
+              </div>
               <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} style={S.select}>
                 <option value="all">Todos los estados</option>
                 <option value="warning">Por vencer (≤3 días)</option>
