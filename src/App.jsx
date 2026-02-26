@@ -186,29 +186,39 @@ export default function App() {
     return matchSearch && matchStatus && matchProject && matchDone && matchDateFrom && matchDateTo
   }), [allTasks, search, filterStatus, filterProject, showDone, filterDateFrom, filterDateTo])
 
-  // Notas de proyecto que coinciden con la búsqueda (con contexto del proyecto)
+  // Notas de proyecto que coinciden con la búsqueda (respeta filtros)
   const filteredProjectNotes = useMemo(() => {
     if (!search.trim()) return []
     const q = search.toLowerCase()
     return projects
       .filter(p => filterProject==='all' || p.id===parseInt(filterProject))
       .flatMap(p => (p.notes||[])
-        .filter(n => n.text.toLowerCase().includes(q) || (n.author||'').toLowerCase().includes(q))
+        .filter(n => {
+          if (!n.text.toLowerCase().includes(q) && !(n.author||'').toLowerCase().includes(q)) return false
+          if (filterDateFrom && n.created_at && String(n.created_at).slice(0,10) < filterDateFrom) return false
+          if (filterDateTo   && n.created_at && String(n.created_at).slice(0,10) > filterDateTo) return false
+          return true
+        })
         .map(n => ({ ...n, projectId:p.id, projectName:p.name, projectColor:p.color }))
       )
-  }, [projects, search, filterProject])
+  }, [projects, search, filterProject, filterDateFrom, filterDateTo])
 
-  // Para cada tarea en resultados: qué comentarios matchean la búsqueda
+  // Para cada tarea en resultados: qué comentarios matchean la búsqueda (respeta filtros)
   const matchingComments = useMemo(() => {
     if (!search.trim()) return {}
     const q = search.toLowerCase()
     const result = {}
     allTasks.forEach(t => {
+      // Respetar filtro de proyecto
+      if (filterProject!=='all' && t.projectId!==parseInt(filterProject)) return
+      // Respetar filtro de fechas
+      if (filterDateFrom && t.created_at && t.created_at < filterDateFrom) return
+      if (filterDateTo   && t.created_at && t.created_at > filterDateTo + 'T99') return
       const hits = t.comments.filter(c => c.text.toLowerCase().includes(q) || (c.author||'').toLowerCase().includes(q))
       if (hits.length) result[t.id] = hits
     })
     return result
-  }, [allTasks, search])
+  }, [allTasks, search, filterProject, filterDateFrom, filterDateTo])
 
   // Ordenar proyectos: primero los que tienen tareas vencidas
   const sortedProjects = useMemo(() => [...projects].sort((a, b) => {
@@ -360,10 +370,12 @@ export default function App() {
 
   // ── Loading / Error ───────────────────────────────────────────
   if (loading) return (
-    <div style={{ minHeight:'100vh', backgroundImage:'url(/splash.png)', backgroundSize:'cover', backgroundPosition:'center', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:16, color:'#94a3b8', fontFamily:'sans-serif' }}>
-      <div style={{ background:'#00000066', borderRadius:12, padding:'18px 32px', display:'flex', flexDirection:'column', alignItems:'center', gap:10, backdropFilter:'blur(6px)' }}>
-        <div style={{ width:10,height:10,borderRadius:'50%',background:'#6366f1',animation:'pulse 1.2s infinite' }} />
-        <div style={{ fontSize:14, color:'#cbd5e1' }}>Conectando con la base de datos...</div>
+    <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#070d1a 0%,#0f172a 50%,#1e1b4b 100%)', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:20, fontFamily:'sans-serif' }}>
+      <img src="/logo.png" alt="FlowTracker" style={{ width:80,height:80,borderRadius:20,objectFit:'cover',boxShadow:'0 0 40px #6366f155' }} />
+      <div style={{ fontSize:20,fontWeight:700,color:'#e2e8f0',letterSpacing:'-0.5px' }}>FlowTracker</div>
+      <div style={{ fontSize:13,color:'#64748b' }}>Conectando con la base de datos...</div>
+      <div style={{ display:'flex',gap:6,marginTop:4 }}>
+        {[0,1,2].map(i => <div key={i} style={{ width:7,height:7,borderRadius:'50%',background:'#6366f1',opacity:0.4+i*0.3 }} />)}
       </div>
     </div>
   )
@@ -547,7 +559,7 @@ export default function App() {
                     <div style={{ fontSize:13,color:'#cbd5e1',lineHeight:1.5 }}>{note.text}</div>
                   </div>
                   <button
-                    onClick={()=>setExpandedNotes(n=>({...n,[note.projectId]:true}))}
+                    onClick={()=>{ setCollapsedProjects(c=>({...c,[note.projectId]:false})); setExpandedNotes(n=>({...n,[note.projectId]:true})); setTimeout(()=>{ const el=document.getElementById('project-'+note.projectId); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}) },100) }}
                     style={{ ...S.btnSecondary,padding:'4px 10px',fontSize:11,flexShrink:0 }}
                     title="Ir al proyecto">
                     Ver proyecto ↓
@@ -617,7 +629,7 @@ export default function App() {
             ].sort((a,b) => (a.created_at||'') > (b.created_at||'') ? 1 : -1)
 
             return (
-              <div key={project.id} style={{ background:'#0f172a',border:`1px solid ${hasOverdue?'#dc262644':'#1e293b'}`,borderRadius:14,marginBottom:16,overflow:'hidden' }}>
+              <div key={project.id} id={`project-${project.id}`} style={{ background:'#0f172a',border:`1px solid ${hasOverdue?'#dc262644':'#1e293b'}`,borderRadius:14,marginBottom:16,overflow:'hidden' }}>
 
                 {/* Project header */}
                 <div style={{ borderLeft:`4px solid ${project.color}`,padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',background:`linear-gradient(90deg,${project.color}11,transparent)` }}>
@@ -625,7 +637,7 @@ export default function App() {
                     <div style={{ width:9,height:9,borderRadius:'50%',background:project.color,flexShrink:0 }} />
                     <span style={{ fontWeight:700,fontSize:15 }}>{project.name}</span>
                     <span style={{ background:'#1e293b',border:'1px solid #334155',borderRadius:20,padding:'1px 9px',fontSize:11,color:'#64748b' }}>
-                      {project.tasks.length} tarea{project.tasks.length!==1?'s':''} · {project.notes?.length||0} nota{(project.notes?.length||0)!==1?'s':''}
+                      {project.tasks.filter(t=>!t.done).length} tarea{project.tasks.filter(t=>!t.done).length!==1?'s':''} activa{project.tasks.filter(t=>!t.done).length!==1?'s':''} · {project.notes?.length||0} nota{(project.notes?.length||0)!==1?'s':''}
                     </span>
                     {hasOverdue && <span style={{ background:'#2d0a0a',border:'1px solid #dc2626',borderRadius:20,padding:'1px 9px',fontSize:11,color:'#ef4444',fontWeight:600 }}>⚠ Tareas vencidas</span>}
                   </div>

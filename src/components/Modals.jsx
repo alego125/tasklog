@@ -61,7 +61,7 @@ export function EditProject({ project, onSave, onClose }) {
 }
 
 export function EditTask({ task, onSave, onClose }) {
-  const [f, setF] = useState({ title: task.title, responsible: task.responsible||'', due_date: task.due_date||'' })
+  const [f, setF] = useState({ title: task.title, responsible: task.responsible||'', due_date: task.due_date ? String(task.due_date).slice(0,10) : '' })
   return (
     <Backdrop onClose={onClose}>
       <div style={{ fontSize:16, fontWeight:700, marginBottom:18 }}>✏️ Editar tarea</div>
