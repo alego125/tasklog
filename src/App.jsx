@@ -143,6 +143,9 @@ export default function App() {
   const [newProjName, setNewProjName]       = useState('')
   const [newProjColor, setNewProjColor]     = useState('#6366f1')
   const [archiveView, setArchiveView]       = useState(false)
+  const [backupModal, setBackupModal]       = useState(false)
+  const [restoring, setRestoring]           = useState(false)
+  const [restoreMsg, setRestoreMsg]         = useState(null)
   const [archivedProjects, setArchivedProjects] = useState([])
   const [loadingArchived, setLoadingArchived]   = useState(false)
   const [editProject, setEditProject]       = useState(null)
@@ -252,6 +255,42 @@ export default function App() {
   const doDeleteProject = async pId => {
     await api.deleteProject(pId)
     setProjects(prev => prev.filter(p => p.id !== pId))
+  }
+
+  const doBackup = async () => {
+    const BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api'
+    const res  = await fetch(`${BASE}/backup`)
+    const blob = await res.blob()
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href     = url
+    a.download = `flowtracker_backup_${new Date().toISOString().slice(0,10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const doRestore = async file => {
+    if (!file) return
+    setRestoring(true)
+    setRestoreMsg(null)
+    try {
+      const text = await file.text()
+      const json = JSON.parse(text)
+      const BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api'
+      const res  = await fetch(`${BASE}/restore`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(json)
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error)
+      setRestoreMsg({ ok: true, text: `✅ Restauración exitosa: ${result.restored.projects} proyectos, ${result.restored.tasks} tareas, ${result.restored.task_comments} comentarios, ${result.restored.project_notes} notas.` })
+      await loadProjects()
+    } catch(e) {
+      setRestoreMsg({ ok: false, text: `❌ Error: ${e.message}` })
+    } finally {
+      setRestoring(false)
+    }
   }
 
   const doArchiveProject = async pId => {
@@ -403,6 +442,43 @@ export default function App() {
     <div style={{ minHeight:'100vh', background:'#070d1a', fontFamily:"'DM Sans','Segoe UI',sans-serif", color:'#e2e8f0' }}>
 
       {/* MODALS */}
+      {backupModal && (
+        <div onClick={()=>setBackupModal(false)} style={{ position:'fixed',inset:0,background:'#000b',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center' }}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:'#0f172a',border:'1px solid #334155',borderRadius:14,padding:28,width:'100%',maxWidth:460,boxShadow:'0 30px 80px #0009' }}>
+            <div style={{ fontSize:16,fontWeight:700,marginBottom:6 }}>💾 Backup y Restauración</div>
+            <div style={{ fontSize:13,color:'#64748b',marginBottom:24 }}>Descargá un backup completo o restaurá desde un archivo previo.</div>
+
+            {/* Descargar */}
+            <div style={{ background:'#0d1829',border:'1px solid #1e293b',borderRadius:10,padding:16,marginBottom:12 }}>
+              <div style={{ fontSize:13,fontWeight:600,color:'#e2e8f0',marginBottom:4 }}>⬇ Descargar backup</div>
+              <div style={{ fontSize:12,color:'#64748b',marginBottom:12 }}>Exporta todos los proyectos, tareas, notas y bitácoras en un archivo JSON.</div>
+              <button onClick={doBackup} style={{ background:'#065f46',border:'1px solid #059669',color:'#34d399',padding:'8px 18px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:600 }}>
+                ⬇ Descargar backup
+              </button>
+            </div>
+
+            {/* Restaurar */}
+            <div style={{ background:'#0d1829',border:'1px solid #1e293b',borderRadius:10,padding:16,marginBottom:16 }}>
+              <div style={{ fontSize:13,fontWeight:600,color:'#e2e8f0',marginBottom:4 }}>⬆ Restaurar desde backup</div>
+              <div style={{ fontSize:12,color:'#94a3b8',marginBottom:4 }}>⚠ Esto <strong>reemplaza todos los datos actuales</strong> con los del archivo.</div>
+              <div style={{ fontSize:12,color:'#64748b',marginBottom:12 }}>Seleccioná un archivo .json generado por FlowTracker.</div>
+              <label style={{ display:'inline-block',background:'#7c3aed',border:'none',color:'white',padding:'8px 18px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:600 }}>
+                {restoring ? '⏳ Restaurando...' : '⬆ Seleccionar archivo'}
+                <input type="file" accept=".json" disabled={restoring} onChange={e=>doRestore(e.target.files[0])} style={{ display:'none' }} />
+              </label>
+              {restoreMsg && (
+                <div style={{ marginTop:12,fontSize:13,color: restoreMsg.ok ? '#34d399':'#ef4444',background: restoreMsg.ok?'#052e16':'#2d0a0a',border:`1px solid ${restoreMsg.ok?'#16a34a':'#dc2626'}`,borderRadius:8,padding:'10px 14px',lineHeight:1.5 }}>
+                  {restoreMsg.text}
+                </div>
+              )}
+            </div>
+
+            <div style={{ display:'flex',justifyContent:'flex-end' }}>
+              <button onClick={()=>setBackupModal(false)} style={{ background:'#1e293b',border:'1px solid #334155',color:'#94a3b8',padding:'8px 18px',borderRadius:8,cursor:'pointer',fontSize:13 }}>Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
       {confirm      && <Confirm msg={confirm.msg} onOk={()=>{confirm.action();setConfirm(null)}} onCancel={()=>setConfirm(null)} title={confirm.title} okLabel={confirm.okLabel} okColor={confirm.okColor} />}
       {editProject  && <EditProject project={editProject} onSave={doSaveEditProject} onClose={()=>setEditProject(null)} />}
       {editTask     && <EditTask task={editTask.task} onSave={doSaveEditTask} onClose={()=>setEditTask(null)} />}
@@ -433,6 +509,13 @@ export default function App() {
             </button>
           )}
 
+          {!archiveView && (
+            <button onClick={()=>{ setBackupModal(true); setRestoreMsg(null) }}
+              style={{ background:'#1e293b',border:'1px solid #334155',color:'#94a3b8',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontSize:13 }}
+              title="Backup y restauración">
+              💾 Backup
+            </button>
+          )}
           {!archiveView && <button onClick={()=>setNewProjOpen(true)} style={S.btnPrimary}>+ Nuevo Proyecto</button>}
         </div>
       </div>

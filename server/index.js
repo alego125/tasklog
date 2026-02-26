@@ -294,6 +294,75 @@ app.post('/api/comments/:id/move-to-project', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }) }
 })
 
+// ── BACKUP / RESTORE ─────────────────────────────────────────────
+app.get('/api/backup', async (req, res) => {
+  try {
+    const projects      = (await db.query('SELECT * FROM projects ORDER BY id')).rows
+    const tasks         = (await db.query('SELECT * FROM tasks ORDER BY id')).rows
+    const task_comments = (await db.query('SELECT * FROM task_comments ORDER BY id')).rows
+    const project_notes = (await db.query('SELECT * FROM project_notes ORDER BY id')).rows
+    const backup = {
+      version: 1,
+      exported_at: new Date().toISOString(),
+      data: { projects, tasks, task_comments, project_notes }
+    }
+    res.setHeader('Content-Type', 'application/json')
+    res.setHeader('Content-Disposition', `attachment; filename="flowtracker_backup_${new Date().toISOString().slice(0,10)}.json"`)
+    res.json(backup)
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
+app.post('/api/restore', async (req, res) => {
+  try {
+    const { version, data } = req.body
+    if (!version || !data) return res.status(400).json({ error: 'Formato de backup inválido' })
+    const { projects, tasks, task_comments, project_notes } = data
+
+    // Borrar todo en orden correcto (por foreign keys)
+    await db.query('DELETE FROM task_comments')
+    await db.query('DELETE FROM project_notes')
+    await db.query('DELETE FROM tasks')
+    await db.query('DELETE FROM projects')
+
+    // Restaurar projects
+    for (const p of projects) {
+      await db.query(
+        'INSERT INTO projects (id, name, color, archived, created_at) VALUES ($1,$2,$3,$4,$5)',
+        [p.id, p.name, p.color, p.archived||false, p.created_at]
+      )
+    }
+    // Restaurar tasks
+    for (const t of tasks) {
+      await db.query(
+        'INSERT INTO tasks (id, project_id, title, responsible, created_at, due_date, done, done_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+        [t.id, t.project_id, t.title, t.responsible||null, t.created_at, t.due_date||null, t.done||false, t.done_at||null]
+      )
+    }
+    // Restaurar task_comments
+    for (const c of task_comments) {
+      await db.query(
+        'INSERT INTO task_comments (id, task_id, author, text, created_at) VALUES ($1,$2,$3,$4,$5)',
+        [c.id, c.task_id, c.author||null, c.text, c.created_at]
+      )
+    }
+    // Restaurar project_notes
+    for (const n of project_notes) {
+      await db.query(
+        'INSERT INTO project_notes (id, project_id, text, author, created_at) VALUES ($1,$2,$3,$4,$5)',
+        [n.id, n.project_id, n.text, n.author||null, n.created_at]
+      )
+    }
+
+    // Resetear secuencias para que los próximos IDs sean correctos
+    await db.query("SELECT setval('projects_id_seq',      COALESCE((SELECT MAX(id) FROM projects), 1))")
+    await db.query("SELECT setval('tasks_id_seq',         COALESCE((SELECT MAX(id) FROM tasks), 1))")
+    await db.query("SELECT setval('task_comments_id_seq', COALESCE((SELECT MAX(id) FROM task_comments), 1))")
+    await db.query("SELECT setval('project_notes_id_seq', COALESCE((SELECT MAX(id) FROM project_notes), 1))")
+
+    res.json({ ok: true, restored: { projects: projects.length, tasks: tasks.length, task_comments: task_comments.length, project_notes: project_notes.length } })
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
 // ── Start ────────────────────────────────────────────────────────
 initDB().then(() => {
   app.listen(PORT, () => {
