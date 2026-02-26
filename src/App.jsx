@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { api } from './hooks/useApi.js'
+import AuthScreen from './components/AuthScreen.jsx'
 import { Confirm, EditProject, EditTask, EditComment, MoveNoteModal, MoveCommentModal } from './components/Modals.jsx'
 
 // ── Helpers ──────────────────────────────────────────────────────
@@ -123,6 +124,12 @@ function exportExcel(projects) {
 // MAIN APP
 // ════════════════════════════════════════════════════════════════
 export default function App() {
+  const [currentUser, setCurrentUser] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('ft_user')) } catch { return null }
+  })
+  const [membersModal, setMembersModal]     = useState(null) // projectId
+  const [memberSearch, setMemberSearch]     = useState('')
+  const [memberResults, setMemberResults]   = useState([])
   const [projects, setProjects]             = useState([])
   const [loading, setLoading]               = useState(true)
   const [error, setError]                   = useState(null)
@@ -293,6 +300,35 @@ export default function App() {
     }
   }
 
+  const doLogout = () => {
+    localStorage.removeItem('ft_token')
+    localStorage.removeItem('ft_user')
+    setCurrentUser(null)
+  }
+
+  const doSearchMembers = async q => {
+    setMemberSearch(q)
+    if (q.length < 2) { setMemberResults([]); return }
+    try {
+      const results = await api.searchUsers(q)
+      // Filtrar los que ya son miembros
+      const project = projects.find(p => p.id === membersModal)
+      const memberIds = (project?.members||[]).map(m => m.id)
+      setMemberResults(results.filter(u => !memberIds.includes(u.id)))
+    } catch(e) {}
+  }
+
+  const doAddMember = async userId => {
+    const updated = await api.addMember(membersModal, userId)
+    setProjects(prev => prev.map(p => p.id === membersModal ? updated : p))
+    setMemberResults(prev => prev.filter(u => u.id !== userId))
+  }
+
+  const doRemoveMember = async (projectId, userId) => {
+    const updated = await api.removeMember(projectId, userId)
+    setProjects(prev => prev.map(p => p.id === projectId ? updated : p))
+  }
+
   const doArchiveProject = async pId => {
     await api.archiveProject(pId)
     setProjects(prev => prev.filter(p => p.id !== pId))
@@ -407,6 +443,9 @@ export default function App() {
     setMoveNote(null)
   }
 
+  // ── Auth guard ───────────────────────────────────────────────────
+  if (!currentUser) return <AuthScreen onAuth={user => { setCurrentUser(user); loadProjects() }} />
+
   // ── Loading / Error ───────────────────────────────────────────
   if (loading) return (
     <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#070d1a 0%,#0f172a 50%,#1e1b4b 100%)', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:20, fontFamily:'sans-serif' }}>
@@ -442,6 +481,70 @@ export default function App() {
     <div style={{ minHeight:'100vh', background:'#070d1a', fontFamily:"'DM Sans','Segoe UI',sans-serif", color:'#e2e8f0' }}>
 
       {/* MODALS */}
+      {membersModal && (() => {
+        const project = projects.find(p => p.id === membersModal)
+        if (!project) return null
+        return (
+          <div onClick={()=>setMembersModal(null)} style={{ position:'fixed',inset:0,background:'#000b',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center' }}>
+            <div onClick={e=>e.stopPropagation()} style={{ background:'#0f172a',border:'1px solid #334155',borderRadius:14,padding:28,width:'100%',maxWidth:460,boxShadow:'0 30px 80px #0009' }}>
+              <div style={{ fontSize:16,fontWeight:700,marginBottom:4 }}>👥 Miembros del proyecto</div>
+              <div style={{ fontSize:13,color:'#64748b',marginBottom:20 }}>{project.name}</div>
+
+              {/* Lista de miembros actuales */}
+              <div style={{ marginBottom:16 }}>
+                {(project.members||[]).map(m => (
+                  <div key={m.id} style={{ display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 12px',background:'#1e293b',borderRadius:8,marginBottom:6 }}>
+                    <div style={{ display:'flex',alignItems:'center',gap:10 }}>
+                      <div style={{ width:28,height:28,borderRadius:'50%',background:'linear-gradient(135deg,#6366f1,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:'white' }}>
+                        {m.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ fontSize:13,color:'#e2e8f0' }}>{m.name}</div>
+                        <div style={{ fontSize:11,color:'#475569' }}>{m.email}</div>
+                      </div>
+                    </div>
+                    <div style={{ display:'flex',alignItems:'center',gap:8 }}>
+                      <span style={{ fontSize:11,color: m.role==='owner'?'#f59e0b':'#64748b',background: m.role==='owner'?'#451a03':'#1e293b',border:`1px solid ${m.role==='owner'?'#92400e':'#334155'}`,padding:'2px 8px',borderRadius:10 }}>
+                        {m.role==='owner'?'Propietario':'Miembro'}
+                      </span>
+                      {m.role !== 'owner' && m.id !== currentUser.id && (
+                        <button onClick={()=>doRemoveMember(project.id, m.id)} style={{ background:'transparent',border:'1px solid #dc262633',color:'#ef4444',borderRadius:6,padding:'3px 8px',cursor:'pointer',fontSize:12 }}>✕</button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Buscar y agregar miembro */}
+              <div style={{ borderTop:'1px solid #1e293b',paddingTop:16 }}>
+                <div style={{ fontSize:13,fontWeight:600,color:'#94a3b8',marginBottom:8 }}>Agregar miembro</div>
+                <input
+                  placeholder="Buscar por nombre o email..."
+                  value={memberSearch}
+                  onChange={e=>doSearchMembers(e.target.value)}
+                  style={{ background:'#1e293b',border:'1px solid #334155',color:'#e2e8f0',padding:'8px 12px',borderRadius:8,fontSize:13,outline:'none',width:'100%',boxSizing:'border-box',marginBottom:8 }}
+                />
+                {memberResults.map(u => (
+                  <div key={u.id} style={{ display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 12px',background:'#1e293b',borderRadius:8,marginBottom:6 }}>
+                    <div>
+                      <div style={{ fontSize:13,color:'#e2e8f0' }}>{u.name}</div>
+                      <div style={{ fontSize:11,color:'#475569' }}>{u.email}</div>
+                    </div>
+                    <button onClick={()=>doAddMember(u.id)} style={{ background:'#065f46',border:'1px solid #059669',color:'#34d399',padding:'5px 12px',borderRadius:7,cursor:'pointer',fontSize:12,fontWeight:600 }}>+ Agregar</button>
+                  </div>
+                ))}
+                {memberSearch.length >= 2 && memberResults.length === 0 && (
+                  <div style={{ fontSize:13,color:'#475569',textAlign:'center',padding:'8px 0' }}>No se encontraron usuarios</div>
+                )}
+              </div>
+
+              <div style={{ display:'flex',justifyContent:'flex-end',marginTop:16 }}>
+                <button onClick={()=>setMembersModal(null)} style={{ background:'#1e293b',border:'1px solid #334155',color:'#94a3b8',padding:'8px 18px',borderRadius:8,cursor:'pointer',fontSize:13 }}>Cerrar</button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
       {backupModal && (
         <div onClick={()=>setBackupModal(false)} style={{ position:'fixed',inset:0,background:'#000b',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center' }}>
           <div onClick={e=>e.stopPropagation()} style={{ background:'#0f172a',border:'1px solid #334155',borderRadius:14,padding:28,width:'100%',maxWidth:460,boxShadow:'0 30px 80px #0009' }}>
@@ -517,6 +620,13 @@ export default function App() {
             </button>
           )}
           {!archiveView && <button onClick={()=>setNewProjOpen(true)} style={S.btnPrimary}>+ Nuevo Proyecto</button>}
+          <div style={{ display:'flex',alignItems:'center',gap:8,borderLeft:'1px solid #1e293b',paddingLeft:12,marginLeft:4 }}>
+            <div style={{ width:30,height:30,borderRadius:'50%',background:'linear-gradient(135deg,#6366f1,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:700,color:'white',flexShrink:0 }}>
+              {currentUser.name.charAt(0).toUpperCase()}
+            </div>
+            <span style={{ fontSize:13,color:'#94a3b8',maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{currentUser.name}</span>
+            <button onClick={doLogout} title="Cerrar sesión" style={{ background:'transparent',border:'1px solid #334155',color:'#64748b',padding:'5px 10px',borderRadius:7,cursor:'pointer',fontSize:12 }}>⎋ Salir</button>
+          </div>
         </div>
       </div>
 
@@ -743,6 +853,7 @@ export default function App() {
                     <button onClick={()=>setNewTaskFor(project.id)} style={{ background:'transparent',border:`1px solid ${project.color}`,color:project.color,padding:'5px 12px',borderRadius:7,cursor:'pointer',fontSize:12,fontWeight:600 }}>+ Tarea</button>
                     <button onClick={()=>setNewProjNote(n=>({...n,[project.id+'_open']:!(n[project.id+'_open'])}))} style={{ background:'transparent',border:'1px solid #4338ca',color:'#818cf8',padding:'5px 12px',borderRadius:7,cursor:'pointer',fontSize:12,fontWeight:600 }}>+ Nota</button>
                     <button onClick={()=>setCollapsedProjects(c=>({...c,[project.id]:!c[project.id]}))} title={isCollapsed?'Expandir':'Colapsar'} style={{ ...S.iconBtn,borderColor:`${project.color}44`,color:'#94a3b8' }}>{isCollapsed?'▼':'▲'}</button>
+                    <button onClick={()=>{ setMembersModal(project.id); setMemberSearch(''); setMemberResults([]) }} title="Gestionar miembros" style={{ ...S.iconBtn,borderColor:'#0e7490',color:'#22d3ee' }}>👥</button>
                     <button onClick={()=>setEditProject(project)} title="Editar proyecto" style={{ ...S.iconBtn,borderColor:`${project.color}66`,color:project.color }}>✏️</button>
                     <button onClick={()=>setConfirm({msg:`¿Archivar "${project.name}"? Podrás recuperarlo desde "Archivados".`,action:()=>doArchiveProject(project.id),title:'📦 Confirmar archivado',okLabel:'Archivar',okColor:'#d97706'})}
                       title="Archivar proyecto" style={{ ...S.iconBtn,borderColor:'#d9770633',color:'#f59e0b' }}>📦</button>
