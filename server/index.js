@@ -107,6 +107,37 @@ function authMiddleware(req, res, next) {
   }
 }
 
+// ── Helpers de autorización ─────────────────────────────────────
+async function isMember(projectId, userId) {
+  const r = await db.query(
+    'SELECT 1 FROM project_members WHERE project_id=$1 AND user_id=$2',
+    [projectId, userId]
+  )
+  return r.rows.length > 0
+}
+
+async function getTaskProject(taskId) {
+  const r = await db.query('SELECT project_id FROM tasks WHERE id=$1', [taskId])
+  return r.rows.length ? r.rows[0].project_id : null
+}
+
+async function getCommentProject(commentId) {
+  const r = await db.query(
+    'SELECT t.project_id FROM task_comments c JOIN tasks t ON t.id=c.task_id WHERE c.id=$1',
+    [commentId]
+  )
+  return r.rows.length ? r.rows[0].project_id : null
+}
+
+async function getNoteProject(noteId) {
+  const r = await db.query('SELECT project_id FROM project_notes WHERE id=$1', [noteId])
+  return r.rows.length ? r.rows[0].project_id : null
+}
+
+function forbidden(res) {
+  return res.status(403).json({ error: 'No tenés permiso para realizar esta acción' })
+}
+
 // ── Helper: proyecto completo ────────────────────────────────────
 async function getFullProject(id) {
   const pRes = await db.query(`
@@ -252,6 +283,7 @@ app.post('/api/projects', authMiddleware, async (req, res) => {
 
 app.put('/api/projects/:id', authMiddleware, async (req, res) => {
   try {
+    if (!await isMember(req.params.id, req.user.id)) return forbidden(res)
     const { name, color } = req.body
     if (!name) return res.status(400).json({ error: 'name requerido' })
     await db.query('UPDATE projects SET name=$1, color=$2 WHERE id=$3', [name, color, req.params.id])
@@ -261,6 +293,7 @@ app.put('/api/projects/:id', authMiddleware, async (req, res) => {
 
 app.patch('/api/projects/:id/archive', authMiddleware, async (req, res) => {
   try {
+    if (!await isMember(req.params.id, req.user.id)) return forbidden(res)
     await db.query('UPDATE projects SET archived = true WHERE id = $1', [req.params.id])
     res.json({ ok: true })
   } catch(e) { res.status(500).json({ error: e.message }) }
@@ -268,6 +301,7 @@ app.patch('/api/projects/:id/archive', authMiddleware, async (req, res) => {
 
 app.patch('/api/projects/:id/unarchive', authMiddleware, async (req, res) => {
   try {
+    if (!await isMember(req.params.id, req.user.id)) return forbidden(res)
     await db.query('UPDATE projects SET archived = false WHERE id = $1', [req.params.id])
     res.json(await getFullProject(req.params.id))
   } catch(e) { res.status(500).json({ error: e.message }) }
@@ -275,6 +309,9 @@ app.patch('/api/projects/:id/unarchive', authMiddleware, async (req, res) => {
 
 app.delete('/api/projects/:id', authMiddleware, async (req, res) => {
   try {
+    const r = await db.query('SELECT owner_id FROM projects WHERE id=$1', [req.params.id])
+    if (!r.rows.length) return res.status(404).json({ error: 'Proyecto no encontrado' })
+    if (r.rows[0].owner_id !== req.user.id) return forbidden(res)
     await db.query('DELETE FROM projects WHERE id = $1', [req.params.id])
     res.json({ ok: true })
   } catch(e) { res.status(500).json({ error: e.message }) }
@@ -295,6 +332,9 @@ app.get('/api/users/search', authMiddleware, async (req, res) => {
 
 app.post('/api/projects/:id/members', authMiddleware, async (req, res) => {
   try {
+    const r = await db.query('SELECT owner_id FROM projects WHERE id=$1', [req.params.id])
+    if (!r.rows.length) return res.status(404).json({ error: 'Proyecto no encontrado' })
+    if (r.rows[0].owner_id !== req.user.id) return forbidden(res)
     const { user_id } = req.body
     if (!user_id) return res.status(400).json({ error: 'user_id requerido' })
     await db.query(
@@ -307,6 +347,9 @@ app.post('/api/projects/:id/members', authMiddleware, async (req, res) => {
 
 app.delete('/api/projects/:id/members/:userId', authMiddleware, async (req, res) => {
   try {
+    const r = await db.query('SELECT owner_id FROM projects WHERE id=$1', [req.params.id])
+    if (!r.rows.length) return res.status(404).json({ error: 'Proyecto no encontrado' })
+    if (r.rows[0].owner_id !== req.user.id) return forbidden(res)
     await db.query('DELETE FROM project_members WHERE project_id=$1 AND user_id=$2', [req.params.id, req.params.userId])
     res.json(await getFullProject(req.params.id))
   } catch(e) { res.status(500).json({ error: e.message }) }
@@ -317,6 +360,7 @@ app.post('/api/tasks', authMiddleware, async (req, res) => {
   try {
     const { project_id, title, responsible, due_date } = req.body
     if (!project_id || !title) return res.status(400).json({ error: 'Faltan campos' })
+    if (!await isMember(project_id, req.user.id)) return forbidden(res)
     const r = await db.query(
       'INSERT INTO tasks (project_id, title, responsible, due_date) VALUES ($1, $2, $3, $4) RETURNING *',
       [project_id, title, responsible || null, (due_date && due_date.trim()) ? due_date : null]
@@ -327,6 +371,8 @@ app.post('/api/tasks', authMiddleware, async (req, res) => {
 
 app.put('/api/tasks/:id', authMiddleware, async (req, res) => {
   try {
+    const projectId = await getTaskProject(req.params.id)
+    if (!projectId || !await isMember(projectId, req.user.id)) return forbidden(res)
     const { title, responsible, due_date } = req.body
     await db.query(
       'UPDATE tasks SET title=$1, responsible=$2, due_date=$3 WHERE id=$4',
@@ -345,6 +391,7 @@ app.patch('/api/tasks/:id/toggle', authMiddleware, async (req, res) => {
     const tRes = await db.query('SELECT * FROM tasks WHERE id=$1', [req.params.id])
     if (!tRes.rows.length) return res.status(404).json({ error: 'No encontrada' })
     const task    = tRes.rows[0]
+    if (!await isMember(task.project_id, req.user.id)) return forbidden(res)
     const newDone = !task.done
     const doneAt  = newDone ? new Date().toISOString().split('T')[0] : null
     await db.query('UPDATE tasks SET done=$1, done_at=$2 WHERE id=$3', [newDone, doneAt, task.id])
@@ -357,6 +404,8 @@ app.patch('/api/tasks/:id/toggle', authMiddleware, async (req, res) => {
 
 app.delete('/api/tasks/:id', authMiddleware, async (req, res) => {
   try {
+    const projectId = await getTaskProject(req.params.id)
+    if (!projectId || !await isMember(projectId, req.user.id)) return forbidden(res)
     await db.query('DELETE FROM tasks WHERE id=$1', [req.params.id])
     res.json({ ok: true })
   } catch(e) { res.status(500).json({ error: e.message }) }
@@ -367,6 +416,8 @@ app.post('/api/comments', authMiddleware, async (req, res) => {
   try {
     const { task_id, text } = req.body
     if (!task_id || !text) return res.status(400).json({ error: 'Faltan campos' })
+    const projectId = await getTaskProject(task_id)
+    if (!projectId || !await isMember(projectId, req.user.id)) return forbidden(res)
     const r = await db.query(
       'INSERT INTO task_comments (task_id, author, text) VALUES ($1, $2, $3) RETURNING *',
       [task_id, req.user.name, text]
@@ -377,6 +428,8 @@ app.post('/api/comments', authMiddleware, async (req, res) => {
 
 app.put('/api/comments/:id', authMiddleware, async (req, res) => {
   try {
+    const projectId = await getCommentProject(req.params.id)
+    if (!projectId || !await isMember(projectId, req.user.id)) return forbidden(res)
     await db.query('UPDATE task_comments SET text=$1 WHERE id=$2', [req.body.text, req.params.id])
     res.json((await db.query('SELECT * FROM task_comments WHERE id=$1', [req.params.id])).rows[0])
   } catch(e) { res.status(500).json({ error: e.message }) }
@@ -384,6 +437,8 @@ app.put('/api/comments/:id', authMiddleware, async (req, res) => {
 
 app.delete('/api/comments/:id', authMiddleware, async (req, res) => {
   try {
+    const projectId = await getCommentProject(req.params.id)
+    if (!projectId || !await isMember(projectId, req.user.id)) return forbidden(res)
     await db.query('DELETE FROM task_comments WHERE id=$1', [req.params.id])
     res.json({ ok: true })
   } catch(e) { res.status(500).json({ error: e.message }) }
@@ -394,6 +449,7 @@ app.post('/api/project-notes', authMiddleware, async (req, res) => {
   try {
     const { project_id, text } = req.body
     if (!project_id || !text) return res.status(400).json({ error: 'Faltan campos' })
+    if (!await isMember(project_id, req.user.id)) return forbidden(res)
     const r = await db.query(
       'INSERT INTO project_notes (project_id, author, text) VALUES ($1, $2, $3) RETURNING *',
       [project_id, req.user.name, text]
@@ -404,6 +460,8 @@ app.post('/api/project-notes', authMiddleware, async (req, res) => {
 
 app.put('/api/project-notes/:id', authMiddleware, async (req, res) => {
   try {
+    const projectId = await getNoteProject(req.params.id)
+    if (!projectId || !await isMember(projectId, req.user.id)) return forbidden(res)
     await db.query('UPDATE project_notes SET text=$1 WHERE id=$2', [req.body.text, req.params.id])
     res.json((await db.query('SELECT * FROM project_notes WHERE id=$1', [req.params.id])).rows[0])
   } catch(e) { res.status(500).json({ error: e.message }) }
@@ -411,6 +469,8 @@ app.put('/api/project-notes/:id', authMiddleware, async (req, res) => {
 
 app.delete('/api/project-notes/:id', authMiddleware, async (req, res) => {
   try {
+    const projectId = await getNoteProject(req.params.id)
+    if (!projectId || !await isMember(projectId, req.user.id)) return forbidden(res)
     await db.query('DELETE FROM project_notes WHERE id=$1', [req.params.id])
     res.json({ ok: true })
   } catch(e) { res.status(500).json({ error: e.message }) }
@@ -423,6 +483,7 @@ app.post('/api/project-notes/:id/move-to-task', authMiddleware, async (req, res)
     if (!task_id) return res.status(400).json({ error: 'task_id requerido' })
     const note = (await db.query('SELECT * FROM project_notes WHERE id=$1', [req.params.id])).rows[0]
     if (!note) return res.status(404).json({ error: 'Nota no encontrada' })
+    if (!await isMember(note.project_id, req.user.id)) return forbidden(res)
     const r = await db.query(
       'INSERT INTO task_comments (task_id, author, text, created_at) VALUES ($1, $2, $3, $4) RETURNING *',
       [task_id, note.author, note.text, note.created_at]
@@ -439,6 +500,7 @@ app.post('/api/comments/:id/move-to-project', authMiddleware, async (req, res) =
     if (!project_id) return res.status(400).json({ error: 'project_id requerido' })
     const comment = (await db.query('SELECT * FROM task_comments WHERE id=$1', [req.params.id])).rows[0]
     if (!comment) return res.status(404).json({ error: 'Comentario no encontrado' })
+    if (!await isMember(project_id, req.user.id)) return forbidden(res)
     const r = await db.query(
       'INSERT INTO project_notes (project_id, author, text, created_at) VALUES ($1, $2, $3, $4) RETURNING *',
       [project_id, comment.author, comment.text, comment.created_at]
