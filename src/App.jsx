@@ -136,39 +136,6 @@ export default function App() {
 
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark')
 
-  // ── Auto-logout por expiración de sesión ─────────────────────
-  useEffect(() => {
-    if (!currentUser) return
-
-    const SESSION_MS = 90 * 60 * 1000 // 90 minutos
-    const loginTime  = parseInt(localStorage.getItem('ft_login_time') || '0')
-    const remaining  = SESSION_MS - (Date.now() - loginTime)
-
-    if (remaining <= 0) {
-      // Ya expiró (ej: volvió después de mucho tiempo)
-      doLogout()
-      return
-    }
-
-    // Timer para cuando expira exactamente
-    const timer = setTimeout(() => {
-      doLogout()
-      alert('Tu sesión expiró. Por favor iniciá sesión nuevamente.')
-    }, remaining)
-
-    // También chequear cuando la pestaña vuelve al foco
-    const handleFocus = () => {
-      const elapsed = Date.now() - parseInt(localStorage.getItem('ft_login_time') || '0')
-      if (elapsed >= SESSION_MS) doLogout()
-    }
-    window.addEventListener('focus', handleFocus)
-
-    return () => {
-      clearTimeout(timer)
-      window.removeEventListener('focus', handleFocus)
-    }
-  }, [currentUser])
-
   const [currentUser, setCurrentUser] = useState(() => {
     try { return JSON.parse(localStorage.getItem('ft_user')) } catch { return null }
   })
@@ -362,6 +329,36 @@ export default function App() {
     document.body.classList.remove('light')
     setCurrentUser(null)
   }
+
+  // ── Auto-logout por expiración de sesión ─────────────────────
+  useEffect(() => {
+    if (!currentUser) return
+
+    const SESSION_MS = 90 * 60 * 1000 // 90 minutos
+    const loginTime  = parseInt(localStorage.getItem('ft_login_time') || '0')
+    const remaining  = SESSION_MS - (Date.now() - loginTime)
+
+    if (remaining <= 0) {
+      doLogout()
+      return
+    }
+
+    const timer = setTimeout(() => {
+      doLogout()
+      alert('Tu sesión expiró. Por favor iniciá sesión nuevamente.')
+    }, remaining)
+
+    const handleFocus = () => {
+      const elapsed = Date.now() - parseInt(localStorage.getItem('ft_login_time') || '0')
+      if (elapsed >= SESSION_MS) doLogout()
+    }
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [currentUser])
 
   const doSearchMembers = async q => {
     setMemberSearch(q)
