@@ -136,6 +136,39 @@ export default function App() {
 
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark')
 
+  // ── Auto-logout por expiración de sesión ─────────────────────
+  useEffect(() => {
+    if (!currentUser) return
+
+    const SESSION_MS = 90 * 60 * 1000 // 90 minutos
+    const loginTime  = parseInt(localStorage.getItem('ft_login_time') || '0')
+    const remaining  = SESSION_MS - (Date.now() - loginTime)
+
+    if (remaining <= 0) {
+      // Ya expiró (ej: volvió después de mucho tiempo)
+      doLogout()
+      return
+    }
+
+    // Timer para cuando expira exactamente
+    const timer = setTimeout(() => {
+      doLogout()
+      alert('Tu sesión expiró. Por favor iniciá sesión nuevamente.')
+    }, remaining)
+
+    // También chequear cuando la pestaña vuelve al foco
+    const handleFocus = () => {
+      const elapsed = Date.now() - parseInt(localStorage.getItem('ft_login_time') || '0')
+      if (elapsed >= SESSION_MS) doLogout()
+    }
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [currentUser])
+
   const [currentUser, setCurrentUser] = useState(() => {
     try { return JSON.parse(localStorage.getItem('ft_user')) } catch { return null }
   })
@@ -325,6 +358,8 @@ export default function App() {
   const doLogout = () => {
     localStorage.removeItem('ft_token')
     localStorage.removeItem('ft_user')
+    localStorage.removeItem('ft_login_time')
+    document.body.classList.remove('light')
     setCurrentUser(null)
   }
 
@@ -467,8 +502,8 @@ export default function App() {
 
   // ── Auth guard ───────────────────────────────────────────────────
   if (!currentUser) return <AuthScreen onAuth={user => {
+    localStorage.setItem('ft_login_time', Date.now().toString())
     setCurrentUser(user)
-    // Aplicar tema guardado al loguearse
     document.body.classList.toggle('light', (localStorage.getItem('ft_theme') || 'dark') === 'light')
     loadProjects()
   }} />

@@ -159,7 +159,7 @@ app.post('/api/auth/register', async (req, res) => {
       [name, username.toLowerCase(), email.toLowerCase(), hash]
     )
     const user = r.rows[0]
-    const token = jwt.sign({ id: user.id, name: user.name, username: user.username, email: user.email }, SECRET, { expiresIn: '30d' })
+    const token = jwt.sign({ id: user.id, name: user.name, username: user.username, email: user.email }, SECRET, { expiresIn: '90m' })
     res.json({ token, user: { id: user.id, name: user.name, username: user.username, email: user.email } })
   } catch(e) { res.status(500).json({ error: e.message }) }
 })
@@ -173,7 +173,7 @@ app.post('/api/auth/login', async (req, res) => {
     const user = r.rows[0]
     const valid = await bcrypt.compare(password, user.password)
     if (!valid) return res.status(401).json({ error: 'Usuario o contraseña incorrectos' })
-    const token = jwt.sign({ id: user.id, name: user.name, username: user.username, email: user.email }, SECRET, { expiresIn: '30d' })
+    const token = jwt.sign({ id: user.id, name: user.name, username: user.username, email: user.email }, SECRET, { expiresIn: '90m' })
     res.json({ token, user: { id: user.id, name: user.name, username: user.username, email: user.email } })
   } catch(e) { res.status(500).json({ error: e.message }) }
 })
@@ -197,7 +197,7 @@ app.put('/api/auth/me', authMiddleware, async (req, res) => {
     }
     const r = await db.query('SELECT id, name, username, email FROM users WHERE id=$1', [req.user.id])
     const user = r.rows[0]
-    const token = jwt.sign({ id: user.id, name: user.name, username: user.username, email: user.email }, SECRET, { expiresIn: '30d' })
+    const token = jwt.sign({ id: user.id, name: user.name, username: user.username, email: user.email }, SECRET, { expiresIn: '90m' })
     res.json({ token, user })
   } catch(e) { res.status(500).json({ error: e.message }) }
 })
