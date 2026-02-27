@@ -178,6 +178,30 @@ app.post('/api/auth/login', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }) }
 })
 
+app.put('/api/auth/me', authMiddleware, async (req, res) => {
+  try {
+    const { name, username, email, password } = req.body
+    if (!name || !username || !email) return res.status(400).json({ error: 'Nombre, usuario y email son requeridos' })
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) return res.status(400).json({ error: 'El usuario solo puede tener letras, números y guión bajo' })
+    // Verificar que username y email no estén en uso por otro usuario
+    const dupUser = await db.query('SELECT id FROM users WHERE username = $1 AND id != $2', [username.toLowerCase(), req.user.id])
+    if (dupUser.rows.length) return res.status(400).json({ error: 'Ese nombre de usuario ya está en uso' })
+    const dupEmail = await db.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email.toLowerCase(), req.user.id])
+    if (dupEmail.rows.length) return res.status(400).json({ error: 'Ese email ya está en uso' })
+    if (password) {
+      if (password.length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' })
+      const hash = await bcrypt.hash(password, 10)
+      await db.query('UPDATE users SET name=$1, username=$2, email=$3, password=$4 WHERE id=$5', [name, username.toLowerCase(), email.toLowerCase(), hash, req.user.id])
+    } else {
+      await db.query('UPDATE users SET name=$1, username=$2, email=$3 WHERE id=$4', [name, username.toLowerCase(), email.toLowerCase(), req.user.id])
+    }
+    const r = await db.query('SELECT id, name, username, email FROM users WHERE id=$1', [req.user.id])
+    const user = r.rows[0]
+    const token = jwt.sign({ id: user.id, name: user.name, username: user.username, email: user.email }, SECRET, { expiresIn: '30d' })
+    res.json({ token, user })
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
 app.get('/api/auth/me', authMiddleware, async (req, res) => {
   try {
     const r = await db.query('SELECT id, name, email, created_at FROM users WHERE id = $1', [req.user.id])

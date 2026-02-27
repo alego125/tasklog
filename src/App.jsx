@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { api } from './hooks/useApi.js'
 import AuthScreen from './components/AuthScreen.jsx'
+import ProfileScreen from './components/ProfileScreen.jsx'
 import { Confirm, EditProject, EditTask, EditComment, MoveNoteModal, MoveCommentModal } from './components/Modals.jsx'
 
 // ── Helpers ──────────────────────────────────────────────────────
@@ -128,6 +129,8 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem('ft_user')) } catch { return null }
   })
   const [membersModal, setMembersModal]     = useState(null) // projectId
+  const [userMenuOpen, setUserMenuOpen]     = useState(false)
+  const [profileOpen, setProfileOpen]       = useState(false)
   const [memberSearch, setMemberSearch]     = useState('')
   const [memberResults, setMemberResults]   = useState([])
   const [projects, setProjects]             = useState([])
@@ -489,6 +492,13 @@ export default function App() {
     <div style={{ minHeight:'100vh', background:'#070d1a', fontFamily:"'DM Sans','Segoe UI',sans-serif", color:'#e2e8f0' }}>
 
       {/* MODALS */}
+      {profileOpen && (
+        <ProfileScreen
+          user={currentUser}
+          onSave={user => { setCurrentUser(user); setProfileOpen(false) }}
+          onClose={()=>setProfileOpen(false)}
+        />
+      )}
       {membersModal && (() => {
         const project = projects.find(p => p.id === membersModal)
         if (!project) return null
@@ -628,12 +638,38 @@ export default function App() {
             </button>
           )}
           {!archiveView && <button onClick={()=>setNewProjOpen(true)} style={S.btnPrimary}>+ Nuevo Proyecto</button>}
-          <div style={{ display:'flex',alignItems:'center',gap:8,borderLeft:'1px solid #1e293b',paddingLeft:12,marginLeft:4 }}>
-            <div style={{ width:30,height:30,borderRadius:'50%',background:'linear-gradient(135deg,#6366f1,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:700,color:'white',flexShrink:0 }}>
-              {currentUser.name.charAt(0).toUpperCase()}
-            </div>
-            <span style={{ fontSize:13,color:'#94a3b8',maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{currentUser.name}</span>
-            <button onClick={doLogout} title="Cerrar sesión" style={{ background:'transparent',border:'1px solid #334155',color:'#64748b',padding:'5px 10px',borderRadius:7,cursor:'pointer',fontSize:12 }}>⎋ Salir</button>
+          <div style={{ position:'relative',borderLeft:'1px solid #1e293b',paddingLeft:12,marginLeft:4 }}>
+            <button onClick={()=>setUserMenuOpen(v=>!v)}
+              style={{ display:'flex',alignItems:'center',gap:8,background:'transparent',border:'none',cursor:'pointer',padding:'4px 6px',borderRadius:8 }}>
+              <div style={{ width:30,height:30,borderRadius:'50%',background:'linear-gradient(135deg,#6366f1,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:700,color:'white',flexShrink:0 }}>
+                {currentUser.name.charAt(0).toUpperCase()}
+              </div>
+              <span style={{ fontSize:13,color:'#94a3b8',maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{currentUser.name}</span>
+              <span style={{ fontSize:10,color:'#475569' }}>▾</span>
+            </button>
+            {userMenuOpen && (
+              <>
+                <div onClick={()=>setUserMenuOpen(false)} style={{ position:'fixed',inset:0,zIndex:150 }} />
+                <div style={{ position:'absolute',right:0,top:'calc(100% + 8px)',background:'#0f172a',border:'1px solid #1e293b',borderRadius:10,minWidth:180,boxShadow:'0 10px 40px #00000088',zIndex:200,overflow:'hidden' }}>
+                  <div style={{ padding:'12px 16px',borderBottom:'1px solid #1e293b' }}>
+                    <div style={{ fontSize:13,fontWeight:600,color:'#e2e8f0' }}>{currentUser.name}</div>
+                    <div style={{ fontSize:11,color:'#475569',marginTop:2 }}>@{currentUser.username||currentUser.email}</div>
+                  </div>
+                  <button onClick={()=>{ setUserMenuOpen(false); setProfileOpen(true) }}
+                    style={{ width:'100%',background:'transparent',border:'none',color:'#94a3b8',padding:'10px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10 }}
+                    onMouseEnter={e=>e.currentTarget.style.background='#1e293b'}
+                    onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                    ✏️ Editar perfil
+                  </button>
+                  <button onClick={()=>{ setUserMenuOpen(false); doLogout() }}
+                    style={{ width:'100%',background:'transparent',border:'none',color:'#ef4444',padding:'10px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10,borderTop:'1px solid #1e293b' }}
+                    onMouseEnter={e=>e.currentTarget.style.background='#2d0a0a'}
+                    onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                    ⎋ Cerrar sesión
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
