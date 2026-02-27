@@ -165,6 +165,7 @@ export default function App() {
 
   // ── Load ─────────────────────────────────────────────────────
   const loadProjects = useCallback(async () => {
+    if (!localStorage.getItem('ft_token')) { setLoading(false); return }
     try {
       setLoading(true); setError(null)
       setProjects(await api.getProjects())
@@ -174,6 +175,13 @@ export default function App() {
   }, [])
 
   useEffect(() => { loadProjects() }, [loadProjects])
+
+  // Escuchar evento de sesión expirada desde useApi
+  useEffect(() => {
+    const handler = () => setCurrentUser(null)
+    window.addEventListener('ft_logout', handler)
+    return () => window.removeEventListener('ft_logout', handler)
+  }, [])
 
   // ── Computed ─────────────────────────────────────────────────
   const allTasks = useMemo(() =>

@@ -20,7 +20,7 @@ async function request(method, path, body) {
   if (res.status === 401) {
     localStorage.removeItem('ft_token')
     localStorage.removeItem('ft_user')
-    window.location.reload()
+    window.dispatchEvent(new Event('ft_logout'))
     return
   }
 
