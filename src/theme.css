@@ -40,3 +40,75 @@
 *, *::before, *::after {
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
+
+/* ── Responsive / Mobile ─────────────────────────────────────── */
+
+/* Ocultar en mobile */
+@media (max-width: 600px) {
+  .hide-mobile { display: none !important; }
+  .mobile-only { display: flex !important; }
+}
+@media (min-width: 601px) {
+  .mobile-only { display: none !important; }
+}
+
+/* Header mobile */
+@media (max-width: 600px) {
+  .ft-header {
+    padding: 10px 14px !important;
+    gap: 8px !important;
+  }
+  .ft-header-logo { font-size: 15px !important; }
+  .ft-header-sub  { display: none !important; }
+  .ft-header-btns { gap: 6px !important; }
+  .ft-header-btns button { padding: 7px 10px !important; font-size: 12px !important; }
+}
+
+/* Filtros mobile: stack vertical */
+@media (max-width: 600px) {
+  .ft-filters { flex-direction: column !important; }
+  .ft-filters > * { width: 100% !important; flex: none !important; box-sizing: border-box; }
+  .ft-search-wrap { width: 100% !important; }
+}
+
+/* Tarea: ocultar badge de estado en mobile, mostrar solo borde de color */
+@media (max-width: 600px) {
+  .ft-task-badge  { display: none !important; }
+  .ft-task-meta   { flex-direction: column !important; gap: 3px !important; }
+  .ft-task-actions { gap: 3px !important; }
+  .ft-task-row    { padding: 9px 10px !important; gap: 8px !important; }
+  .ft-task-comments { padding: 0 10px 12px 36px !important; }
+}
+
+/* Project header en mobile */
+@media (max-width: 600px) {
+  .ft-proj-header { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; }
+  .ft-proj-actions { width: 100% !important; justify-content: flex-end !important; }
+  .ft-proj-badge  { font-size: 10px !important; }
+}
+
+/* Nueva tarea: stack vertical en mobile */
+@media (max-width: 600px) {
+  .ft-new-task { flex-direction: column !important; }
+  .ft-new-task > * { width: 100% !important; flex: none !important; box-sizing: border-box; }
+}
+
+/* Stats bar en mobile */
+@media (max-width: 600px) {
+  .ft-stats { flex-wrap: wrap !important; gap: 6px !important; }
+  .ft-stat-item { font-size: 11px !important; padding: 4px 8px !important; }
+}
+
+/* Modales: full width en mobile */
+@media (max-width: 600px) {
+  .ft-modal-inner {
+    padding: 18px 16px !important;
+    border-radius: 12px !important;
+    margin: 0 8px !important;
+  }
+}
+
+/* Main content padding mobile */
+@media (max-width: 600px) {
+  .ft-main { padding: 12px 10px !important; }
+}

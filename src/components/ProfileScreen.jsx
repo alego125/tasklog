@@ -48,7 +48,7 @@ export default function ProfileScreen({ user, onSave, onClose }) {
 
   return (
     <div onClick={onClose} style={{ position:'fixed',inset:0,background:'#000b',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:20 }}>
-      <div onClick={e=>e.stopPropagation()} style={{ background:'var(--bg-surface)',border:'1px solid var(--border)',borderRadius:16,padding:28,width:'100%',maxWidth:440,boxShadow:'0 30px 80px #0009',fontFamily:"'DM Sans','Segoe UI',sans-serif" }}>
+      <div onClick={e=>e.stopPropagation()} className="ft-modal-inner" style={{ background:'var(--bg-surface)',border:'1px solid var(--border)',borderRadius:16,padding:28,width:'100%',maxWidth:440,boxShadow:'0 30px 80px #0009',fontFamily:"'DM Sans','Segoe UI',sans-serif" }}>
 
         {/* Header */}
         <div style={{ display:'flex',alignItems:'center',gap:14,marginBottom:24 }}>

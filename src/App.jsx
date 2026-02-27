@@ -625,24 +625,24 @@ export default function App() {
       {moveComment  && <MoveCommentModal comment={moveComment.comment} projects={projects} currentProjectId={moveComment.pId} onMove={doMoveCommentToProject} onClose={()=>setMoveComment(null)} />}
 
       {/* HEADER */}
-      <div style={{ background:'var(--header-bg)', borderBottom:'1px solid var(--border)', padding:'18px 28px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100, flexWrap:'wrap', gap:10 }}>
+      <div className="ft-header" style={{ background:'var(--header-bg)', borderBottom:'1px solid var(--border)', padding:'18px 28px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100, flexWrap:'wrap', gap:10 }}>
         <div style={{ display:'flex', alignItems:'center', gap:12 }}>
           <img src="/logo.png" alt="FlowTracker" style={{ width:38,height:38,borderRadius:9,objectFit:'cover' }} />
           <div>
             <div style={{ fontSize:19,fontWeight:700,letterSpacing:'-0.5px' }}>FlowTracker</div>
-            <div style={{ fontSize:11,color:'var(--text-muted)' }}><span style={{color:'#22c55e'}}>● PostgreSQL</span> · Datos persistentes en la nube</div>
+            <div className="ft-header-sub" style={{ fontSize:11,color:'var(--text-muted)' }}><span style={{color:'#22c55e'}}>● PostgreSQL</span> · Datos persistentes en la nube</div>
           </div>
         </div>
-        <div style={{ display:'flex',gap:8,flexWrap:'wrap' }}>
+        <div className="ft-header-btns" style={{ display:'flex',gap:8,flexWrap:'wrap' }}>
           {!archiveView && (
             <button onClick={()=>exportExcel(projects)} style={{ background:'#065f46',border:'1px solid #059669',color:'#34d399',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:600 }}>
-              ⬇ Exportar Excel
+              <span className="hide-mobile">⬇ </span>Excel
             </button>
           )}
           {(
             <button onClick={()=>{ if(!archiveView){ loadArchived() } setArchiveView(v=>!v) }}
               style={{ background:archiveView?'#78350f':'#1e293b',border:`1px solid ${archiveView?'#d97706':'#334155'}`,color:archiveView?'#fbbf24':'#94a3b8',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontSize:13 }}>
-              {archiveView?'← Volver':'📦 Archivados'}
+              {archiveView?'← Volver':<><span className="hide-mobile">📦 </span>Archivados</>}
             </button>
           )}
 
@@ -650,7 +650,7 @@ export default function App() {
             <button onClick={()=>{ setBackupModal(true); setRestoreMsg(null) }}
               style={{ background:'var(--bg-elevated)',border:'1px solid var(--border-soft)',color:'var(--text-secondary)',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontSize:13 }}
               title="Backup y restauración">
-              💾 Backup
+              💾<span className="hide-mobile"> Backup</span>
             </button>
           )}
           {!archiveView && <button onClick={()=>setNewProjOpen(true)} style={S.btnPrimary}>+ Nuevo Proyecto</button>}
@@ -660,7 +660,7 @@ export default function App() {
               <div style={{ width:30,height:30,borderRadius:'50%',background:'linear-gradient(135deg,#6366f1,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:700,color:'white',flexShrink:0 }}>
                 {currentUser.name.charAt(0).toUpperCase()}
               </div>
-              <span style={{ fontSize:13,color:'var(--text-secondary)',maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{currentUser.name}</span>
+              <span className="hide-mobile" style={{ fontSize:13,color:'var(--text-secondary)',maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{currentUser.name}</span>
               <span style={{ fontSize:10,color:'var(--text-faint)' }}>▾</span>
             </button>
             {userMenuOpen && (
@@ -697,7 +697,7 @@ export default function App() {
       </div>
 
       {archiveView ? (
-        <div style={{ maxWidth:1200,margin:'0 auto',padding:'28px 20px' }}>
+        <div className="ft-main" style={{ maxWidth:1200,margin:'0 auto',padding:'28px 20px' }}>
           <div style={{ display:'flex',alignItems:'center',gap:12,marginBottom:20 }}>
             <span style={{ fontSize:18,fontWeight:700,color:'#fbbf24' }}>📦 Proyectos Archivados</span>
             {loadingArchived && <span style={{ fontSize:13,color:'var(--text-muted)' }}>Cargando...</span>}
@@ -741,7 +741,7 @@ export default function App() {
           {/* FILTROS */}
           <div style={{ background:'var(--bg-surface)',border:'1px solid var(--border)',borderRadius:12,padding:'14px 16px',marginBottom:18 }}>
             <div style={{ display:'flex',gap:10,flexWrap:'wrap',alignItems:'center',marginBottom:10 }}>
-              <div style={{ position:'relative', flex:'1 1 220px', display:'flex', alignItems:'center' }}>
+              <div className="ft-search-wrap" style={{ position:'relative', flex:'1 1 220px', display:'flex', alignItems:'center' }}>
                 <input placeholder="🔍 Buscar por tarea, proyecto o responsable..." value={search} onChange={e=>setSearch(e.target.value)} style={{ ...S.input, width:'100%', paddingRight: search ? '32px' : '12px' }} />
                 {search && (
                   <button onClick={()=>setSearch('')} style={{ position:'absolute',right:8,background:'none',border:'none',color:'var(--text-muted)',cursor:'pointer',fontSize:16,lineHeight:1,padding:'2px 4px',display:'flex',alignItems:'center' }} title="Limpiar búsqueda">✕</button>
@@ -762,7 +762,7 @@ export default function App() {
               </label>
             </div>
             {/* Filtro por fechas */}
-            <div style={{ display:'flex',gap:10,flexWrap:'wrap',alignItems:'center' }}>
+            <div className="ft-filters" style={{ display:'flex',gap:10,flexWrap:'wrap',alignItems:'center' }}>
               <span style={{ fontSize:12,color:'var(--text-muted)',whiteSpace:'nowrap' }}>📅 Filtrar por fecha de registro:</span>
               <label style={{ display:'flex',alignItems:'center',gap:6,fontSize:12,color:'var(--text-secondary)' }}>
                 Desde <input type="date" value={filterDateFrom} onChange={e=>setFilterDateFrom(e.target.value)} style={{ ...S.input,padding:'5px 8px',fontSize:12 }} />
@@ -906,7 +906,7 @@ export default function App() {
               <div key={project.id} id={`project-${project.id}`} style={{ background:'var(--bg-surface)',border:`1px solid ${hasOverdue?'#dc262644':'#1e293b'}`,borderRadius:14,marginBottom:16,overflow:'hidden' }}>
 
                 {/* Project header */}
-                <div style={{ borderLeft:`4px solid ${project.color}`,padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',background:`linear-gradient(90deg,${project.color}11,transparent)` }}>
+                <div className="ft-proj-header" style={{ borderLeft:`4px solid ${project.color}`,padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',background:`linear-gradient(90deg,${project.color}11,transparent)` }}>
                   <div style={{ display:'flex',alignItems:'center',gap:10,flexWrap:'wrap' }}>
                     <div style={{ width:9,height:9,borderRadius:'50%',background:project.color,flexShrink:0 }} />
                     <span style={{ fontWeight:700,fontSize:15 }}>{project.name}</span>
@@ -915,7 +915,7 @@ export default function App() {
                     </span>
                     {hasOverdue && <span style={{ background:'#2d0a0a',border:'1px solid #dc2626',borderRadius:20,padding:'1px 9px',fontSize:11,color:'#ef4444',fontWeight:600 }}>⚠ Tareas vencidas</span>}
                   </div>
-                  <div style={{ display:'flex',gap:7 }}>
+                  <div className="ft-proj-actions" style={{ display:'flex',gap:7 }}>
                     <button onClick={()=>setNewTaskFor(project.id)} style={{ background:'transparent',border:`1px solid ${project.color}`,color:project.color,padding:'5px 12px',borderRadius:7,cursor:'pointer',fontSize:12,fontWeight:600 }}>+ Tarea</button>
                     <button onClick={()=>setNewProjNote(n=>({...n,[project.id+'_open']:!(n[project.id+'_open'])}))} style={{ background:'transparent',border:'1px solid #4338ca',color:'#818cf8',padding:'5px 12px',borderRadius:7,cursor:'pointer',fontSize:12,fontWeight:600 }}>+ Nota</button>
                     <button onClick={()=>setCollapsedProjects(c=>({...c,[project.id]:!c[project.id]}))} title={isCollapsed?'Expandir':'Colapsar'} style={{ ...S.iconBtn,borderColor:`${project.color}44`,color:'var(--text-secondary)' }}>{isCollapsed?'▼':'▲'}</button>
@@ -939,7 +939,7 @@ export default function App() {
 
                 {/* New task form */}
                 {newTaskFor===project.id && (
-                  <div style={{ background:'var(--bg-elevated)',padding:'12px 16px',display:'flex',gap:8,flexWrap:'wrap',borderBottom:'1px solid var(--border-soft)',alignItems:'center' }}>
+                  <div className="ft-new-task" style={{ background:'var(--bg-elevated)',padding:'12px 16px',display:'flex',gap:8,flexWrap:'wrap',borderBottom:'1px solid var(--border-soft)',alignItems:'center' }}>
                     <input placeholder="Título *" value={newTask.title} onChange={e=>setNewTask(p=>({...p,title:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&newTask.title&&doAddTask(project.id)} style={{ ...S.input,flex:'2 1 160px' }} autoFocus />
                     <input placeholder="Responsable (opcional)" value={newTask.responsible} onChange={e=>setNewTask(p=>({...p,responsible:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&newTask.title&&doAddTask(project.id)} style={{ ...S.input,flex:'1 1 140px' }} />
                     <input type="date" value={newTask.due_date} onChange={e=>setNewTask(p=>({...p,due_date:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&newTask.title&&doAddTask(project.id)} title="Vencimiento (opcional)" style={{ ...S.input,flex:'0 1 148px' }} />
@@ -986,19 +986,19 @@ export default function App() {
                       const isExp  = expanded===task.id
                       return (
                         <div key={`task-${task.id}`} id={`task-${task.id}`} style={{ borderTop:idx===0?'none':'1px solid #1e293b',background:isExp?cfg.bg:'transparent',transition:'background .2s' }}>
-                          <div style={{ padding:'11px 16px',display:'flex',alignItems:'center',gap:10,borderLeft:`3px solid ${cfg.border}` }}>
+                          <div className="ft-task-row" style={{ padding:'11px 16px',display:'flex',alignItems:'center',gap:10,borderLeft:`3px solid ${cfg.border}` }}>
                             <div onClick={()=>doToggle(task.id)} style={{ width:21,height:21,borderRadius:5,border:`2px solid ${cfg.badge}`,background:task.done?cfg.badge:'transparent',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0,fontSize:12,color:'#0f172a',fontWeight:900,transition:'all .15s' }}>{task.done&&'✓'}</div>
                             <div style={{ flex:1,minWidth:0 }}>
                               <div style={{ fontWeight:600,fontSize:14,textDecoration:task.done?'line-through':'none',color:task.done?'var(--text-faint)':(status==='overdue'?'#ef4444':status==='warning'?'#f59e0b':'var(--task-title)'),whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis' }}>{task.title}</div>
-                              <div style={{ fontSize:11,color:'var(--text-muted)',marginTop:2,display:'flex',gap:10,flexWrap:'wrap' }}>
+                              <div className="ft-task-meta" style={{ fontSize:11,color:'var(--text-muted)',marginTop:2,display:'flex',gap:10,flexWrap:'wrap' }}>
                                 {task.responsible && <span>👤 {task.responsible}</span>}
                                 {task.due_date    && <span>📅 Vence: {fmtSimpleDate(task.due_date)}</span>}
                                 <span>🗓 Registro: {fmtDate(task.created_at)}</span>
                                 <span>💬 {task.comments.length} nota{task.comments.length!==1?'s':''}</span>
                               </div>
                             </div>
-                            <div style={{ background:`${cfg.badge}22`,border:`1px solid ${cfg.badge}55`,color:cfg.badge,padding:'3px 9px',borderRadius:20,fontSize:11,fontWeight:600,whiteSpace:'nowrap',flexShrink:0 }}>● {cfg.label}</div>
-                            <div style={{ display:'flex',gap:5,flexShrink:0 }}>
+                            <div className="ft-task-badge" style={{ background:`${cfg.badge}22`,border:`1px solid ${cfg.badge}55`,color:cfg.badge,padding:'3px 9px',borderRadius:20,fontSize:11,fontWeight:600,whiteSpace:'nowrap',flexShrink:0 }}>● {cfg.label}</div>
+                            <div className="ft-task-actions" style={{ display:'flex',gap:5,flexShrink:0 }}>
                               <button onClick={()=>setEditTask({pId:task.projectId,task})} style={S.iconBtn} title="Editar">✏️</button>
                               <button onClick={()=>setConfirm({msg:`¿Eliminar "${task.title}"?`,action:()=>doDeleteTask(task.projectId,task.id)})} style={{ ...S.iconBtn,borderColor:'#dc262633' }} title="Eliminar">🗑️</button>
                               <button onClick={()=>setExpanded(isExp?null:task.id)} style={{ ...S.iconBtn,fontSize:11 }}>{isExp?'▲':'▼'}</button>
@@ -1007,7 +1007,7 @@ export default function App() {
 
                           {/* Task comments */}
                           {isExp && (
-                            <div style={{ padding:'0 16px 14px 50px',borderLeft:`3px solid ${cfg.border}` }}>
+                            <div className="ft-task-comments" style={{ padding:'0 16px 14px 50px',borderLeft:`3px solid ${cfg.border}` }}>
                               <div style={{ fontSize:11,color:'var(--text-secondary)',fontWeight:700,marginBottom:8,textTransform:'uppercase',letterSpacing:1 }}>💬 Bitácora de la tarea</div>
                               {task.comments.length===0 && <div style={{ fontSize:13,color:'var(--text-faint)',marginBottom:10 }}>Sin notas aún.</div>}
                               {task.comments.map(c=>(

@@ -42,7 +42,7 @@ export default function AuthScreen({ onAuth }) {
   const handleKey = e => { if (e.key === 'Enter') handleSubmit() }
 
   return (
-    <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#070d1a 0%,#0f172a 50%,#1e1b4b 100%)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'DM Sans','Segoe UI',sans-serif", padding:20 }}>
+    <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#070d1a 0%,#0f172a 50%,#1e1b4b 100%)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'DM Sans','Segoe UI',sans-serif", padding:'20px 12px' }}>
       <div style={{ width:'100%', maxWidth:400 }}>
 
         {/* Logo y título */}
