@@ -823,7 +823,7 @@ export default function App() {
                       <span>·</span>
                       <span>{note.author||'—'} · {fmtDate(note.created_at)}</span>
                     </div>
-                    <div style={{ fontSize:13,color:'#cbd5e1',lineHeight:1.5 }}>{note.text}</div>
+                    <div style={{ fontSize:13,color:'var(--text-content)',lineHeight:1.5 }}>{note.text}</div>
                   </div>
                   <button
                     onClick={()=>{ setCollapsedProjects(c=>({...c,[note.projectId]:false})); setExpandedNotes(n=>({...n,[note.projectId]:true})); setTimeout(()=>{ const el=document.getElementById('project-'+note.projectId); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}) },100) }}
@@ -853,7 +853,7 @@ export default function App() {
                         <span>·</span>
                         <span>{c.author||'—'} · {fmtDate(c.created_at)}</span>
                       </div>
-                      <div style={{ fontSize:13,color:'#cbd5e1',lineHeight:1.5 }}>{c.text}</div>
+                      <div style={{ fontSize:13,color:'var(--text-content)',lineHeight:1.5 }}>{c.text}</div>
                     </div>
                     <button
                       onClick={()=>{
@@ -960,7 +960,7 @@ export default function App() {
                               </div>
                               <div style={{ flex:1,minWidth:0 }}>
                                 <div style={{ fontSize:11,color:'var(--text-muted)',marginBottom:3 }}>{item.author||'—'} · {fmtDate(item.created_at)}</div>
-                                <div style={{ fontSize:13,color:'#cbd5e1',lineHeight:1.5 }}>{item.text}</div>
+                                <div style={{ fontSize:13,color:'var(--text-content)',lineHeight:1.5 }}>{item.text}</div>
                               </div>
                               <div style={{ display:'flex',gap:4,flexShrink:0 }}>
                                 <button onClick={()=>setMoveNote({note:item,pId:project.id})} title="Mover a tarea" style={{ ...S.iconBtn,borderColor:'#6366f133',color:'#818cf8' }}>🔀</button>
@@ -982,7 +982,7 @@ export default function App() {
                           <div style={{ padding:'11px 16px',display:'flex',alignItems:'center',gap:10,borderLeft:`3px solid ${cfg.border}` }}>
                             <div onClick={()=>doToggle(task.id)} style={{ width:21,height:21,borderRadius:5,border:`2px solid ${cfg.badge}`,background:task.done?cfg.badge:'transparent',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0,fontSize:12,color:'#0f172a',fontWeight:900,transition:'all .15s' }}>{task.done&&'✓'}</div>
                             <div style={{ flex:1,minWidth:0 }}>
-                              <div style={{ fontWeight:600,fontSize:14,textDecoration:task.done?'line-through':'none',color:task.done?'#475569':'#e2e8f0',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis' }}>{task.title}</div>
+                              <div style={{ fontWeight:600,fontSize:14,textDecoration:task.done?'line-through':'none',color:task.done?'var(--text-faint)':(status==='overdue'?'#ef4444':status==='warning'?'#f59e0b':'var(--task-title)'),whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis' }}>{task.title}</div>
                               <div style={{ fontSize:11,color:'var(--text-muted)',marginTop:2,display:'flex',gap:10,flexWrap:'wrap' }}>
                                 {task.responsible && <span>👤 {task.responsible}</span>}
                                 {task.due_date    && <span>📅 Vence: {fmtSimpleDate(task.due_date)}</span>}
@@ -1007,7 +1007,7 @@ export default function App() {
                                 <div key={c.id} style={{ background:'var(--bg-elevated)',border:'1px solid var(--border-soft)',borderRadius:8,padding:'9px 12px',marginBottom:7,display:'flex',gap:10,alignItems:'flex-start' }}>
                                   <div style={{ flex:1 }}>
                                     <div style={{ fontSize:11,color:'var(--text-muted)',marginBottom:3 }}>{c.author||'—'} · {fmtDate(c.created_at)}</div>
-                                    <div style={{ fontSize:13,color:'#cbd5e1' }}>{c.text}</div>
+                                    <div style={{ fontSize:13,color:'var(--text-content)' }}>{c.text}</div>
                                   </div>
                                   <div style={{ display:'flex',gap:4 }}>
                                     <button onClick={()=>setMoveComment({comment:c,pId:task.projectId,tId:task.id})} title="Mover a proyecto" style={{ ...S.iconBtn,borderColor:'#6366f133',color:'#818cf8' }}>🔀</button>

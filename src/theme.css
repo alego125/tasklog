@@ -13,6 +13,8 @@
   --input-bg:     #1e293b;
   --header-bg:    linear-gradient(135deg, #0f172a, #1e1b4b);
   --splash-bg:    linear-gradient(135deg, #070d1a 0%, #0f172a 50%, #1e1b4b 100%);
+  --text-content: #cbd5e1;   /* notas, bitácoras, texto de contenido */
+  --task-title:   #e2e8f0;   /* título tarea sin vencer */
 }
 
 /* ── Tema claro ──────────────────────────────────────────────── */
@@ -30,6 +32,8 @@
   --input-bg:     #f8fafc;
   --header-bg:    linear-gradient(135deg, #ffffff, #eef2ff);
   --splash-bg:    linear-gradient(135deg, #eef2ff 0%, #f1f5f9 50%, #e0e7ff 100%);
+  --text-content: #0f172a;   /* notas, bitácoras → negro en modo claro */
+  --task-title:   #0f172a;   /* título tarea sin vencer → negro en modo claro */
 }
 
 /* ── Transición suave al cambiar tema ────────────────────────── */
