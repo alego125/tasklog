@@ -698,7 +698,7 @@ export default function App() {
             {userMenuOpen && (
               <>
                 <div onClick={()=>setUserMenuOpen(false)} style={{ position:'fixed',inset:0,zIndex:150 }} />
-                <div style={{ position:'absolute',right:0,top:'calc(100% + 8px)',background:'var(--bg-surface)',border:'1px solid var(--border)',borderRadius:10,minWidth:180,boxShadow:'0 10px 40px #00000088',zIndex:200,overflow:'hidden' }}>
+                <div style={{ position:'fixed',right:8,top:'auto',marginTop:4,background:'var(--bg-surface)',border:'1px solid var(--border)',borderRadius:10,minWidth:180,maxWidth:'calc(100vw - 16px)',boxShadow:'0 10px 40px #00000088',zIndex:200,overflow:'hidden' }}>
                   <div style={{ padding:'12px 16px',borderBottom:'1px solid var(--border)' }}>
                     <div style={{ fontSize:13,fontWeight:600,color:'var(--text-primary)' }}>{currentUser.name}</div>
                     <div style={{ fontSize:11,color:'var(--text-faint)',marginTop:2 }}>@{currentUser.username||currentUser.email}</div>
