@@ -749,7 +749,7 @@ export default function App() {
         {userMenuOpen && (
           <>
             <div onClick={()=>{ setUserMenuOpen(false); setMobileSubMenu(false) }} style={{ position:'fixed',inset:0,zIndex:150 }} />
-            <div className="mobile-only" style={{ position:'fixed',right:12,top:64,background:'var(--bg-surface)',border:'1px solid var(--border)',borderRadius:12,width:240,maxWidth:'calc(100vw - 24px)',boxShadow:'0 10px 40px #00000099',zIndex:200,overflow:'hidden' }}>
+            <div style={{ position:'fixed',right:12,top:64,background:'var(--bg-surface)',border:'1px solid var(--border)',borderRadius:12,width:240,maxWidth:'calc(100vw - 24px)',boxShadow:'0 10px 40px #00000099',zIndex:200,display:'block',overflowY:'auto',maxHeight:'calc(100vh - 80px)' }}>
 
               {/* Fila usuario → abre submenu */}
               <button onClick={()=>setMobileSubMenu(v=>!v)}
