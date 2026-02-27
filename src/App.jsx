@@ -657,48 +657,48 @@ export default function App() {
       {moveComment  && <MoveCommentModal comment={moveComment.comment} projects={projects} currentProjectId={moveComment.pId} onMove={doMoveCommentToProject} onClose={()=>setMoveComment(null)} />}
 
       {/* HEADER */}
-      <div className="ft-header" style={{ background:'var(--header-bg)', borderBottom:'1px solid var(--border)', padding:'18px 28px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100, flexWrap:'wrap', gap:10 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-          <img src="/logo.png" alt="FlowTracker" style={{ width:38,height:38,borderRadius:9,objectFit:'cover' }} />
+      <div className="ft-header" style={{ background:'var(--header-bg)', borderBottom:'1px solid var(--border)', padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100, gap:10 }}>
+        {/* Logo */}
+        <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
+          <img src="/logo.png" alt="FlowTracker" style={{ width:34,height:34,borderRadius:8,objectFit:'cover' }} />
           <div>
-            <div style={{ fontSize:19,fontWeight:700,letterSpacing:'-0.5px' }}>FlowTracker</div>
-            <div className="ft-header-sub" style={{ fontSize:11,color:'var(--text-muted)' }}><span style={{color:'#22c55e'}}>● PostgreSQL</span> · Datos persistentes en la nube</div>
+            <div style={{ fontSize:17,fontWeight:700,letterSpacing:'-0.5px' }}>FlowTracker</div>
+            <div className="ft-header-sub" style={{ fontSize:10,color:'var(--text-muted)' }}><span style={{color:'#22c55e'}}>● PostgreSQL</span> · Datos persistentes en la nube</div>
           </div>
         </div>
-        <div className="ft-header-btns" style={{ display:'flex',gap:8,flexWrap:'wrap' }}>
+
+        {/* DESKTOP: botones normales */}
+        <div className="hide-mobile" style={{ display:'flex',gap:8,alignItems:'center',flexWrap:'wrap' }}>
           {!archiveView && (
             <button onClick={()=>exportExcel(projects)} style={{ background:'#065f46',border:'1px solid #059669',color:'#34d399',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:600 }}>
-              <span className="hide-mobile">⬇ </span>Excel
+              ⬇ Exportar Excel
             </button>
           )}
-          {(
-            <button onClick={()=>{ if(!archiveView){ loadArchived() } setArchiveView(v=>!v) }}
-              style={{ background:archiveView?'#78350f':'#1e293b',border:`1px solid ${archiveView?'#d97706':'#334155'}`,color:archiveView?'#fbbf24':'#94a3b8',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontSize:13 }}>
-              {archiveView?'← Volver':<><span className="hide-mobile">📦 </span>Archivados</>}
-            </button>
-          )}
-
+          <button onClick={()=>{ if(!archiveView){ loadArchived() } setArchiveView(v=>!v) }}
+            style={{ background:archiveView?'#78350f':'var(--bg-elevated)',border:`1px solid ${archiveView?'#d97706':'var(--border-soft)'}`,color:archiveView?'#fbbf24':'var(--text-secondary)',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontSize:13 }}>
+            {archiveView?'← Volver':'📦 Archivados'}
+          </button>
           {!archiveView && (
             <button onClick={()=>{ setBackupModal(true); setRestoreMsg(null) }}
-              style={{ background:'var(--bg-elevated)',border:'1px solid var(--border-soft)',color:'var(--text-secondary)',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontSize:13 }}
-              title="Backup y restauración">
-              💾<span className="hide-mobile"> Backup</span>
+              style={{ background:'var(--bg-elevated)',border:'1px solid var(--border-soft)',color:'var(--text-secondary)',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontSize:13 }}>
+              💾 Backup
             </button>
           )}
           {!archiveView && <button onClick={()=>setNewProjOpen(true)} style={S.btnPrimary}>+ Nuevo Proyecto</button>}
-          <div style={{ position:'relative',borderLeft:'1px solid #1e293b',paddingLeft:12,marginLeft:4 }}>
+          {/* Avatar + menú usuario desktop */}
+          <div style={{ position:'relative',borderLeft:'1px solid var(--border)',paddingLeft:12,marginLeft:4 }}>
             <button onClick={()=>setUserMenuOpen(v=>!v)}
               style={{ display:'flex',alignItems:'center',gap:8,background:'transparent',border:'none',cursor:'pointer',padding:'4px 6px',borderRadius:8 }}>
               <div style={{ width:30,height:30,borderRadius:'50%',background:'linear-gradient(135deg,#6366f1,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:700,color:'white',flexShrink:0 }}>
                 {currentUser.name.charAt(0).toUpperCase()}
               </div>
-              <span className="hide-mobile" style={{ fontSize:13,color:'var(--text-secondary)',maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{currentUser.name}</span>
+              <span style={{ fontSize:13,color:'var(--text-secondary)',maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{currentUser.name}</span>
               <span style={{ fontSize:10,color:'var(--text-faint)' }}>▾</span>
             </button>
             {userMenuOpen && (
               <>
                 <div onClick={()=>setUserMenuOpen(false)} style={{ position:'fixed',inset:0,zIndex:150 }} />
-                <div style={{ position:'fixed',right:8,top:'auto',marginTop:4,background:'var(--bg-surface)',border:'1px solid var(--border)',borderRadius:10,minWidth:180,maxWidth:'calc(100vw - 16px)',boxShadow:'0 10px 40px #00000088',zIndex:200,overflow:'hidden' }}>
+                <div style={{ position:'absolute',right:0,top:'calc(100% + 8px)',background:'var(--bg-surface)',border:'1px solid var(--border)',borderRadius:10,minWidth:200,boxShadow:'0 10px 40px #00000088',zIndex:200,overflow:'hidden' }}>
                   <div style={{ padding:'12px 16px',borderBottom:'1px solid var(--border)' }}>
                     <div style={{ fontSize:13,fontWeight:600,color:'var(--text-primary)' }}>{currentUser.name}</div>
                     <div style={{ fontSize:11,color:'var(--text-faint)',marginTop:2 }}>@{currentUser.username||currentUser.email}</div>
@@ -711,7 +711,7 @@ export default function App() {
                   </button>
                   <button onClick={()=>{ setUserMenuOpen(false); setProfileOpen(true) }}
                     style={{ width:'100%',background:'transparent',border:'none',color:'var(--text-secondary)',padding:'10px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10 }}
-                    onMouseEnter={e=>e.currentTarget.style.background='#1e293b'}
+                    onMouseEnter={e=>e.currentTarget.style.background='var(--bg-elevated)'}
                     onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                     ✏️ Editar perfil
                   </button>
@@ -726,6 +726,81 @@ export default function App() {
             )}
           </div>
         </div>
+
+        {/* MOBILE: Nuevo Proyecto + Hamburguesa */}
+        <div className="mobile-only" style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+          {!archiveView && <button onClick={()=>setNewProjOpen(true)} style={{ ...S.btnPrimary, padding:'8px 12px', fontSize:12 }}>+ Proyecto</button>}
+          {archiveView && (
+            <button onClick={()=>setArchiveView(false)}
+              style={{ background:'#78350f',border:'1px solid #d97706',color:'#fbbf24',padding:'8px 12px',borderRadius:8,cursor:'pointer',fontSize:12 }}>
+              ← Volver
+            </button>
+          )}
+          <button onClick={()=>setUserMenuOpen(v=>!v)}
+            style={{ background:'var(--bg-elevated)',border:'1px solid var(--border-soft)',color:'var(--text-secondary)',width:38,height:38,borderRadius:8,cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4,flexShrink:0,padding:0 }}>
+            <span style={{ display:'block',width:16,height:2,background:'currentColor',borderRadius:2 }}/>
+            <span style={{ display:'block',width:16,height:2,background:'currentColor',borderRadius:2 }}/>
+            <span style={{ display:'block',width:16,height:2,background:'currentColor',borderRadius:2 }}/>
+          </button>
+        </div>
+
+        {/* Menú hamburguesa MOBILE */}
+        {userMenuOpen && (
+          <>
+            <div onClick={()=>setUserMenuOpen(false)} style={{ position:'fixed',inset:0,zIndex:150 }} />
+            <div className="mobile-only" style={{ position:'fixed',right:12,top:64,background:'var(--bg-surface)',border:'1px solid var(--border)',borderRadius:12,minWidth:220,maxWidth:'calc(100vw - 24px)',boxShadow:'0 10px 40px #00000099',zIndex:200,overflow:'hidden' }}>
+              <div style={{ padding:'14px 16px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',gap:10 }}>
+                <div style={{ width:32,height:32,borderRadius:'50%',background:'linear-gradient(135deg,#6366f1,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:700,color:'white',flexShrink:0 }}>
+                  {currentUser.name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <div style={{ fontSize:13,fontWeight:600,color:'var(--text-primary)' }}>{currentUser.name}</div>
+                  <div style={{ fontSize:11,color:'var(--text-faint)' }}>@{currentUser.username||currentUser.email}</div>
+                </div>
+              </div>
+              {!archiveView && (
+                <button onClick={()=>{ exportExcel(projects); setUserMenuOpen(false) }}
+                  style={{ width:'100%',background:'transparent',border:'none',color:'#34d399',padding:'11px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10,borderBottom:'1px solid var(--border)' }}
+                  onMouseEnter={e=>e.currentTarget.style.background='var(--bg-elevated)'}
+                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                  ⬇ Exportar Excel
+                </button>
+              )}
+              <button onClick={()=>{ if(!archiveView){ loadArchived() } setArchiveView(v=>!v); setUserMenuOpen(false) }}
+                style={{ width:'100%',background:'transparent',border:'none',color:'#fbbf24',padding:'11px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10,borderBottom:'1px solid var(--border)' }}
+                onMouseEnter={e=>e.currentTarget.style.background='var(--bg-elevated)'}
+                onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                📦 {archiveView ? 'Volver a proyectos' : 'Archivados'}
+              </button>
+              {!archiveView && (
+                <button onClick={()=>{ setBackupModal(true); setRestoreMsg(null); setUserMenuOpen(false) }}
+                  style={{ width:'100%',background:'transparent',border:'none',color:'var(--text-secondary)',padding:'11px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10,borderBottom:'1px solid var(--border)' }}
+                  onMouseEnter={e=>e.currentTarget.style.background='var(--bg-elevated)'}
+                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                  💾 Backup y restauración
+                </button>
+              )}
+              <button onClick={()=>{ toggleTheme(); setUserMenuOpen(false) }}
+                style={{ width:'100%',background:'transparent',border:'none',color:'var(--text-secondary)',padding:'11px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10,borderBottom:'1px solid var(--border)' }}
+                onMouseEnter={e=>e.currentTarget.style.background='var(--bg-elevated)'}
+                onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                {theme === 'dark' ? '☀️ Modo claro' : '🌙 Modo oscuro'}
+              </button>
+              <button onClick={()=>{ setUserMenuOpen(false); setProfileOpen(true) }}
+                style={{ width:'100%',background:'transparent',border:'none',color:'var(--text-secondary)',padding:'11px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10,borderBottom:'1px solid var(--border)' }}
+                onMouseEnter={e=>e.currentTarget.style.background='var(--bg-elevated)'}
+                onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                ✏️ Editar perfil
+              </button>
+              <button onClick={()=>{ setUserMenuOpen(false); doLogout() }}
+                style={{ width:'100%',background:'transparent',border:'none',color:'#ef4444',padding:'11px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10 }}
+                onMouseEnter={e=>e.currentTarget.style.background='#2d0a0a'}
+                onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                ⎋ Cerrar sesión
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {archiveView ? (
