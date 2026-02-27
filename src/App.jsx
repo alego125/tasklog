@@ -141,6 +141,7 @@ export default function App() {
   })
   const [membersModal, setMembersModal]     = useState(null) // projectId
   const [userMenuOpen, setUserMenuOpen]     = useState(false)
+  const [mobileSubMenu, setMobileSubMenu]   = useState(false)
   const [profileOpen, setProfileOpen]       = useState(false)
   const [memberSearch, setMemberSearch]     = useState('')
   const [memberResults, setMemberResults]   = useState([])
@@ -697,7 +698,7 @@ export default function App() {
             </button>
             {userMenuOpen && (
               <>
-                <div onClick={()=>setUserMenuOpen(false)} style={{ position:'fixed',inset:0,zIndex:150 }} />
+                <div onClick={()=>{ setUserMenuOpen(false); setMobileSubMenu(false) }} style={{ position:'fixed',inset:0,zIndex:150 }} />
                 <div style={{ position:'absolute',right:0,top:'calc(100% + 8px)',background:'var(--bg-surface)',border:'1px solid var(--border)',borderRadius:10,minWidth:200,boxShadow:'0 10px 40px #00000088',zIndex:200,overflow:'hidden' }}>
                   <div style={{ padding:'12px 16px',borderBottom:'1px solid var(--border)' }}>
                     <div style={{ fontSize:13,fontWeight:600,color:'var(--text-primary)' }}>{currentUser.name}</div>
@@ -747,57 +748,69 @@ export default function App() {
         {/* Menú hamburguesa MOBILE */}
         {userMenuOpen && (
           <>
-            <div onClick={()=>setUserMenuOpen(false)} style={{ position:'fixed',inset:0,zIndex:150 }} />
-            <div className="mobile-only" style={{ position:'fixed',right:12,top:64,background:'var(--bg-surface)',border:'1px solid var(--border)',borderRadius:12,minWidth:220,maxWidth:'calc(100vw - 24px)',boxShadow:'0 10px 40px #00000099',zIndex:200,overflow:'hidden' }}>
-              <div style={{ padding:'14px 16px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',gap:10 }}>
+            <div onClick={()=>{ setUserMenuOpen(false); setMobileSubMenu(false) }} style={{ position:'fixed',inset:0,zIndex:150 }} />
+            <div className="mobile-only" style={{ position:'fixed',right:12,top:64,background:'var(--bg-surface)',border:'1px solid var(--border)',borderRadius:12,width:240,maxWidth:'calc(100vw - 24px)',boxShadow:'0 10px 40px #00000099',zIndex:200,overflow:'hidden' }}>
+
+              {/* Fila usuario → abre submenu */}
+              <button onClick={()=>setMobileSubMenu(v=>!v)}
+                style={{ width:'100%',background:'transparent',border:'none',borderBottom:'1px solid var(--border)',padding:'13px 16px',cursor:'pointer',display:'flex',alignItems:'center',gap:10,textAlign:'left' }}>
                 <div style={{ width:32,height:32,borderRadius:'50%',background:'linear-gradient(135deg,#6366f1,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:700,color:'white',flexShrink:0 }}>
                   {currentUser.name.charAt(0).toUpperCase()}
                 </div>
-                <div>
+                <div style={{ flex:1 }}>
                   <div style={{ fontSize:13,fontWeight:600,color:'var(--text-primary)' }}>{currentUser.name}</div>
                   <div style={{ fontSize:11,color:'var(--text-faint)' }}>@{currentUser.username||currentUser.email}</div>
                 </div>
-              </div>
+                <span style={{ fontSize:11,color:'var(--text-faint)' }}>{mobileSubMenu ? '▲' : '▶'}</span>
+              </button>
+
+              {/* Submenu usuario */}
+              {mobileSubMenu && (
+                <div style={{ background:'var(--bg-hover)',borderBottom:'1px solid var(--border)' }}>
+                  <button onClick={()=>{ toggleTheme(); setUserMenuOpen(false); setMobileSubMenu(false) }}
+                    style={{ width:'100%',background:'transparent',border:'none',color:'var(--text-secondary)',padding:'10px 16px 10px 26px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10 }}
+                    onMouseEnter={e=>e.currentTarget.style.background='var(--bg-elevated)'}
+                    onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                    {theme === 'dark' ? '☀️ Modo claro' : '🌙 Modo oscuro'}
+                  </button>
+                  <button onClick={()=>{ setUserMenuOpen(false); setMobileSubMenu(false); setProfileOpen(true) }}
+                    style={{ width:'100%',background:'transparent',border:'none',color:'var(--text-secondary)',padding:'10px 16px 10px 26px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10 }}
+                    onMouseEnter={e=>e.currentTarget.style.background='var(--bg-elevated)'}
+                    onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                    ✏️ Editar perfil
+                  </button>
+                  <button onClick={()=>{ setUserMenuOpen(false); setMobileSubMenu(false); doLogout() }}
+                    style={{ width:'100%',background:'transparent',border:'none',color:'#ef4444',padding:'10px 16px 10px 26px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10 }}
+                    onMouseEnter={e=>e.currentTarget.style.background='#2d0a0a'}
+                    onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                    ⎋ Cerrar sesión
+                  </button>
+                </div>
+              )}
+
+              {/* Opciones generales */}
               {!archiveView && (
                 <button onClick={()=>{ exportExcel(projects); setUserMenuOpen(false) }}
-                  style={{ width:'100%',background:'transparent',border:'none',color:'#34d399',padding:'11px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10,borderBottom:'1px solid var(--border)' }}
+                  style={{ width:'100%',background:'transparent',border:'none',color:'#34d399',padding:'12px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10,borderBottom:'1px solid var(--border)' }}
                   onMouseEnter={e=>e.currentTarget.style.background='var(--bg-elevated)'}
                   onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                   ⬇ Exportar Excel
                 </button>
               )}
               <button onClick={()=>{ if(!archiveView){ loadArchived() } setArchiveView(v=>!v); setUserMenuOpen(false) }}
-                style={{ width:'100%',background:'transparent',border:'none',color:'#fbbf24',padding:'11px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10,borderBottom:'1px solid var(--border)' }}
+                style={{ width:'100%',background:'transparent',border:'none',color:'#fbbf24',padding:'12px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10,borderBottom:'1px solid var(--border)' }}
                 onMouseEnter={e=>e.currentTarget.style.background='var(--bg-elevated)'}
                 onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                 📦 {archiveView ? 'Volver a proyectos' : 'Archivados'}
               </button>
               {!archiveView && (
                 <button onClick={()=>{ setBackupModal(true); setRestoreMsg(null); setUserMenuOpen(false) }}
-                  style={{ width:'100%',background:'transparent',border:'none',color:'var(--text-secondary)',padding:'11px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10,borderBottom:'1px solid var(--border)' }}
+                  style={{ width:'100%',background:'transparent',border:'none',color:'var(--text-secondary)',padding:'12px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10 }}
                   onMouseEnter={e=>e.currentTarget.style.background='var(--bg-elevated)'}
                   onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                   💾 Backup y restauración
                 </button>
               )}
-              <button onClick={()=>{ toggleTheme(); setUserMenuOpen(false) }}
-                style={{ width:'100%',background:'transparent',border:'none',color:'var(--text-secondary)',padding:'11px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10,borderBottom:'1px solid var(--border)' }}
-                onMouseEnter={e=>e.currentTarget.style.background='var(--bg-elevated)'}
-                onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                {theme === 'dark' ? '☀️ Modo claro' : '🌙 Modo oscuro'}
-              </button>
-              <button onClick={()=>{ setUserMenuOpen(false); setProfileOpen(true) }}
-                style={{ width:'100%',background:'transparent',border:'none',color:'var(--text-secondary)',padding:'11px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10,borderBottom:'1px solid var(--border)' }}
-                onMouseEnter={e=>e.currentTarget.style.background='var(--bg-elevated)'}
-                onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                ✏️ Editar perfil
-              </button>
-              <button onClick={()=>{ setUserMenuOpen(false); doLogout() }}
-                style={{ width:'100%',background:'transparent',border:'none',color:'#ef4444',padding:'11px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10 }}
-                onMouseEnter={e=>e.currentTarget.style.background='#2d0a0a'}
-                onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                ⎋ Cerrar sesión
-              </button>
             </div>
           </>
         )}
