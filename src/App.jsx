@@ -47,11 +47,11 @@ const fmtSimpleDate = d => {
 
 // ── Styles ────────────────────────────────────────────────────────
 const S = {
-  input:  { background:'#1e293b', border:'1px solid #334155', color:'#e2e8f0', padding:'8px 12px', borderRadius:8, fontSize:13, outline:'none', boxSizing:'border-box' },
-  select: { background:'#1e293b', border:'1px solid #334155', color:'#e2e8f0', padding:'8px 12px', borderRadius:8, fontSize:13, outline:'none', cursor:'pointer' },
+  input:  { background:'var(--bg-elevated)', border:'1px solid var(--border-soft)', color:'var(--text-primary)', padding:'8px 12px', borderRadius:8, fontSize:13, outline:'none', boxSizing:'border-box' },
+  select: { background:'var(--bg-elevated)', border:'1px solid var(--border-soft)', color:'var(--text-primary)', padding:'8px 12px', borderRadius:8, fontSize:13, outline:'none', cursor:'pointer' },
   btnPrimary:   { background:'linear-gradient(135deg,#6366f1,#8b5cf6)', border:'none', color:'white', padding:'8px 16px', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:600, whiteSpace:'nowrap' },
-  btnSecondary: { background:'#1e293b', border:'1px solid #334155', color:'#94a3b8', padding:'8px 14px', borderRadius:8, cursor:'pointer', fontSize:13, whiteSpace:'nowrap' },
-  iconBtn: { background:'transparent', border:'1px solid #334155', color:'#94a3b8', width:28, height:28, borderRadius:6, cursor:'pointer', fontSize:13, display:'flex', alignItems:'center', justifyContent:'center', padding:0, flexShrink:0 },
+  btnSecondary: { background:'var(--bg-elevated)', border:'1px solid var(--border-soft)', color:'var(--text-secondary)', padding:'8px 14px', borderRadius:8, cursor:'pointer', fontSize:13, whiteSpace:'nowrap' },
+  iconBtn: { background:'transparent', border:'1px solid var(--border-soft)', color:'var(--text-secondary)', width:28, height:28, borderRadius:6, cursor:'pointer', fontSize:13, display:'flex', alignItems:'center', justifyContent:'center', padding:0, flexShrink:0 },
 }
 
 // ── Excel export (sin librería externa) ──────────────────────────
@@ -125,6 +125,15 @@ function exportExcel(projects) {
 // MAIN APP
 // ════════════════════════════════════════════════════════════════
 export default function App() {
+  const [theme, setTheme] = useState(() => localStorage.getItem('ft_theme') || 'dark')
+
+  useEffect(() => {
+    document.body.classList.toggle('light', theme === 'light')
+    localStorage.setItem('ft_theme', theme)
+  }, [theme])
+
+  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark')
+
   const [currentUser, setCurrentUser] = useState(() => {
     try { return JSON.parse(localStorage.getItem('ft_user')) } catch { return null }
   })
@@ -459,7 +468,7 @@ export default function App() {
 
   // ── Loading / Error ───────────────────────────────────────────
   if (loading) return (
-    <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#070d1a 0%,#0f172a 50%,#1e1b4b 100%)', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:20, fontFamily:'sans-serif' }}>
+    <div style={{ minHeight:'100vh', background:'var(--splash-bg)', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:20, fontFamily:'sans-serif' }}>
       <style>{`
         @keyframes flowbar {
           0%   { transform: translateX(-100%) }
@@ -471,25 +480,25 @@ export default function App() {
         }
       `}</style>
       <img src="/logo.png" alt="FlowTracker" style={{ width:80,height:80,borderRadius:20,objectFit:'cover',boxShadow:'0 0 40px #6366f155' }} />
-      <div style={{ fontSize:20,fontWeight:700,color:'#e2e8f0',letterSpacing:'-0.5px' }}>FlowTracker</div>
-      <div style={{ fontSize:13,color:'#64748b' }}>Conectando con la base de datos...</div>
-      <div style={{ width:160,height:4,background:'#1e293b',borderRadius:999,overflow:'hidden',marginTop:4 }}>
+      <div style={{ fontSize:20,fontWeight:700,color:'var(--text-primary)',letterSpacing:'-0.5px' }}>FlowTracker</div>
+      <div style={{ fontSize:13,color:'var(--text-muted)' }}>Conectando con la base de datos...</div>
+      <div style={{ width:160,height:4,background:'var(--bg-elevated)',borderRadius:999,overflow:'hidden',marginTop:4 }}>
         <div style={{ width:'40%',height:'100%',background:'linear-gradient(90deg,#6366f1,#8b5cf6)',borderRadius:999,animation:'flowbar 1.2s ease-in-out infinite' }} />
       </div>
     </div>
   )
 
   if (error) return (
-    <div style={{ minHeight:'100vh', background:'#070d1a', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:16, color:'#e2e8f0', fontFamily:'sans-serif', padding:24, textAlign:'center' }}>
+    <div style={{ minHeight:'100vh', background:'var(--bg-base)', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:16, color:'var(--text-primary)', fontFamily:'sans-serif', padding:24, textAlign:'center' }}>
       <div style={{ fontSize:40 }}>⚠️</div>
       <div style={{ fontSize:18, fontWeight:700 }}>Error de conexión</div>
-      <div style={{ color:'#94a3b8', maxWidth:400, lineHeight:1.6 }}>{error}</div>
+      <div style={{ color:'var(--text-secondary)', maxWidth:400, lineHeight:1.6 }}>{error}</div>
       <button onClick={loadProjects} style={{ background:'#6366f1', border:'none', color:'white', padding:'10px 24px', borderRadius:8, cursor:'pointer', fontSize:14 }}>Reintentar</button>
     </div>
   )
 
   return (
-    <div style={{ minHeight:'100vh', background:'#070d1a', fontFamily:"'DM Sans','Segoe UI',sans-serif", color:'#e2e8f0' }}>
+    <div style={{ minHeight:'100vh', background:'var(--bg-base)', fontFamily:"'DM Sans','Segoe UI',sans-serif", color:'var(--text-primary)' }}>
 
       {/* MODALS */}
       {profileOpen && (
@@ -504,21 +513,21 @@ export default function App() {
         if (!project) return null
         return (
           <div onClick={()=>setMembersModal(null)} style={{ position:'fixed',inset:0,background:'#000b',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center' }}>
-            <div onClick={e=>e.stopPropagation()} style={{ background:'#0f172a',border:'1px solid #334155',borderRadius:14,padding:28,width:'100%',maxWidth:460,boxShadow:'0 30px 80px #0009' }}>
+            <div onClick={e=>e.stopPropagation()} style={{ background:'var(--bg-surface)',border:'1px solid var(--border-soft)',borderRadius:14,padding:28,width:'100%',maxWidth:460,boxShadow:'0 30px 80px #0009' }}>
               <div style={{ fontSize:16,fontWeight:700,marginBottom:4 }}>👥 Miembros del proyecto</div>
-              <div style={{ fontSize:13,color:'#64748b',marginBottom:20 }}>{project.name}</div>
+              <div style={{ fontSize:13,color:'var(--text-muted)',marginBottom:20 }}>{project.name}</div>
 
               {/* Lista de miembros actuales */}
               <div style={{ marginBottom:16 }}>
                 {(project.members||[]).map(m => (
-                  <div key={m.id} style={{ display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 12px',background:'#1e293b',borderRadius:8,marginBottom:6 }}>
+                  <div key={m.id} style={{ display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 12px',background:'var(--bg-elevated)',borderRadius:8,marginBottom:6 }}>
                     <div style={{ display:'flex',alignItems:'center',gap:10 }}>
                       <div style={{ width:28,height:28,borderRadius:'50%',background:'linear-gradient(135deg,#6366f1,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:'white' }}>
                         {m.name.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <div style={{ fontSize:13,color:'#e2e8f0' }}>{m.name}</div>
-                        <div style={{ fontSize:11,color:'#475569' }}>{m.email}</div>
+                        <div style={{ fontSize:13,color:'var(--text-primary)' }}>{m.name}</div>
+                        <div style={{ fontSize:11,color:'var(--text-faint)' }}>{m.email}</div>
                       </div>
                     </div>
                     <div style={{ display:'flex',alignItems:'center',gap:8 }}>
@@ -534,30 +543,30 @@ export default function App() {
               </div>
 
               {/* Buscar y agregar miembro */}
-              <div style={{ borderTop:'1px solid #1e293b',paddingTop:16 }}>
-                <div style={{ fontSize:13,fontWeight:600,color:'#94a3b8',marginBottom:8 }}>Agregar miembro</div>
+              <div style={{ borderTop:'1px solid var(--border)',paddingTop:16 }}>
+                <div style={{ fontSize:13,fontWeight:600,color:'var(--text-secondary)',marginBottom:8 }}>Agregar miembro</div>
                 <input
                   placeholder="Buscar por nombre o email..."
                   value={memberSearch}
                   onChange={e=>doSearchMembers(e.target.value)}
-                  style={{ background:'#1e293b',border:'1px solid #334155',color:'#e2e8f0',padding:'8px 12px',borderRadius:8,fontSize:13,outline:'none',width:'100%',boxSizing:'border-box',marginBottom:8 }}
+                  style={{ background:'var(--bg-elevated)',border:'1px solid var(--border-soft)',color:'var(--text-primary)',padding:'8px 12px',borderRadius:8,fontSize:13,outline:'none',width:'100%',boxSizing:'border-box',marginBottom:8 }}
                 />
                 {memberResults.map(u => (
-                  <div key={u.id} style={{ display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 12px',background:'#1e293b',borderRadius:8,marginBottom:6 }}>
+                  <div key={u.id} style={{ display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 12px',background:'var(--bg-elevated)',borderRadius:8,marginBottom:6 }}>
                     <div>
-                      <div style={{ fontSize:13,color:'#e2e8f0' }}>{u.name}</div>
-                      <div style={{ fontSize:11,color:'#475569' }}>{u.email}</div>
+                      <div style={{ fontSize:13,color:'var(--text-primary)' }}>{u.name}</div>
+                      <div style={{ fontSize:11,color:'var(--text-faint)' }}>{u.email}</div>
                     </div>
                     <button onClick={()=>doAddMember(u.id)} style={{ background:'#065f46',border:'1px solid #059669',color:'#34d399',padding:'5px 12px',borderRadius:7,cursor:'pointer',fontSize:12,fontWeight:600 }}>+ Agregar</button>
                   </div>
                 ))}
                 {memberSearch.length >= 2 && memberResults.length === 0 && (
-                  <div style={{ fontSize:13,color:'#475569',textAlign:'center',padding:'8px 0' }}>No se encontraron usuarios</div>
+                  <div style={{ fontSize:13,color:'var(--text-faint)',textAlign:'center',padding:'8px 0' }}>No se encontraron usuarios</div>
                 )}
               </div>
 
               <div style={{ display:'flex',justifyContent:'flex-end',marginTop:16 }}>
-                <button onClick={()=>setMembersModal(null)} style={{ background:'#1e293b',border:'1px solid #334155',color:'#94a3b8',padding:'8px 18px',borderRadius:8,cursor:'pointer',fontSize:13 }}>Cerrar</button>
+                <button onClick={()=>setMembersModal(null)} style={{ background:'var(--bg-elevated)',border:'1px solid var(--border-soft)',color:'var(--text-secondary)',padding:'8px 18px',borderRadius:8,cursor:'pointer',fontSize:13 }}>Cerrar</button>
               </div>
             </div>
           </div>
@@ -565,24 +574,24 @@ export default function App() {
       })()}
       {backupModal && (
         <div onClick={()=>setBackupModal(false)} style={{ position:'fixed',inset:0,background:'#000b',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center' }}>
-          <div onClick={e=>e.stopPropagation()} style={{ background:'#0f172a',border:'1px solid #334155',borderRadius:14,padding:28,width:'100%',maxWidth:460,boxShadow:'0 30px 80px #0009' }}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:'var(--bg-surface)',border:'1px solid var(--border-soft)',borderRadius:14,padding:28,width:'100%',maxWidth:460,boxShadow:'0 30px 80px #0009' }}>
             <div style={{ fontSize:16,fontWeight:700,marginBottom:6 }}>💾 Backup y Restauración</div>
-            <div style={{ fontSize:13,color:'#64748b',marginBottom:24 }}>Descargá un backup completo o restaurá desde un archivo previo.</div>
+            <div style={{ fontSize:13,color:'var(--text-muted)',marginBottom:24 }}>Descargá un backup completo o restaurá desde un archivo previo.</div>
 
             {/* Descargar */}
-            <div style={{ background:'#0d1829',border:'1px solid #1e293b',borderRadius:10,padding:16,marginBottom:12 }}>
-              <div style={{ fontSize:13,fontWeight:600,color:'#e2e8f0',marginBottom:4 }}>⬇ Descargar backup</div>
-              <div style={{ fontSize:12,color:'#64748b',marginBottom:12 }}>Exporta todos los proyectos, tareas, notas y bitácoras en un archivo JSON.</div>
+            <div style={{ background:'var(--bg-hover)',border:'1px solid var(--border)',borderRadius:10,padding:16,marginBottom:12 }}>
+              <div style={{ fontSize:13,fontWeight:600,color:'var(--text-primary)',marginBottom:4 }}>⬇ Descargar backup</div>
+              <div style={{ fontSize:12,color:'var(--text-muted)',marginBottom:12 }}>Exporta todos los proyectos, tareas, notas y bitácoras en un archivo JSON.</div>
               <button onClick={doBackup} style={{ background:'#065f46',border:'1px solid #059669',color:'#34d399',padding:'8px 18px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:600 }}>
                 ⬇ Descargar backup
               </button>
             </div>
 
             {/* Restaurar */}
-            <div style={{ background:'#0d1829',border:'1px solid #1e293b',borderRadius:10,padding:16,marginBottom:16 }}>
-              <div style={{ fontSize:13,fontWeight:600,color:'#e2e8f0',marginBottom:4 }}>⬆ Restaurar desde backup</div>
-              <div style={{ fontSize:12,color:'#94a3b8',marginBottom:4 }}>⚠ Esto <strong>reemplaza todos los datos actuales</strong> con los del archivo.</div>
-              <div style={{ fontSize:12,color:'#64748b',marginBottom:12 }}>Seleccioná un archivo .json generado por FlowTracker.</div>
+            <div style={{ background:'var(--bg-hover)',border:'1px solid var(--border)',borderRadius:10,padding:16,marginBottom:16 }}>
+              <div style={{ fontSize:13,fontWeight:600,color:'var(--text-primary)',marginBottom:4 }}>⬆ Restaurar desde backup</div>
+              <div style={{ fontSize:12,color:'var(--text-secondary)',marginBottom:4 }}>⚠ Esto <strong>reemplaza todos los datos actuales</strong> con los del archivo.</div>
+              <div style={{ fontSize:12,color:'var(--text-muted)',marginBottom:12 }}>Seleccioná un archivo .json generado por FlowTracker.</div>
               <label style={{ display:'inline-block',background:'#7c3aed',border:'none',color:'white',padding:'8px 18px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:600 }}>
                 {restoring ? '⏳ Restaurando...' : '⬆ Seleccionar archivo'}
                 <input type="file" accept=".json" disabled={restoring} onChange={e=>doRestore(e.target.files[0])} style={{ display:'none' }} />
@@ -595,7 +604,7 @@ export default function App() {
             </div>
 
             <div style={{ display:'flex',justifyContent:'flex-end' }}>
-              <button onClick={()=>setBackupModal(false)} style={{ background:'#1e293b',border:'1px solid #334155',color:'#94a3b8',padding:'8px 18px',borderRadius:8,cursor:'pointer',fontSize:13 }}>Cerrar</button>
+              <button onClick={()=>setBackupModal(false)} style={{ background:'var(--bg-elevated)',border:'1px solid var(--border-soft)',color:'var(--text-secondary)',padding:'8px 18px',borderRadius:8,cursor:'pointer',fontSize:13 }}>Cerrar</button>
             </div>
           </div>
         </div>
@@ -609,12 +618,12 @@ export default function App() {
       {moveComment  && <MoveCommentModal comment={moveComment.comment} projects={projects} currentProjectId={moveComment.pId} onMove={doMoveCommentToProject} onClose={()=>setMoveComment(null)} />}
 
       {/* HEADER */}
-      <div style={{ background:'linear-gradient(135deg,#0f172a,#1e1b4b)', borderBottom:'1px solid #1e293b', padding:'18px 28px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100, flexWrap:'wrap', gap:10 }}>
+      <div style={{ background:'var(--header-bg)', borderBottom:'1px solid var(--border)', padding:'18px 28px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100, flexWrap:'wrap', gap:10 }}>
         <div style={{ display:'flex', alignItems:'center', gap:12 }}>
           <img src="/logo.png" alt="FlowTracker" style={{ width:38,height:38,borderRadius:9,objectFit:'cover' }} />
           <div>
             <div style={{ fontSize:19,fontWeight:700,letterSpacing:'-0.5px' }}>FlowTracker</div>
-            <div style={{ fontSize:11,color:'#64748b' }}><span style={{color:'#22c55e'}}>● PostgreSQL</span> · Datos persistentes en la nube</div>
+            <div style={{ fontSize:11,color:'var(--text-muted)' }}><span style={{color:'#22c55e'}}>● PostgreSQL</span> · Datos persistentes en la nube</div>
           </div>
         </div>
         <div style={{ display:'flex',gap:8,flexWrap:'wrap' }}>
@@ -632,7 +641,7 @@ export default function App() {
 
           {!archiveView && (
             <button onClick={()=>{ setBackupModal(true); setRestoreMsg(null) }}
-              style={{ background:'#1e293b',border:'1px solid #334155',color:'#94a3b8',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontSize:13 }}
+              style={{ background:'var(--bg-elevated)',border:'1px solid var(--border-soft)',color:'var(--text-secondary)',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontSize:13 }}
               title="Backup y restauración">
               💾 Backup
             </button>
@@ -644,25 +653,31 @@ export default function App() {
               <div style={{ width:30,height:30,borderRadius:'50%',background:'linear-gradient(135deg,#6366f1,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:700,color:'white',flexShrink:0 }}>
                 {currentUser.name.charAt(0).toUpperCase()}
               </div>
-              <span style={{ fontSize:13,color:'#94a3b8',maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{currentUser.name}</span>
-              <span style={{ fontSize:10,color:'#475569' }}>▾</span>
+              <span style={{ fontSize:13,color:'var(--text-secondary)',maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{currentUser.name}</span>
+              <span style={{ fontSize:10,color:'var(--text-faint)' }}>▾</span>
             </button>
             {userMenuOpen && (
               <>
                 <div onClick={()=>setUserMenuOpen(false)} style={{ position:'fixed',inset:0,zIndex:150 }} />
-                <div style={{ position:'absolute',right:0,top:'calc(100% + 8px)',background:'#0f172a',border:'1px solid #1e293b',borderRadius:10,minWidth:180,boxShadow:'0 10px 40px #00000088',zIndex:200,overflow:'hidden' }}>
-                  <div style={{ padding:'12px 16px',borderBottom:'1px solid #1e293b' }}>
-                    <div style={{ fontSize:13,fontWeight:600,color:'#e2e8f0' }}>{currentUser.name}</div>
-                    <div style={{ fontSize:11,color:'#475569',marginTop:2 }}>@{currentUser.username||currentUser.email}</div>
+                <div style={{ position:'absolute',right:0,top:'calc(100% + 8px)',background:'var(--bg-surface)',border:'1px solid var(--border)',borderRadius:10,minWidth:180,boxShadow:'0 10px 40px #00000088',zIndex:200,overflow:'hidden' }}>
+                  <div style={{ padding:'12px 16px',borderBottom:'1px solid var(--border)' }}>
+                    <div style={{ fontSize:13,fontWeight:600,color:'var(--text-primary)' }}>{currentUser.name}</div>
+                    <div style={{ fontSize:11,color:'var(--text-faint)',marginTop:2 }}>@{currentUser.username||currentUser.email}</div>
                   </div>
+                  <button onClick={()=>{ toggleTheme(); setUserMenuOpen(false) }}
+                    style={{ width:'100%',background:'transparent',border:'none',color:'var(--text-secondary)',padding:'10px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10 }}
+                    onMouseEnter={e=>e.currentTarget.style.background='var(--bg-elevated)'}
+                    onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                    {theme === 'dark' ? '☀️ Modo claro' : '🌙 Modo oscuro'}
+                  </button>
                   <button onClick={()=>{ setUserMenuOpen(false); setProfileOpen(true) }}
-                    style={{ width:'100%',background:'transparent',border:'none',color:'#94a3b8',padding:'10px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10 }}
+                    style={{ width:'100%',background:'transparent',border:'none',color:'var(--text-secondary)',padding:'10px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10 }}
                     onMouseEnter={e=>e.currentTarget.style.background='#1e293b'}
                     onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                     ✏️ Editar perfil
                   </button>
                   <button onClick={()=>{ setUserMenuOpen(false); doLogout() }}
-                    style={{ width:'100%',background:'transparent',border:'none',color:'#ef4444',padding:'10px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10,borderTop:'1px solid #1e293b' }}
+                    style={{ width:'100%',background:'transparent',border:'none',color:'#ef4444',padding:'10px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10,borderTop:'1px solid var(--border)' }}
                     onMouseEnter={e=>e.currentTarget.style.background='#2d0a0a'}
                     onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                     ⎋ Cerrar sesión
@@ -678,19 +693,19 @@ export default function App() {
         <div style={{ maxWidth:1200,margin:'0 auto',padding:'28px 20px' }}>
           <div style={{ display:'flex',alignItems:'center',gap:12,marginBottom:20 }}>
             <span style={{ fontSize:18,fontWeight:700,color:'#fbbf24' }}>📦 Proyectos Archivados</span>
-            {loadingArchived && <span style={{ fontSize:13,color:'#64748b' }}>Cargando...</span>}
-            {!loadingArchived && <span style={{ fontSize:13,color:'#64748b' }}>{archivedProjects.length} proyecto{archivedProjects.length!==1?'s':''}</span>}
+            {loadingArchived && <span style={{ fontSize:13,color:'var(--text-muted)' }}>Cargando...</span>}
+            {!loadingArchived && <span style={{ fontSize:13,color:'var(--text-muted)' }}>{archivedProjects.length} proyecto{archivedProjects.length!==1?'s':''}</span>}
           </div>
           {!loadingArchived && archivedProjects.length===0 && (
-            <div style={{ textAlign:'center',color:'#475569',fontSize:14,padding:40 }}>No hay proyectos archivados.</div>
+            <div style={{ textAlign:'center',color:'var(--text-faint)',fontSize:14,padding:40 }}>No hay proyectos archivados.</div>
           )}
           {archivedProjects.map(project => (
-            <div key={project.id} style={{ background:'#0f172a',border:'1px solid #334155',borderRadius:14,marginBottom:12,overflow:'hidden',opacity:0.85 }}>
+            <div key={project.id} style={{ background:'var(--bg-surface)',border:'1px solid var(--border-soft)',borderRadius:14,marginBottom:12,overflow:'hidden',opacity:0.85 }}>
               <div style={{ borderLeft:`4px solid ${project.color}`,padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',background:`linear-gradient(90deg,${project.color}11,transparent)` }}>
                 <div style={{ display:'flex',alignItems:'center',gap:10 }}>
                   <div style={{ width:9,height:9,borderRadius:'50%',background:project.color }} />
-                  <span style={{ fontWeight:700,fontSize:15,color:'#94a3b8' }}>{project.name}</span>
-                  <span style={{ background:'#1e293b',border:'1px solid #334155',borderRadius:20,padding:'1px 9px',fontSize:11,color:'#475569' }}>
+                  <span style={{ fontWeight:700,fontSize:15,color:'var(--text-secondary)' }}>{project.name}</span>
+                  <span style={{ background:'var(--bg-elevated)',border:'1px solid var(--border-soft)',borderRadius:20,padding:'1px 9px',fontSize:11,color:'var(--text-faint)' }}>
                     {project.tasks.length} tarea{project.tasks.length!==1?'s':''} · {project.notes?.length||0} nota{(project.notes?.length||0)!==1?'s':''}
                   </span>
                   <span style={{ background:'#451a03',border:'1px solid #92400e',borderRadius:20,padding:'1px 9px',fontSize:11,color:'#fbbf24' }}>📦 Archivado</span>
@@ -705,7 +720,7 @@ export default function App() {
                 </div>
               </div>
               {/* Resumen de tareas archivadas */}
-              <div style={{ padding:'8px 16px',fontSize:12,color:'#475569',display:'flex',gap:16,borderTop:'1px solid #1e293b' }}>
+              <div style={{ padding:'8px 16px',fontSize:12,color:'var(--text-faint)',display:'flex',gap:16,borderTop:'1px solid var(--border)' }}>
                 <span>📌 {project.tasks.filter(t=>!t.done).length} pendiente{project.tasks.filter(t=>!t.done).length!==1?'s':''}</span>
                 <span>✅ {project.tasks.filter(t=>t.done).length} completada{project.tasks.filter(t=>t.done).length!==1?'s':''}</span>
                 <span>📝 {project.notes?.length||0} nota{(project.notes?.length||0)!==1?'s':''}</span>
@@ -717,12 +732,12 @@ export default function App() {
         <div style={{ maxWidth:1200,margin:'0 auto',padding:'28px 20px' }}>
 
           {/* FILTROS */}
-          <div style={{ background:'#0f172a',border:'1px solid #1e293b',borderRadius:12,padding:'14px 16px',marginBottom:18 }}>
+          <div style={{ background:'var(--bg-surface)',border:'1px solid var(--border)',borderRadius:12,padding:'14px 16px',marginBottom:18 }}>
             <div style={{ display:'flex',gap:10,flexWrap:'wrap',alignItems:'center',marginBottom:10 }}>
               <div style={{ position:'relative', flex:'1 1 220px', display:'flex', alignItems:'center' }}>
                 <input placeholder="🔍 Buscar por tarea, proyecto o responsable..." value={search} onChange={e=>setSearch(e.target.value)} style={{ ...S.input, width:'100%', paddingRight: search ? '32px' : '12px' }} />
                 {search && (
-                  <button onClick={()=>setSearch('')} style={{ position:'absolute',right:8,background:'none',border:'none',color:'#64748b',cursor:'pointer',fontSize:16,lineHeight:1,padding:'2px 4px',display:'flex',alignItems:'center' }} title="Limpiar búsqueda">✕</button>
+                  <button onClick={()=>setSearch('')} style={{ position:'absolute',right:8,background:'none',border:'none',color:'var(--text-muted)',cursor:'pointer',fontSize:16,lineHeight:1,padding:'2px 4px',display:'flex',alignItems:'center' }} title="Limpiar búsqueda">✕</button>
                 )}
               </div>
               <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} style={S.select}>
@@ -741,11 +756,11 @@ export default function App() {
             </div>
             {/* Filtro por fechas */}
             <div style={{ display:'flex',gap:10,flexWrap:'wrap',alignItems:'center' }}>
-              <span style={{ fontSize:12,color:'#64748b',whiteSpace:'nowrap' }}>📅 Filtrar por fecha de registro:</span>
-              <label style={{ display:'flex',alignItems:'center',gap:6,fontSize:12,color:'#94a3b8' }}>
+              <span style={{ fontSize:12,color:'var(--text-muted)',whiteSpace:'nowrap' }}>📅 Filtrar por fecha de registro:</span>
+              <label style={{ display:'flex',alignItems:'center',gap:6,fontSize:12,color:'var(--text-secondary)' }}>
                 Desde <input type="date" value={filterDateFrom} onChange={e=>setFilterDateFrom(e.target.value)} style={{ ...S.input,padding:'5px 8px',fontSize:12 }} />
               </label>
-              <label style={{ display:'flex',alignItems:'center',gap:6,fontSize:12,color:'#94a3b8' }}>
+              <label style={{ display:'flex',alignItems:'center',gap:6,fontSize:12,color:'var(--text-secondary)' }}>
                 Hasta <input type="date" value={filterDateTo} onChange={e=>setFilterDateTo(e.target.value)} style={{ ...S.input,padding:'5px 8px',fontSize:12 }} />
               </label>
               {(filterDateFrom||filterDateTo) && (
@@ -763,16 +778,16 @@ export default function App() {
               {label:'Completadas', val:doneTasks.length,                                                  color:'#22c55e'},
               {label:'Proyectos',   val:projects.length,                                                   color:'#8b5cf6'},
             ].map(s=>(
-              <div key={s.label} style={{ background:'#0f172a',border:`1px solid ${s.color}44`,borderRadius:10,padding:'12px 14px',textAlign:'center' }}>
+              <div key={s.label} style={{ background:'var(--bg-surface)',border:`1px solid ${s.color}44`,borderRadius:10,padding:'12px 14px',textAlign:'center' }}>
                 <div style={{ fontSize:24,fontWeight:800,color:s.color }}>{s.val}</div>
-                <div style={{ fontSize:11,color:'#64748b',marginTop:2 }}>{s.label}</div>
+                <div style={{ fontSize:11,color:'var(--text-muted)',marginTop:2 }}>{s.label}</div>
               </div>
             ))}
           </div>
 
           {/* NUEVO PROYECTO */}
           {newProjOpen && (
-            <div style={{ background:'#1e293b',border:'1px solid #334155',borderRadius:12,padding:14,marginBottom:16,display:'flex',gap:10,flexWrap:'wrap',alignItems:'center' }}>
+            <div style={{ background:'var(--bg-elevated)',border:'1px solid var(--border-soft)',borderRadius:12,padding:14,marginBottom:16,display:'flex',gap:10,flexWrap:'wrap',alignItems:'center' }}>
               <input placeholder="Nombre del proyecto..." value={newProjName} onChange={e=>setNewProjName(e.target.value)} onKeyDown={e=>e.key==='Enter'&&doAddProject()} style={{ ...S.input,flex:1 }} autoFocus />
               <div style={{ display:'flex',gap:6 }}>
                 {COLORS.map(c=>(
@@ -786,8 +801,8 @@ export default function App() {
 
           {/* RESULTADOS DE BÚSQUEDA EN BITÁCORAS */}
           {search.trim() && (filteredProjectNotes.length > 0 || Object.keys(matchingComments).length > 0) && (
-            <div style={{ background:'#0d1829',border:'1px solid #4338ca44',borderRadius:12,marginBottom:18,overflow:'hidden' }}>
-              <div style={{ padding:'12px 16px',borderBottom:'1px solid #1e293b',background:'#1e1b4b44',display:'flex',alignItems:'center',gap:8 }}>
+            <div style={{ background:'var(--bg-hover)',border:'1px solid #4338ca44',borderRadius:12,marginBottom:18,overflow:'hidden' }}>
+              <div style={{ padding:'12px 16px',borderBottom:'1px solid var(--border)',background:'#1e1b4b44',display:'flex',alignItems:'center',gap:8 }}>
                 <span style={{ fontSize:13,fontWeight:700,color:'#818cf8' }}>🔍 Resultados en bitácoras</span>
                 <span style={{ fontSize:12,color:'#4338ca',background:'#1e1b4b',border:'1px solid #4338ca',borderRadius:20,padding:'1px 8px' }}>
                   {filteredProjectNotes.length + Object.values(matchingComments).flat().length} resultado{(filteredProjectNotes.length + Object.values(matchingComments).flat().length)!==1?'s':''}
@@ -801,7 +816,7 @@ export default function App() {
                     <div style={{ width:8,height:8,borderRadius:'50%',background:note.projectColor,marginBottom:4 }} />
                   </div>
                   <div style={{ flex:1,minWidth:0 }}>
-                    <div style={{ fontSize:11,color:'#64748b',marginBottom:3,display:'flex',gap:8,alignItems:'center' }}>
+                    <div style={{ fontSize:11,color:'var(--text-muted)',marginBottom:3,display:'flex',gap:8,alignItems:'center' }}>
                       <span style={{ color:note.projectColor,fontWeight:600 }}>📁 {note.projectName}</span>
                       <span>·</span>
                       <span style={{ background:'#1e1b4b',color:'#818cf8',padding:'1px 7px',borderRadius:10,fontSize:10 }}>Bitácora de proyecto</span>
@@ -829,10 +844,10 @@ export default function App() {
                       <div style={{ width:8,height:8,borderRadius:'50%',background:task.projectColor,marginBottom:4 }} />
                     </div>
                     <div style={{ flex:1,minWidth:0 }}>
-                      <div style={{ fontSize:11,color:'#64748b',marginBottom:3,display:'flex',gap:8,alignItems:'center',flexWrap:'wrap' }}>
+                      <div style={{ fontSize:11,color:'var(--text-muted)',marginBottom:3,display:'flex',gap:8,alignItems:'center',flexWrap:'wrap' }}>
                         <span style={{ color:task.projectColor,fontWeight:600 }}>📁 {task.projectName}</span>
                         <span>›</span>
-                        <span style={{ color:'#94a3b8',fontWeight:600 }}>📌 {task.title}</span>
+                        <span style={{ color:'var(--text-secondary)',fontWeight:600 }}>📌 {task.title}</span>
                         <span>·</span>
                         <span style={{ background:'#0f2a1e',color:'#4ade80',padding:'1px 7px',borderRadius:10,fontSize:10 }}>Bitácora de tarea</span>
                         <span>·</span>
@@ -881,14 +896,14 @@ export default function App() {
             ].sort((a,b) => (a.created_at||'') > (b.created_at||'') ? 1 : -1)
 
             return (
-              <div key={project.id} id={`project-${project.id}`} style={{ background:'#0f172a',border:`1px solid ${hasOverdue?'#dc262644':'#1e293b'}`,borderRadius:14,marginBottom:16,overflow:'hidden' }}>
+              <div key={project.id} id={`project-${project.id}`} style={{ background:'var(--bg-surface)',border:`1px solid ${hasOverdue?'#dc262644':'#1e293b'}`,borderRadius:14,marginBottom:16,overflow:'hidden' }}>
 
                 {/* Project header */}
                 <div style={{ borderLeft:`4px solid ${project.color}`,padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',background:`linear-gradient(90deg,${project.color}11,transparent)` }}>
                   <div style={{ display:'flex',alignItems:'center',gap:10,flexWrap:'wrap' }}>
                     <div style={{ width:9,height:9,borderRadius:'50%',background:project.color,flexShrink:0 }} />
                     <span style={{ fontWeight:700,fontSize:15 }}>{project.name}</span>
-                    <span style={{ background:'#1e293b',border:'1px solid #334155',borderRadius:20,padding:'1px 9px',fontSize:11,color:'#64748b' }}>
+                    <span style={{ background:'var(--bg-elevated)',border:'1px solid var(--border-soft)',borderRadius:20,padding:'1px 9px',fontSize:11,color:'var(--text-muted)' }}>
                       {project.tasks.filter(t=>!t.done).length} tarea{project.tasks.filter(t=>!t.done).length!==1?'s':''} activa{project.tasks.filter(t=>!t.done).length!==1?'s':''} · {project.notes?.length||0} nota{(project.notes?.length||0)!==1?'s':''}
                     </span>
                     {hasOverdue && <span style={{ background:'#2d0a0a',border:'1px solid #dc2626',borderRadius:20,padding:'1px 9px',fontSize:11,color:'#ef4444',fontWeight:600 }}>⚠ Tareas vencidas</span>}
@@ -896,7 +911,7 @@ export default function App() {
                   <div style={{ display:'flex',gap:7 }}>
                     <button onClick={()=>setNewTaskFor(project.id)} style={{ background:'transparent',border:`1px solid ${project.color}`,color:project.color,padding:'5px 12px',borderRadius:7,cursor:'pointer',fontSize:12,fontWeight:600 }}>+ Tarea</button>
                     <button onClick={()=>setNewProjNote(n=>({...n,[project.id+'_open']:!(n[project.id+'_open'])}))} style={{ background:'transparent',border:'1px solid #4338ca',color:'#818cf8',padding:'5px 12px',borderRadius:7,cursor:'pointer',fontSize:12,fontWeight:600 }}>+ Nota</button>
-                    <button onClick={()=>setCollapsedProjects(c=>({...c,[project.id]:!c[project.id]}))} title={isCollapsed?'Expandir':'Colapsar'} style={{ ...S.iconBtn,borderColor:`${project.color}44`,color:'#94a3b8' }}>{isCollapsed?'▼':'▲'}</button>
+                    <button onClick={()=>setCollapsedProjects(c=>({...c,[project.id]:!c[project.id]}))} title={isCollapsed?'Expandir':'Colapsar'} style={{ ...S.iconBtn,borderColor:`${project.color}44`,color:'var(--text-secondary)' }}>{isCollapsed?'▼':'▲'}</button>
                     <button onClick={()=>{ setMembersModal(project.id); setMemberSearch(''); setMemberResults([]) }} title="Gestionar miembros" style={{ ...S.iconBtn,borderColor:'#0e7490',color:'#22d3ee' }}>👥</button>
                     <button onClick={()=>setEditProject(project)} title="Editar proyecto" style={{ ...S.iconBtn,borderColor:`${project.color}66`,color:project.color }}>✏️</button>
                     <button onClick={()=>setConfirm({msg:`¿Archivar "${project.name}"? Podrás recuperarlo desde "Archivados".`,action:()=>doArchiveProject(project.id),title:'📦 Confirmar archivado',okLabel:'Archivar',okColor:'#d97706'})}
@@ -908,7 +923,7 @@ export default function App() {
 
                 {/* Nueva nota rápida */}
                 {newProjNote[project.id+'_open'] && (
-                  <div style={{ background:'#0d1829',borderBottom:'1px solid #1e293b',padding:'10px 16px',display:'flex',gap:8 }}>
+                  <div style={{ background:'var(--bg-hover)',borderBottom:'1px solid var(--border)',padding:'10px 16px',display:'flex',gap:8 }}>
                     <input placeholder="Agregar nota al proyecto..." value={newProjNote[project.id]||''} onChange={e=>setNewProjNote(n=>({...n,[project.id]:e.target.value}))} onKeyDown={e=>{ if(e.key==='Enter'){ doAddProjectNote(project.id); setNewProjNote(n=>({...n,[project.id+'_open']:false})) } }} style={{ ...S.input,flex:1 }} autoFocus />
                     <button onClick={()=>{ doAddProjectNote(project.id); setNewProjNote(n=>({...n,[project.id+'_open']:false})) }} style={S.btnPrimary}>Agregar</button>
                     <button onClick={()=>setNewProjNote(n=>({...n,[project.id+'_open']:false}))} style={S.btnSecondary}>✕</button>
@@ -917,7 +932,7 @@ export default function App() {
 
                 {/* New task form */}
                 {newTaskFor===project.id && (
-                  <div style={{ background:'#1e293b',padding:'12px 16px',display:'flex',gap:8,flexWrap:'wrap',borderBottom:'1px solid #334155',alignItems:'center' }}>
+                  <div style={{ background:'var(--bg-elevated)',padding:'12px 16px',display:'flex',gap:8,flexWrap:'wrap',borderBottom:'1px solid var(--border-soft)',alignItems:'center' }}>
                     <input placeholder="Título *" value={newTask.title} onChange={e=>setNewTask(p=>({...p,title:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&newTask.title&&doAddTask(project.id)} style={{ ...S.input,flex:'2 1 160px' }} autoFocus />
                     <input placeholder="Responsable (opcional)" value={newTask.responsible} onChange={e=>setNewTask(p=>({...p,responsible:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&newTask.title&&doAddTask(project.id)} style={{ ...S.input,flex:'1 1 140px' }} />
                     <input type="date" value={newTask.due_date} onChange={e=>setNewTask(p=>({...p,due_date:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&newTask.title&&doAddTask(project.id)} title="Vencimiento (opcional)" style={{ ...S.input,flex:'0 1 148px' }} />
@@ -930,7 +945,7 @@ export default function App() {
                 {!isCollapsed && (
                   <div>
                     {mixedItems.length===0 && (
-                      <div style={{ padding:'16px',textAlign:'center',color:'#475569',fontSize:13 }}>
+                      <div style={{ padding:'16px',textAlign:'center',color:'var(--text-faint)',fontSize:13 }}>
                         Sin tareas ni notas aún.
                       </div>
                     )}
@@ -944,7 +959,7 @@ export default function App() {
                                 <span style={{ background:'#1e1b4b',border:'1px solid #4338ca',color:'#818cf8',padding:'2px 7px',borderRadius:10,fontSize:10,fontWeight:700 }}>📝 NOTA</span>
                               </div>
                               <div style={{ flex:1,minWidth:0 }}>
-                                <div style={{ fontSize:11,color:'#64748b',marginBottom:3 }}>{item.author||'—'} · {fmtDate(item.created_at)}</div>
+                                <div style={{ fontSize:11,color:'var(--text-muted)',marginBottom:3 }}>{item.author||'—'} · {fmtDate(item.created_at)}</div>
                                 <div style={{ fontSize:13,color:'#cbd5e1',lineHeight:1.5 }}>{item.text}</div>
                               </div>
                               <div style={{ display:'flex',gap:4,flexShrink:0 }}>
@@ -968,7 +983,7 @@ export default function App() {
                             <div onClick={()=>doToggle(task.id)} style={{ width:21,height:21,borderRadius:5,border:`2px solid ${cfg.badge}`,background:task.done?cfg.badge:'transparent',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0,fontSize:12,color:'#0f172a',fontWeight:900,transition:'all .15s' }}>{task.done&&'✓'}</div>
                             <div style={{ flex:1,minWidth:0 }}>
                               <div style={{ fontWeight:600,fontSize:14,textDecoration:task.done?'line-through':'none',color:task.done?'#475569':'#e2e8f0',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis' }}>{task.title}</div>
-                              <div style={{ fontSize:11,color:'#64748b',marginTop:2,display:'flex',gap:10,flexWrap:'wrap' }}>
+                              <div style={{ fontSize:11,color:'var(--text-muted)',marginTop:2,display:'flex',gap:10,flexWrap:'wrap' }}>
                                 {task.responsible && <span>👤 {task.responsible}</span>}
                                 {task.due_date    && <span>📅 Vence: {fmtSimpleDate(task.due_date)}</span>}
                                 <span>🗓 Registro: {fmtDate(task.created_at)}</span>
@@ -986,12 +1001,12 @@ export default function App() {
                           {/* Task comments */}
                           {isExp && (
                             <div style={{ padding:'0 16px 14px 50px',borderLeft:`3px solid ${cfg.border}` }}>
-                              <div style={{ fontSize:11,color:'#94a3b8',fontWeight:700,marginBottom:8,textTransform:'uppercase',letterSpacing:1 }}>💬 Bitácora de la tarea</div>
-                              {task.comments.length===0 && <div style={{ fontSize:13,color:'#475569',marginBottom:10 }}>Sin notas aún.</div>}
+                              <div style={{ fontSize:11,color:'var(--text-secondary)',fontWeight:700,marginBottom:8,textTransform:'uppercase',letterSpacing:1 }}>💬 Bitácora de la tarea</div>
+                              {task.comments.length===0 && <div style={{ fontSize:13,color:'var(--text-faint)',marginBottom:10 }}>Sin notas aún.</div>}
                               {task.comments.map(c=>(
-                                <div key={c.id} style={{ background:'#1e293b',border:'1px solid #334155',borderRadius:8,padding:'9px 12px',marginBottom:7,display:'flex',gap:10,alignItems:'flex-start' }}>
+                                <div key={c.id} style={{ background:'var(--bg-elevated)',border:'1px solid var(--border-soft)',borderRadius:8,padding:'9px 12px',marginBottom:7,display:'flex',gap:10,alignItems:'flex-start' }}>
                                   <div style={{ flex:1 }}>
-                                    <div style={{ fontSize:11,color:'#64748b',marginBottom:3 }}>{c.author||'—'} · {fmtDate(c.created_at)}</div>
+                                    <div style={{ fontSize:11,color:'var(--text-muted)',marginBottom:3 }}>{c.author||'—'} · {fmtDate(c.created_at)}</div>
                                     <div style={{ fontSize:13,color:'#cbd5e1' }}>{c.text}</div>
                                   </div>
                                   <div style={{ display:'flex',gap:4 }}>
@@ -1015,7 +1030,7 @@ export default function App() {
 
                 {/* Resumen cuando está colapsado */}
                 {isCollapsed && (
-                  <div style={{ padding:'10px 16px',borderTop:'1px solid #1e293b',display:'flex',gap:16,fontSize:12,color:'#475569' }}>
+                  <div style={{ padding:'10px 16px',borderTop:'1px solid var(--border)',display:'flex',gap:16,fontSize:12,color:'var(--text-faint)' }}>
                     <span>📌 {project.tasks.filter(t=>!t.done).length} pendiente{project.tasks.filter(t=>!t.done).length!==1?'s':''}</span>
                     <span>✅ {project.tasks.filter(t=>t.done).length} completada{project.tasks.filter(t=>t.done).length!==1?'s':''}</span>
                     <span>📝 {project.notes?.length||0} nota{(project.notes?.length||0)!==1?'s':''}</span>

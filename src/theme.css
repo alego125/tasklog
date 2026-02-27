@@ -1,0 +1,38 @@
+/* ── Tema oscuro (default) ──────────────────────────────────── */
+:root {
+  --bg-base:      #070d1a;
+  --bg-surface:   #0f172a;
+  --bg-elevated:  #1e293b;
+  --bg-hover:     #0d1829;
+  --border:       #1e293b;
+  --border-soft:  #334155;
+  --text-primary: #e2e8f0;
+  --text-secondary:#94a3b8;
+  --text-muted:   #64748b;
+  --text-faint:   #475569;
+  --input-bg:     #1e293b;
+  --header-bg:    linear-gradient(135deg, #0f172a, #1e1b4b);
+  --splash-bg:    linear-gradient(135deg, #070d1a 0%, #0f172a 50%, #1e1b4b 100%);
+}
+
+/* ── Tema claro ──────────────────────────────────────────────── */
+.light {
+  --bg-base:      #f1f5f9;
+  --bg-surface:   #ffffff;
+  --bg-elevated:  #f8fafc;
+  --bg-hover:     #f1f5f9;
+  --border:       #e2e8f0;
+  --border-soft:  #cbd5e1;
+  --text-primary: #0f172a;
+  --text-secondary:#475569;
+  --text-muted:   #64748b;
+  --text-faint:   #94a3b8;
+  --input-bg:     #f8fafc;
+  --header-bg:    linear-gradient(135deg, #ffffff, #eef2ff);
+  --splash-bg:    linear-gradient(135deg, #eef2ff 0%, #f1f5f9 50%, #e0e7ff 100%);
+}
+
+/* ── Transición suave al cambiar tema ────────────────────────── */
+*, *::before, *::after {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}

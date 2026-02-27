@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { api } from '../hooks/useApi.js'
 
 const S = {
-  input: { background:'#1e293b', border:'1px solid #334155', color:'#e2e8f0', padding:'10px 14px', borderRadius:8, fontSize:14, outline:'none', width:'100%', boxSizing:'border-box' },
-  label: { fontSize:13, color:'#94a3b8', display:'flex', flexDirection:'column', gap:6 },
+  input: { background:'var(--input-bg)', border:'1px solid var(--border-soft)', color:'var(--text-primary)', padding:'10px 14px', borderRadius:8, fontSize:14, outline:'none', width:'100%', boxSizing:'border-box' },
+  label: { fontSize:13, color:'var(--text-secondary)', display:'flex', flexDirection:'column', gap:6 },
   btnPrimary: { background:'linear-gradient(135deg,#6366f1,#8b5cf6)', border:'none', color:'white', padding:'11px 0', borderRadius:8, cursor:'pointer', fontSize:14, fontWeight:600, width:'100%' },
 }
 
@@ -44,14 +44,14 @@ export default function AuthScreen({ onAuth }) {
         {/* Logo y título */}
         <div style={{ textAlign:'center', marginBottom:32 }}>
           <img src="/logo.png" alt="FlowTracker" style={{ width:72, height:72, borderRadius:18, objectFit:'cover', boxShadow:'0 0 40px #6366f155', marginBottom:16 }} />
-          <div style={{ fontSize:26, fontWeight:700, color:'#e2e8f0', letterSpacing:'-0.5px' }}>FlowTracker</div>
-          <div style={{ fontSize:13, color:'#475569', marginTop:4 }}>Gestión de proyectos y tareas</div>
+          <div style={{ fontSize:26, fontWeight:700, color:'var(--text-primary)', letterSpacing:'-0.5px' }}>FlowTracker</div>
+          <div style={{ fontSize:13, color:'var(--text-faint)', marginTop:4 }}>Gestión de proyectos y tareas</div>
         </div>
 
         {/* Card */}
-        <div style={{ background:'#0f172a', border:'1px solid #1e293b', borderRadius:16, padding:28, boxShadow:'0 20px 60px #00000066' }}>
+        <div style={{ background:'var(--bg-surface)', border:'1px solid var(--border)', borderRadius:16, padding:28, boxShadow:'0 20px 60px #00000066' }}>
           {/* Tabs */}
-          <div style={{ display:'flex', background:'#1e293b', borderRadius:10, padding:3, marginBottom:24, gap:3 }}>
+          <div style={{ display:'flex', background:'var(--bg-elevated)', borderRadius:10, padding:3, marginBottom:24, gap:3 }}>
             {['login','register'].map(m => (
               <button key={m} onClick={()=>{ setMode(m); setError(null) }}
                 style={{ flex:1, padding:'8px 0', borderRadius:8, border:'none', cursor:'pointer', fontSize:13, fontWeight:600, transition:'all .2s',

@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { api } from '../hooks/useApi.js'
 
 const S = {
-  input: { background:'#1e293b', border:'1px solid #334155', color:'#e2e8f0', padding:'10px 14px', borderRadius:8, fontSize:14, outline:'none', width:'100%', boxSizing:'border-box' },
+  input: { background:'var(--input-bg)', border:'1px solid var(--border-soft)', color:'var(--text-primary)', padding:'10px 14px', borderRadius:8, fontSize:14, outline:'none', width:'100%', boxSizing:'border-box' },
   inputFocus: { border:'1px solid #6366f1' },
-  label: { fontSize:13, color:'#94a3b8', display:'flex', flexDirection:'column', gap:6 },
-  hint: { fontSize:11, color:'#475569', marginTop:2 },
+  label: { fontSize:13, color:'var(--text-secondary)', display:'flex', flexDirection:'column', gap:6 },
+  hint: { fontSize:11, color:'var(--text-faint)', marginTop:2 },
 }
 
 export default function ProfileScreen({ user, onSave, onClose }) {
@@ -48,7 +48,7 @@ export default function ProfileScreen({ user, onSave, onClose }) {
 
   return (
     <div onClick={onClose} style={{ position:'fixed',inset:0,background:'#000b',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:20 }}>
-      <div onClick={e=>e.stopPropagation()} style={{ background:'#0f172a',border:'1px solid #1e293b',borderRadius:16,padding:28,width:'100%',maxWidth:440,boxShadow:'0 30px 80px #0009',fontFamily:"'DM Sans','Segoe UI',sans-serif" }}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:'var(--bg-surface)',border:'1px solid var(--border)',borderRadius:16,padding:28,width:'100%',maxWidth:440,boxShadow:'0 30px 80px #0009',fontFamily:"'DM Sans','Segoe UI',sans-serif" }}>
 
         {/* Header */}
         <div style={{ display:'flex',alignItems:'center',gap:14,marginBottom:24 }}>
@@ -56,8 +56,8 @@ export default function ProfileScreen({ user, onSave, onClose }) {
             {name.charAt(0).toUpperCase()}
           </div>
           <div>
-            <div style={{ fontSize:16,fontWeight:700,color:'#e2e8f0' }}>Editar perfil</div>
-            <div style={{ fontSize:12,color:'#475569' }}>@{username || '...'}</div>
+            <div style={{ fontSize:16,fontWeight:700,color:'var(--text-primary)' }}>Editar perfil</div>
+            <div style={{ fontSize:12,color:'var(--text-faint)' }}>@{username || '...'}</div>
           </div>
         </div>
 
@@ -79,8 +79,8 @@ export default function ProfileScreen({ user, onSave, onClose }) {
             <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="tu@email.com" style={S.input} />
           </label>
 
-          <div style={{ borderTop:'1px solid #1e293b',paddingTop:14,marginTop:2 }}>
-            <div style={{ fontSize:12,color:'#475569',marginBottom:10 }}>Dejá en blanco para no cambiar la contraseña</div>
+          <div style={{ borderTop:'1px solid var(--border)',paddingTop:14,marginTop:2 }}>
+            <div style={{ fontSize:12,color:'var(--text-faint)',marginBottom:10 }}>Dejá en blanco para no cambiar la contraseña</div>
             <div style={{ display:'flex',flexDirection:'column',gap:10 }}>
               <label style={S.label}>
                 Nueva contraseña
@@ -107,7 +107,7 @@ export default function ProfileScreen({ user, onSave, onClose }) {
 
         {/* Botones */}
         <div style={{ display:'flex',gap:10,justifyContent:'flex-end',marginTop:20 }}>
-          <button onClick={onClose} style={{ background:'#1e293b',border:'1px solid #334155',color:'#94a3b8',padding:'9px 18px',borderRadius:8,cursor:'pointer',fontSize:13 }}>
+          <button onClick={onClose} style={{ background:'var(--bg-elevated)',border:'1px solid var(--border-soft)',color:'var(--text-secondary)',padding:'9px 18px',borderRadius:8,cursor:'pointer',fontSize:13 }}>
             Cancelar
           </button>
           <button onClick={handleSave} disabled={loading} style={{ background:'linear-gradient(135deg,#6366f1,#8b5cf6)',border:'none',color:'white',padding:'9px 20px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:600,opacity:loading?0.7:1 }}>

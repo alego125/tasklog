@@ -1,11 +1,11 @@
 import { useState } from 'react'
 
 const S = {
-  input: { background:'#1e293b', border:'1px solid #334155', color:'#e2e8f0', padding:'8px 12px', borderRadius:8, fontSize:13, outline:'none', boxSizing:'border-box', width:'100%' },
+  input: { background:'var(--input-bg)', border:'1px solid var(--border-soft)', color:'var(--text-primary)', padding:'8px 12px', borderRadius:8, fontSize:13, outline:'none', boxSizing:'border-box', width:'100%' },
   btnPrimary:   { background:'linear-gradient(135deg,#6366f1,#8b5cf6)', border:'none', color:'white', padding:'8px 16px', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:600 },
-  btnSecondary: { background:'#1e293b', border:'1px solid #334155', color:'#94a3b8', padding:'8px 14px', borderRadius:8, cursor:'pointer', fontSize:13 },
+  btnSecondary: { background:'var(--bg-elevated)', border:'1px solid var(--border-soft)', color:'var(--text-secondary)', padding:'8px 14px', borderRadius:8, cursor:'pointer', fontSize:13 },
   btnDanger:    { background:'#dc2626', border:'none', color:'white', padding:'8px 16px', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:600 },
-  label: { fontSize:13, color:'#94a3b8', display:'flex', flexDirection:'column', gap:4 },
+  label: { fontSize:13, color:'var(--text-secondary)', display:'flex', flexDirection:'column', gap:4 },
 }
 
 const COLORS = ['#6366f1','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4','#f59e0b','#22c55e']
@@ -13,7 +13,7 @@ const COLORS = ['#6366f1','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4','#f5
 function Backdrop({ onClose, children }) {
   return (
     <div onClick={onClose} style={{ position:'fixed', inset:0, background:'#000b', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center' }}>
-      <div onClick={e=>e.stopPropagation()} style={{ background:'#0f172a', border:'1px solid #334155', borderRadius:14, padding:28, width:'100%', maxWidth:480, boxShadow:'0 30px 80px #0009' }}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:'var(--bg-surface)', border:'1px solid var(--border-soft)', borderRadius:14, padding:28, width:'100%', maxWidth:480, boxShadow:'0 30px 80px #0009' }}>
         {children}
       </div>
     </div>
@@ -25,7 +25,7 @@ export function Confirm({ msg, onOk, onCancel, title, okLabel, okColor }) {
   return (
     <Backdrop onClose={onCancel}>
       <div style={{ fontSize:16, fontWeight:700, marginBottom:8 }}>{title || '⚠️ Confirmar eliminación'}</div>
-      <div style={{ fontSize:14, color:'#94a3b8', marginBottom:24 }}>{msg}</div>
+      <div style={{ fontSize:14, color:'var(--text-secondary)', marginBottom:24 }}>{msg}</div>
       <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
         <button onClick={onCancel} style={S.btnSecondary}>Cancelar</button>
         <button onClick={onOk} style={btnStyle}>{okLabel || 'Eliminar'}</button>
@@ -67,8 +67,8 @@ export function EditTask({ task, onSave, onClose }) {
       <div style={{ fontSize:16, fontWeight:700, marginBottom:18 }}>✏️ Editar tarea</div>
       <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
         <label style={S.label}>Título *<input value={f.title} onChange={e=>setF(p=>({...p,title:e.target.value}))} style={S.input} /></label>
-        <label style={S.label}>Responsable <span style={{color:'#475569',fontSize:11}}>(opcional)</span><input value={f.responsible} onChange={e=>setF(p=>({...p,responsible:e.target.value}))} style={S.input} /></label>
-        <label style={S.label}>Vencimiento <span style={{color:'#475569',fontSize:11}}>(opcional)</span><input type="date" value={f.due_date} onChange={e=>setF(p=>({...p,due_date:e.target.value}))} style={S.input} /></label>
+        <label style={S.label}>Responsable <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span><input value={f.responsible} onChange={e=>setF(p=>({...p,responsible:e.target.value}))} style={S.input} /></label>
+        <label style={S.label}>Vencimiento <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span><input type="date" value={f.due_date} onChange={e=>setF(p=>({...p,due_date:e.target.value}))} style={S.input} /></label>
       </div>
       <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:20 }}>
         <button onClick={onClose} style={S.btnSecondary}>Cancelar</button>
@@ -97,8 +97,8 @@ export function MoveNoteModal({ note, tasks, onMove, onClose }) {
   return (
     <Backdrop onClose={onClose}>
       <div style={{ fontSize:16, fontWeight:700, marginBottom:8 }}>🔀 Mover nota a tarea</div>
-      <div style={{ fontSize:13, color:'#94a3b8', marginBottom:16 }}>Seleccioná la tarea donde querés mover esta nota de bitácora:</div>
-      <div style={{ background:'#1e293b', borderRadius:8, padding:'10px 12px', marginBottom:16, fontSize:13, color:'#cbd5e1', fontStyle:'italic' }}>"{note.text}"</div>
+      <div style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:16 }}>Seleccioná la tarea donde querés mover esta nota de bitácora:</div>
+      <div style={{ background:'var(--bg-elevated)', borderRadius:8, padding:'10px 12px', marginBottom:16, fontSize:13, color:'#cbd5e1', fontStyle:'italic' }}>"{note.text}"</div>
       <select value={selectedTask} onChange={e=>setSelectedTask(e.target.value)} style={{ ...S.input, marginBottom:20, cursor:'pointer' }}>
         <option value="">-- Seleccioná una tarea --</option>
         {tasks.map(t=><option key={t.id} value={t.id}>{t.title}</option>)}
@@ -116,8 +116,8 @@ export function MoveCommentModal({ comment, projects, currentProjectId, onMove, 
   return (
     <Backdrop onClose={onClose}>
       <div style={{ fontSize:16, fontWeight:700, marginBottom:8 }}>🔀 Mover nota a proyecto</div>
-      <div style={{ fontSize:13, color:'#94a3b8', marginBottom:16 }}>Esta nota pasará a la bitácora del proyecto seleccionado:</div>
-      <div style={{ background:'#1e293b', borderRadius:8, padding:'10px 12px', marginBottom:16, fontSize:13, color:'#cbd5e1', fontStyle:'italic' }}>"{comment.text}"</div>
+      <div style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:16 }}>Esta nota pasará a la bitácora del proyecto seleccionado:</div>
+      <div style={{ background:'var(--bg-elevated)', borderRadius:8, padding:'10px 12px', marginBottom:16, fontSize:13, color:'#cbd5e1', fontStyle:'italic' }}>"{comment.text}"</div>
       <select value={selectedProject} onChange={e=>setSelectedProject(e.target.value)} style={{ ...S.input, marginBottom:20, cursor:'pointer' }}>
         <option value="">-- Seleccioná un proyecto --</option>
         {projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
