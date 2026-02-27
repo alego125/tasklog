@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { api } from '../hooks/useApi.js'
 
 const S = {
@@ -8,6 +8,11 @@ const S = {
 }
 
 export default function AuthScreen({ onAuth }) {
+  // Forzar modo oscuro mientras está en la pantalla de login
+  useEffect(() => {
+    document.body.classList.remove('light')
+    return () => {} // al desmontar no hacemos nada, App.jsx ya aplica el tema guardado
+  }, [])
   const [mode, setMode]       = useState('login') // 'login' | 'register'
   const [name, setName]         = useState('')
   const [username, setUsername] = useState('')
