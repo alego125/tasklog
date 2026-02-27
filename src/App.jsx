@@ -670,19 +670,10 @@ export default function App() {
 
         {/* DESKTOP: botones normales */}
         <div className="hide-mobile" style={{ display:'flex',gap:8,alignItems:'center',flexWrap:'wrap' }}>
-          {!archiveView && (
-            <button onClick={()=>exportExcel(projects)} style={{ background:'#065f46',border:'1px solid #059669',color:'#34d399',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:600 }}>
-              ⬇ Exportar Excel
-            </button>
-          )}
-          <button onClick={()=>{ if(!archiveView){ loadArchived() } setArchiveView(v=>!v) }}
-            style={{ background:archiveView?'#78350f':'var(--bg-elevated)',border:`1px solid ${archiveView?'#d97706':'var(--border-soft)'}`,color:archiveView?'#fbbf24':'var(--text-secondary)',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontSize:13 }}>
-            {archiveView?'← Volver':'📦 Archivados'}
-          </button>
-          {!archiveView && (
-            <button onClick={()=>{ setBackupModal(true); setRestoreMsg(null) }}
-              style={{ background:'var(--bg-elevated)',border:'1px solid var(--border-soft)',color:'var(--text-secondary)',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontSize:13 }}>
-              💾 Backup
+          {archiveView && (
+            <button onClick={()=>setArchiveView(false)}
+              style={{ background:'#78350f',border:'1px solid #d97706',color:'#fbbf24',padding:'8px 16px',borderRadius:8,cursor:'pointer',fontSize:13 }}>
+              ← Volver
             </button>
           )}
           {!archiveView && <button onClick={()=>setNewProjOpen(true)} style={S.btnPrimary}>+ Nuevo Proyecto</button>}
@@ -704,8 +695,30 @@ export default function App() {
                     <div style={{ fontSize:13,fontWeight:600,color:'var(--text-primary)' }}>{currentUser.name}</div>
                     <div style={{ fontSize:11,color:'var(--text-faint)',marginTop:2 }}>@{currentUser.username||currentUser.email}</div>
                   </div>
+                  {!archiveView && (
+                    <button onClick={()=>{ exportExcel(projects); setUserMenuOpen(false) }}
+                      style={{ width:'100%',background:'transparent',border:'none',color:'#34d399',padding:'10px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10 }}
+                      onMouseEnter={e=>e.currentTarget.style.background='var(--bg-elevated)'}
+                      onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                      ⬇ Exportar Excel
+                    </button>
+                  )}
+                  <button onClick={()=>{ if(!archiveView){ loadArchived() } setArchiveView(v=>!v); setUserMenuOpen(false) }}
+                    style={{ width:'100%',background:'transparent',border:'none',color:'#fbbf24',padding:'10px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10 }}
+                    onMouseEnter={e=>e.currentTarget.style.background='var(--bg-elevated)'}
+                    onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                    📦 {archiveView ? 'Volver a proyectos' : 'Archivados'}
+                  </button>
+                  {!archiveView && (
+                    <button onClick={()=>{ setBackupModal(true); setRestoreMsg(null); setUserMenuOpen(false) }}
+                      style={{ width:'100%',background:'transparent',border:'none',color:'var(--text-secondary)',padding:'10px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10 }}
+                      onMouseEnter={e=>e.currentTarget.style.background='var(--bg-elevated)'}
+                      onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                      💾 Backup y restauración
+                    </button>
+                  )}
                   <button onClick={()=>{ toggleTheme(); setUserMenuOpen(false) }}
-                    style={{ width:'100%',background:'transparent',border:'none',color:'var(--text-secondary)',padding:'10px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10 }}
+                    style={{ width:'100%',background:'transparent',border:'none',color:'var(--text-secondary)',padding:'10px 16px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10,borderTop:'1px solid var(--border)' }}
                     onMouseEnter={e=>e.currentTarget.style.background='var(--bg-elevated)'}
                     onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                     {theme === 'dark' ? '☀️ Modo claro' : '🌙 Modo oscuro'}
