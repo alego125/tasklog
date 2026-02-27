@@ -68,7 +68,16 @@
 @media (max-width: 600px) {
   .ft-filters { flex-direction: column !important; }
   .ft-filters > * { width: 100% !important; flex: none !important; box-sizing: border-box; }
+  .ft-filters select { width: 100% !important; min-width: 0 !important; }
+  .ft-filters input[type="date"] { width: 100% !important; min-width: 0 !important; }
+  .ft-filters label { width: 100% !important; }
   .ft-search-wrap { width: 100% !important; }
+  .ft-search-wrap input { width: 100% !important; min-width: 0 !important; }
+  /* Primera fila de filtros */
+  .ft-filter-row1 { flex-direction: column !important; }
+  .ft-filter-row1 > * { width: 100% !important; flex: none !important; box-sizing: border-box; }
+  .ft-filter-row1 select { width: 100% !important; }
+  .ft-filter-row1 label { width: 100% !important; }
 }
 
 /* Tarea: ocultar badge de estado en mobile, mostrar solo borde de color */

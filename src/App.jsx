@@ -740,20 +740,20 @@ export default function App() {
 
           {/* FILTROS */}
           <div style={{ background:'var(--bg-surface)',border:'1px solid var(--border)',borderRadius:12,padding:'14px 16px',marginBottom:18 }}>
-            <div style={{ display:'flex',gap:10,flexWrap:'wrap',alignItems:'center',marginBottom:10 }}>
+            <div className="ft-filter-row1" style={{ display:'flex',gap:10,flexWrap:'wrap',alignItems:'center',marginBottom:10 }}>
               <div className="ft-search-wrap" style={{ position:'relative', flex:'1 1 220px', display:'flex', alignItems:'center' }}>
                 <input placeholder="🔍 Buscar por tarea, proyecto o responsable..." value={search} onChange={e=>setSearch(e.target.value)} style={{ ...S.input, width:'100%', paddingRight: search ? '32px' : '12px' }} />
                 {search && (
                   <button onClick={()=>setSearch('')} style={{ position:'absolute',right:8,background:'none',border:'none',color:'var(--text-muted)',cursor:'pointer',fontSize:16,lineHeight:1,padding:'2px 4px',display:'flex',alignItems:'center' }} title="Limpiar búsqueda">✕</button>
                 )}
               </div>
-              <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} style={S.select}>
+              <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} style={{ ...S.select, flex:'1 1 150px' }}>
                 <option value="all">Todos los estados</option>
                 <option value="warning">Por vencer (≤3 días)</option>
                 <option value="overdue">Vencidas</option>
                 <option value="done">Completadas</option>
               </select>
-              <select value={filterProject} onChange={e=>setFilterProject(e.target.value)} style={S.select}>
+              <select value={filterProject} onChange={e=>setFilterProject(e.target.value)} style={{ ...S.select, flex:'1 1 150px' }}>
                 <option value="all">Todos los proyectos</option>
                 {projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
