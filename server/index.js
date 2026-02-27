@@ -138,36 +138,75 @@ function forbidden(res) {
   return res.status(403).json({ error: 'No tenés permiso para realizar esta acción' })
 }
 
-// ── Helper: proyecto completo ────────────────────────────────────
+// ── Helper: proyecto completo (para operaciones individuales) ────
 async function getFullProject(id) {
-  const pRes = await db.query(`
-    SELECT p.*, u.name as owner_name FROM projects p
-    LEFT JOIN users u ON u.id = p.owner_id
-    WHERE p.id = $1
-  `, [id])
+  // 4 queries en paralelo en vez de N queries secuenciales
+  const [pRes, mRes, tRes, cRes, nRes] = await Promise.all([
+    db.query(`SELECT p.*, u.name as owner_name FROM projects p
+              LEFT JOIN users u ON u.id = p.owner_id WHERE p.id = $1`, [id]),
+    db.query(`SELECT u.id, u.name, u.email, pm.role FROM project_members pm
+              JOIN users u ON u.id = pm.user_id WHERE pm.project_id = $1`, [id]),
+    db.query('SELECT * FROM tasks WHERE project_id = $1 ORDER BY created_at ASC', [id]),
+    db.query('SELECT * FROM task_comments WHERE task_id IN (SELECT id FROM tasks WHERE project_id = $1) ORDER BY id', [id]),
+    db.query('SELECT * FROM project_notes WHERE project_id = $1 ORDER BY created_at ASC', [id]),
+  ])
   if (!pRes.rows.length) return null
-  const project = { ...pRes.rows[0] }
-
-  // Miembros
-  const mRes = await db.query(`
-    SELECT u.id, u.name, u.email, pm.role FROM project_members pm
-    JOIN users u ON u.id = pm.user_id WHERE pm.project_id = $1
-  `, [id])
+  const project  = { ...pRes.rows[0] }
   project.members = mRes.rows
-
-  // Tareas
-  const tRes = await db.query('SELECT * FROM tasks WHERE project_id = $1 ORDER BY created_at ASC', [id])
-  const tasks = []
-  for (const row of tRes.rows) {
-    const cRes = await db.query('SELECT * FROM task_comments WHERE task_id = $1 ORDER BY id', [row.id])
-    tasks.push({ ...row, comments: cRes.rows })
+  // Agrupar comentarios por tarea en memoria
+  const commentsByTask = {}
+  for (const c of cRes.rows) {
+    if (!commentsByTask[c.task_id]) commentsByTask[c.task_id] = []
+    commentsByTask[c.task_id].push(c)
   }
-  project.tasks = tasks
-
-  // Notas
-  const nRes = await db.query('SELECT * FROM project_notes WHERE project_id = $1 ORDER BY created_at ASC', [id])
+  project.tasks = tRes.rows.map(t => ({ ...t, comments: commentsByTask[t.id] || [] }))
   project.notes = nRes.rows
   return project
+}
+
+// ── Helper: múltiples proyectos de una vez (para listados) ────────
+async function getFullProjects(projectIds) {
+  if (!projectIds.length) return []
+  const ids = projectIds.map((_, i) => `$${i + 1}`).join(',')
+  // 5 queries en paralelo para TODOS los proyectos juntos
+  const [pRes, mRes, tRes, cRes, nRes] = await Promise.all([
+    db.query(`SELECT p.*, u.name as owner_name FROM projects p
+              LEFT JOIN users u ON u.id = p.owner_id
+              WHERE p.id IN (${ids}) ORDER BY p.id`, projectIds),
+    db.query(`SELECT u.id, u.name, u.email, pm.role, pm.project_id FROM project_members pm
+              JOIN users u ON u.id = pm.user_id WHERE pm.project_id IN (${ids})`, projectIds),
+    db.query(`SELECT * FROM tasks WHERE project_id IN (${ids}) ORDER BY created_at ASC`, projectIds),
+    db.query(`SELECT * FROM task_comments WHERE task_id IN
+              (SELECT id FROM tasks WHERE project_id IN (${ids})) ORDER BY id`, projectIds),
+    db.query(`SELECT * FROM project_notes WHERE project_id IN (${ids}) ORDER BY created_at ASC`, projectIds),
+  ])
+  // Agrupar en memoria
+  const membersMap  = {}
+  const tasksMap    = {}
+  const commentsMap = {}
+  const notesMap    = {}
+  for (const m of mRes.rows) {
+    if (!membersMap[m.project_id])  membersMap[m.project_id] = []
+    membersMap[m.project_id].push(m)
+  }
+  for (const t of tRes.rows) {
+    if (!tasksMap[t.project_id]) tasksMap[t.project_id] = []
+    tasksMap[t.project_id].push(t)
+  }
+  for (const c of cRes.rows) {
+    if (!commentsMap[c.task_id]) commentsMap[c.task_id] = []
+    commentsMap[c.task_id].push(c)
+  }
+  for (const n of nRes.rows) {
+    if (!notesMap[n.project_id]) notesMap[n.project_id] = []
+    notesMap[n.project_id].push(n)
+  }
+  return pRes.rows.map(p => ({
+    ...p,
+    members: membersMap[p.id]  || [],
+    tasks:   (tasksMap[p.id]   || []).map(t => ({ ...t, comments: commentsMap[t.id] || [] })),
+    notes:   notesMap[p.id]    || [],
+  }))
 }
 
 app.use(cors({ origin: process.env.FRONTEND_URL || '*' }))
@@ -245,24 +284,24 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
 app.get('/api/projects', authMiddleware, async (req, res) => {
   try {
     const result = await db.query(`
-      SELECT DISTINCT p.* FROM projects p
+      SELECT DISTINCT p.id FROM projects p
       JOIN project_members pm ON pm.project_id = p.id
       WHERE pm.user_id = $1 AND p.archived = false ORDER BY p.id
     `, [req.user.id])
-    const projects = await Promise.all(result.rows.map(p => getFullProject(p.id)))
-    res.json(projects)
+    const ids = result.rows.map(r => r.id)
+    res.json(await getFullProjects(ids))
   } catch(e) { res.status(500).json({ error: e.message }) }
 })
 
 app.get('/api/projects/archived', authMiddleware, async (req, res) => {
   try {
     const result = await db.query(`
-      SELECT DISTINCT p.* FROM projects p
+      SELECT DISTINCT p.id FROM projects p
       JOIN project_members pm ON pm.project_id = p.id
       WHERE pm.user_id = $1 AND p.archived = true ORDER BY p.id
     `, [req.user.id])
-    const projects = await Promise.all(result.rows.map(p => getFullProject(p.id)))
-    res.json(projects)
+    const ids = result.rows.map(r => r.id)
+    res.json(await getFullProjects(ids))
   } catch(e) { res.status(500).json({ error: e.message }) }
 })
 
