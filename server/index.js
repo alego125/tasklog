@@ -23,6 +23,7 @@ async function initDB() {
     CREATE TABLE IF NOT EXISTS users (
       id         SERIAL PRIMARY KEY,
       name       TEXT NOT NULL,
+      username   TEXT UNIQUE,
       email      TEXT NOT NULL UNIQUE,
       password   TEXT NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -85,8 +86,10 @@ async function initDB() {
   await db.query(`CREATE INDEX IF NOT EXISTS idx_members_project ON project_members(project_id)`)
   await db.query(`CREATE INDEX IF NOT EXISTS idx_members_user    ON project_members(user_id)`)
 
-  // Migración: agregar owner_id si no existe en proyectos viejos
+  // Migraciones
   try { await db.query(`ALTER TABLE projects ADD COLUMN owner_id INTEGER REFERENCES users(id) ON DELETE SET NULL`) } catch(e) {}
+  try { await db.query(`ALTER TABLE users ADD COLUMN username TEXT`) } catch(e) {}
+  try { await db.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username)`) } catch(e) {}
 
   console.log('✅ Schema verificado — BD lista')
 }
@@ -142,33 +145,36 @@ app.use(express.json())
 // ── AUTH ─────────────────────────────────────────────────────────
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { name, email, password } = req.body
-    if (!name || !email || !password) return res.status(400).json({ error: 'Todos los campos son requeridos' })
+    const { name, username, email, password } = req.body
+    if (!name || !username || !email || !password) return res.status(400).json({ error: 'Todos los campos son requeridos' })
     if (password.length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' })
-    const existing = await db.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase()])
-    if (existing.rows.length) return res.status(400).json({ error: 'Ya existe una cuenta con ese email' })
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) return res.status(400).json({ error: 'El usuario solo puede tener letras, números y guión bajo' })
+    const existingEmail = await db.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase()])
+    if (existingEmail.rows.length) return res.status(400).json({ error: 'Ya existe una cuenta con ese email' })
+    const existingUser = await db.query('SELECT id FROM users WHERE username = $1', [username.toLowerCase()])
+    if (existingUser.rows.length) return res.status(400).json({ error: 'Ese nombre de usuario ya está en uso' })
     const hash = await bcrypt.hash(password, 10)
     const r = await db.query(
-      'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email',
-      [name, email.toLowerCase(), hash]
+      'INSERT INTO users (name, username, email, password) VALUES ($1, $2, $3, $4) RETURNING id, name, username, email',
+      [name, username.toLowerCase(), email.toLowerCase(), hash]
     )
     const user = r.rows[0]
-    const token = jwt.sign({ id: user.id, name: user.name, email: user.email }, SECRET, { expiresIn: '30d' })
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email } })
+    const token = jwt.sign({ id: user.id, name: user.name, username: user.username, email: user.email }, SECRET, { expiresIn: '30d' })
+    res.json({ token, user: { id: user.id, name: user.name, username: user.username, email: user.email } })
   } catch(e) { res.status(500).json({ error: e.message }) }
 })
 
 app.post('/api/auth/login', async (req, res) => {
   try {
-    const { email, password } = req.body
-    if (!email || !password) return res.status(400).json({ error: 'Email y contraseña requeridos' })
-    const r = await db.query('SELECT * FROM users WHERE email = $1', [email.toLowerCase()])
-    if (!r.rows.length) return res.status(401).json({ error: 'Email o contraseña incorrectos' })
+    const { username, password } = req.body
+    if (!username || !password) return res.status(400).json({ error: 'Usuario y contraseña requeridos' })
+    const r = await db.query('SELECT * FROM users WHERE username = $1 OR email = $1', [username.toLowerCase()])
+    if (!r.rows.length) return res.status(401).json({ error: 'Usuario o contraseña incorrectos' })
     const user = r.rows[0]
     const valid = await bcrypt.compare(password, user.password)
-    if (!valid) return res.status(401).json({ error: 'Email o contraseña incorrectos' })
-    const token = jwt.sign({ id: user.id, name: user.name, email: user.email }, SECRET, { expiresIn: '30d' })
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email } })
+    if (!valid) return res.status(401).json({ error: 'Usuario o contraseña incorrectos' })
+    const token = jwt.sign({ id: user.id, name: user.name, username: user.username, email: user.email }, SECRET, { expiresIn: '30d' })
+    res.json({ token, user: { id: user.id, name: user.name, username: user.username, email: user.email } })
   } catch(e) { res.status(500).json({ error: e.message }) }
 })
 

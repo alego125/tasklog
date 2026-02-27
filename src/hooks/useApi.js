@@ -33,8 +33,8 @@ async function request(method, path, body) {
 
 export const api = {
   // Auth
-  register: (name, email, password) => request('POST', '/auth/register', { name, email, password }),
-  login:    (email, password)        => request('POST', '/auth/login',    { email, password }),
+  register: (name, username, email, password) => request('POST', '/auth/register', { name, username, email, password }),
+  login:    (username, password)     => request('POST', '/auth/login',    { username, password }),
   me:       ()                       => request('GET',  '/auth/me'),
   // Users
   searchUsers: (q) => request('GET', `/users/search?q=${encodeURIComponent(q)}`),

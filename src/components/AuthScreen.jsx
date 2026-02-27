@@ -9,21 +9,22 @@ const S = {
 
 export default function AuthScreen({ onAuth }) {
   const [mode, setMode]       = useState('login') // 'login' | 'register'
-  const [name, setName]       = useState('')
-  const [email, setEmail]     = useState('')
-  const [password, setPass]   = useState('')
+  const [name, setName]         = useState('')
+  const [username, setUsername] = useState('')
+  const [email, setEmail]       = useState('')
+  const [password, setPass]     = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState(null)
 
   const handleSubmit = async () => {
-    if (!email || !password) return setError('Completá todos los campos')
-    if (mode === 'register' && !name) return setError('El nombre es requerido')
+    if (mode === 'login' && (!username || !password)) return setError('Completá todos los campos')
+    if (mode === 'register' && (!name || !username || !email || !password)) return setError('Completá todos los campos')
     setLoading(true)
     setError(null)
     try {
       const result = mode === 'login'
-        ? await api.login(email, password)
-        : await api.register(name, email, password)
+        ? await api.login(username, password)
+        : await api.register(name, username, email, password)
       localStorage.setItem('ft_token', result.token)
       localStorage.setItem('ft_user', JSON.stringify(result.user))
       onAuth(result.user)
@@ -65,14 +66,20 @@ export default function AuthScreen({ onAuth }) {
           <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
             {mode === 'register' && (
               <label style={S.label}>
-                Nombre
+                Nombre completo
                 <input value={name} onChange={e=>setName(e.target.value)} onKeyDown={handleKey} placeholder="Tu nombre" style={S.input} autoFocus />
               </label>
             )}
             <label style={S.label}>
-              Email
-              <input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={handleKey} placeholder="tu@email.com" style={S.input} autoFocus={mode==='login'} />
+              Nombre de usuario
+              <input value={username} onChange={e=>setUsername(e.target.value)} onKeyDown={handleKey} placeholder={mode==='register' ? 'ej: juan_perez' : 'Tu usuario'} style={S.input} autoFocus={mode==='login'} />
             </label>
+            {mode === 'register' && (
+              <label style={S.label}>
+                Email
+                <input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={handleKey} placeholder="tu@email.com" style={S.input} />
+              </label>
+            )}
             <label style={S.label}>
               Contraseña
               <input type="password" value={password} onChange={e=>setPass(e.target.value)} onKeyDown={handleKey} placeholder={mode==='register' ? 'Mínimo 6 caracteres' : '••••••••'} style={S.input} />
