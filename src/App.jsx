@@ -140,7 +140,8 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem('ft_user')) } catch { return null }
   })
   const [membersModal, setMembersModal]     = useState(null) // projectId
-  const [userMenuOpen, setUserMenuOpen]     = useState(false)
+  const [userMenuOpen, setUserMenuOpen]     = useState(false)  // desktop
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)  // mobile
   const [mobileSubMenu, setMobileSubMenu]   = useState(false)
   const [profileOpen, setProfileOpen]       = useState(false)
   const [memberSearch, setMemberSearch]     = useState('')
@@ -750,7 +751,7 @@ export default function App() {
               ← Volver
             </button>
           )}
-          <button onClick={()=>setUserMenuOpen(v=>!v)}
+          <button onClick={()=>setMobileMenuOpen(v=>!v)}
             style={{ background:'var(--bg-elevated)',border:'1px solid var(--border-soft)',color:'var(--text-secondary)',width:38,height:38,borderRadius:8,cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4,flexShrink:0,padding:0 }}>
             <span style={{ display:'block',width:16,height:2,background:'currentColor',borderRadius:2 }}/>
             <span style={{ display:'block',width:16,height:2,background:'currentColor',borderRadius:2 }}/>
@@ -759,9 +760,9 @@ export default function App() {
         </div>
 
         {/* Menú hamburguesa MOBILE */}
-        {userMenuOpen && (
+        {mobileMenuOpen && (
           <>
-            <div onClick={()=>{ setUserMenuOpen(false); setMobileSubMenu(false) }} style={{ position:'fixed',inset:0,zIndex:150 }} />
+            <div onClick={()=>{ setMobileMenuOpen(false); setMobileSubMenu(false) }} style={{ position:'fixed',inset:0,zIndex:150 }} />
             <div style={{ position:'fixed',right:12,top:64,background:'var(--bg-surface)',border:'1px solid var(--border)',borderRadius:12,width:240,maxWidth:'calc(100vw - 24px)',boxShadow:'0 10px 40px #00000099',zIndex:200,display:'block',overflowY:'auto',maxHeight:'calc(100vh - 80px)' }}>
 
               {/* Fila usuario → abre submenu */}
@@ -780,19 +781,19 @@ export default function App() {
               {/* Submenu usuario */}
               {mobileSubMenu && (
                 <div style={{ background:'var(--bg-hover)',borderBottom:'1px solid var(--border)' }}>
-                  <button onClick={()=>{ toggleTheme(); setUserMenuOpen(false); setMobileSubMenu(false) }}
+                  <button onClick={()=>{ toggleTheme(); setMobileMenuOpen(false); setMobileSubMenu(false) }}
                     style={{ width:'100%',background:'transparent',border:'none',color:'var(--text-secondary)',padding:'10px 16px 10px 26px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10 }}
                     onMouseEnter={e=>e.currentTarget.style.background='var(--bg-elevated)'}
                     onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                     {theme === 'dark' ? '☀️ Modo claro' : '🌙 Modo oscuro'}
                   </button>
-                  <button onClick={()=>{ setUserMenuOpen(false); setMobileSubMenu(false); setProfileOpen(true) }}
+                  <button onClick={()=>{ setMobileMenuOpen(false); setMobileSubMenu(false); setProfileOpen(true) }}
                     style={{ width:'100%',background:'transparent',border:'none',color:'var(--text-secondary)',padding:'10px 16px 10px 26px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10 }}
                     onMouseEnter={e=>e.currentTarget.style.background='var(--bg-elevated)'}
                     onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                     ✏️ Editar perfil
                   </button>
-                  <button onClick={()=>{ setUserMenuOpen(false); setMobileSubMenu(false); doLogout() }}
+                  <button onClick={()=>{ setMobileMenuOpen(false); setMobileSubMenu(false); doLogout() }}
                     style={{ width:'100%',background:'transparent',border:'none',color:'#ef4444',padding:'10px 16px 10px 26px',cursor:'pointer',fontSize:13,textAlign:'left',display:'flex',alignItems:'center',gap:10 }}
                     onMouseEnter={e=>e.currentTarget.style.background='#2d0a0a'}
                     onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
