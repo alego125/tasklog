@@ -8,10 +8,9 @@ const S = {
 }
 
 export default function AuthScreen({ onAuth }) {
-  // Forzar modo oscuro mientras está en la pantalla de login
+  // Siempre oscuro en login, sin excepción
   useEffect(() => {
     document.body.classList.remove('light')
-    return () => {} // al desmontar no hacemos nada, App.jsx ya aplica el tema guardado
   }, [])
   const [mode, setMode]       = useState('login') // 'login' | 'register'
   const [name, setName]         = useState('')

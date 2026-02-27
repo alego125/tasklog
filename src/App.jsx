@@ -128,7 +128,9 @@ export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('ft_theme') || 'dark')
 
   useEffect(() => {
-    document.body.classList.toggle('light', theme === 'light')
+    // Solo aplicar modo claro si hay usuario logueado, login siempre oscuro
+    const hasUser = !!localStorage.getItem('ft_token')
+    document.body.classList.toggle('light', theme === 'light' && hasUser)
     localStorage.setItem('ft_theme', theme)
   }, [theme])
 
@@ -464,7 +466,12 @@ export default function App() {
   }
 
   // ── Auth guard ───────────────────────────────────────────────────
-  if (!currentUser) return <AuthScreen onAuth={user => { setCurrentUser(user); loadProjects() }} />
+  if (!currentUser) return <AuthScreen onAuth={user => {
+    setCurrentUser(user)
+    // Aplicar tema guardado al loguearse
+    document.body.classList.toggle('light', (localStorage.getItem('ft_theme') || 'dark') === 'light')
+    loadProjects()
+  }} />
 
   // ── Loading / Error ───────────────────────────────────────────
   if (loading) return (
