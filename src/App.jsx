@@ -473,7 +473,7 @@ export default function App() {
                 onDeleteComment={proj.doDeleteComment}
                 onMoveComment={(comment, pId, tId) => setMoveComment({ comment, pId, tId })}
                 onMoveNote={(note, pId) => setMoveNote({ note, pId })}
-                onAddComment={proj.doAddComment}
+                onAddComment={(pId, tId, text) => proj.doAddComment(pId, tId, text).then(() => setNewComment(p=>({...p,[tId]:''}) ))}
                 newComment={newComment}
                 onNewCommentChange={(tId, val) => setNewComment(p=>({...p,[tId]:val}))}
                 onEditNote={(pId, note) => setEditNote({ pId, note })}

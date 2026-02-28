@@ -64,10 +64,10 @@ export default function TaskItem({ task, expanded, onToggle, onExpand, onEdit, o
               placeholder="Agregar nota..."
               value={newComment || ''}
               onChange={e => onNewCommentChange(task.id, e.target.value)}
-              onKeyDown={e => e.key==='Enter' && onAddComment(task.projectId, task.id)}
+              onKeyDown={e => e.key==='Enter' && onAddComment(task.projectId, task.id, newComment || '')}
               style={{ ...S.input, flex:1 }}
             />
-            <button onClick={() => onAddComment(task.projectId, task.id)} style={S.btnPrimary}>Agregar</button>
+            <button onClick={() => onAddComment(task.projectId, task.id, newComment || '')} style={S.btnPrimary}>Agregar</button>
           </div>
         </div>
       )}
