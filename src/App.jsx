@@ -370,12 +370,16 @@ export default function App() {
           {newProjOpen && (
             <div style={{ background:'var(--bg-elevated)', border:'1px solid var(--border-soft)', borderRadius:12, padding:14, marginBottom:16, display:'flex', gap:10, flexWrap:'wrap', alignItems:'center' }}>
               <input placeholder="Nombre del proyecto..." value={newProjName} onChange={e=>setNewProjName(e.target.value)}
-                onKeyDown={e => { if(e.key==='Enter' && newProjName.trim()) proj.doAddProject(newProjName,newProjColor).then(()=>{ setNewProjName(''); setNewProjOpen(false) }) }}
+                onKeyDown={e => {
+                if (e.key==='Enter' && newProjName.trim()) {
+                  proj.doAddProject(newProjName, newProjColor).then(() => { setNewProjName(''); setNewProjOpen(false) })
+                }
+              }}
                 style={{ ...S.input, flex:1 }} autoFocus />
               <div style={{ display:'flex', gap:6 }}>
                 {COLORS.map(c => <div key={c} onClick={() => setNewProjColor(c)} style={{ width:22, height:22, borderRadius:'50%', background:c, cursor:'pointer', border:newProjColor===c?'3px solid white':'3px solid transparent', boxSizing:'border-box' }} />)}
               </div>
-              <button onClick={() => proj.doAddProject(newProjName,newProjColor).then(()=>{ setNewProjName(''); setNewProjOpen(false) })} style={S.btnPrimary}>Crear</button>
+              <button onClick={() => { proj.doAddProject(newProjName,newProjColor).then(()=>{ setNewProjName(''); setNewProjOpen(false) }) }} style={S.btnPrimary}>Crear</button>
               <button onClick={() => setNewProjOpen(false)} style={S.btnSecondary}>Cancelar</button>
             </div>
           )}
@@ -446,10 +450,19 @@ export default function App() {
                 onOpenNewTask={id => { setNewTaskFor(id); if(id) setNewTask({ title:'', responsible:'', due_date:'' }) }}
                 newTask={newTask}
                 onNewTaskChange={setNewTask}
-                onAddTask={pId => proj.doAddTask(pId, newTask).then(() => { setNewTask({ title:'', responsible:'', due_date:'' }); setNewTaskFor(null) })}
+                onAddTask={pId => {
+                  proj.doAddTask(pId, newTask).then(() => {
+                    setNewTask({ title:'', responsible:'', due_date:'' })
+                    setNewTaskFor(null)
+                  })
+                }}
                 newProjNote={newProjNote}
                 onNewProjNoteChange={(key, val) => setNewProjNote(n => ({ ...n, [key]: val }))}
-                onAddProjectNote={pId => proj.doAddProjectNote(pId, newProjNote[pId]||'').then(() => setNewProjNote(n=>({...n,[pId]:'',(pId+'_open'):false})))}
+                onAddProjectNote={pId => {
+                  proj.doAddProjectNote(pId, newProjNote[pId]||'').then(() =>
+                    setNewProjNote(n => ({ ...n, [pId]:'', [pId+'_open']:false }))
+                  )
+                }}
                 onEditProject={setEditProject}
                 onDeleteProject={pId => proj.doDeleteProject(pId)}
                 onArchiveProject={pId => proj.doArchiveProject(pId)}
