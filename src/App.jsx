@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect } from 'react'
 import { api } from './hooks/useApi.js'
 import { useProjects } from './hooks/useProjects.js'
+import { useToast } from './hooks/useToast.js'
+import Toast from './components/Toast.jsx'
 import { getStatus, COLORS, S, exportExcel } from './utils/helpers.js'
 import AuthScreen    from './components/AuthScreen.jsx'
 import ProfileScreen from './components/ProfileScreen.jsx'
@@ -30,6 +32,12 @@ export default function App() {
 
   useEffect(() => { proj.loadProjects() }, [])
 
+  useEffect(() => {
+    if (!restoreMsg) return
+    if (restoreMsg.ok) toast(restoreMsg.text.replace('✅ ',''), 'success', 5000)
+    else toast(restoreMsg.text.replace('❌ ',''), 'error', 5000)
+  }, [restoreMsg])
+
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark')
 
   const doLogout = () => {
@@ -46,7 +54,7 @@ export default function App() {
     const loginTime  = parseInt(localStorage.getItem('ft_login_time') || '0')
     const remaining  = SESSION_MS - (Date.now() - loginTime)
     if (remaining <= 0) { doLogout(); return }
-    const timer = setTimeout(() => { doLogout(); alert('Tu sesión expiró. Por favor iniciá sesión nuevamente.') }, remaining)
+    const timer = setTimeout(() => { doLogout() }, remaining)
     const handleFocus = () => { if (Date.now() - parseInt(localStorage.getItem('ft_login_time')||'0') >= SESSION_MS) doLogout() }
     window.addEventListener('focus', handleFocus)
     return () => { clearTimeout(timer); window.removeEventListener('focus', handleFocus) }
@@ -54,6 +62,9 @@ export default function App() {
 
   // ── Data hook ─────────────────────────────────────────────────
   const proj = useProjects()
+
+  // ── Toast ────────────────────────────────────────────────────
+  const { toasts, toast, dismiss } = useToast()
 
   // ── UI state ──────────────────────────────────────────────────
   const [search,             setSearch]             = useState('')
@@ -265,12 +276,12 @@ export default function App() {
       )}
 
       {confirm     && <Confirm msg={confirm.msg} onOk={()=>{confirm.action();setConfirm(null)}} onCancel={()=>setConfirm(null)} title={confirm.title} okLabel={confirm.okLabel} okColor={confirm.okColor} />}
-      {editProject && <EditProject project={editProject} onSave={(name,color) => { proj.doSaveEditProject(editProject,name,color); setEditProject(null) }} onClose={()=>setEditProject(null)} />}
-      {editTask    && <EditTask task={editTask.task} onSave={form => { proj.doSaveEditTask(editTask.pId,editTask.task.id,form); setEditTask(null) }} onClose={()=>setEditTask(null)} />}
-      {editComment && <EditComment comment={editComment.comment} onSave={text => { proj.doSaveEditComment(editComment.pId,editComment.tId,editComment.comment.id,text); setEditComment(null) }} onClose={()=>setEditComment(null)} />}
-      {editNote    && <EditComment comment={editNote.note}       onSave={text => { proj.doSaveEditNote(editNote.pId,editNote.note.id,text); setEditNote(null) }}           onClose={()=>setEditNote(null)} />}
-      {moveNote    && <MoveNoteModal note={moveNote.note} tasks={proj.allTasks.filter(t=>!t.done)} onMove={taskId => { proj.doMoveNoteToTask(moveNote.note,moveNote.pId,taskId,proj.allTasks); setMoveNote(null) }} onClose={()=>setMoveNote(null)} />}
-      {moveComment && <MoveCommentModal comment={moveComment.comment} projects={proj.projects} currentProjectId={moveComment.pId} onMove={projectId => { proj.doMoveCommentToProject(moveComment.comment,moveComment.pId,moveComment.tId,projectId); setMoveComment(null) }} onClose={()=>setMoveComment(null)} />}
+      {editProject && <EditProject project={editProject} onSave={(name,color) => { proj.doSaveEditProject(editProject,name,color).then(()=>toast('Proyecto actualizado')).catch(()=>toast('Error al guardar','error')); setEditProject(null) }} onClose={()=>setEditProject(null)} />}
+      {editTask    && <EditTask task={editTask.task} onSave={form => { proj.doSaveEditTask(editTask.pId,editTask.task.id,form).then(()=>toast('Tarea actualizada')).catch(()=>toast('Error al guardar','error')); setEditTask(null) }} onClose={()=>setEditTask(null)} />}
+      {editComment && <EditComment comment={editComment.comment} onSave={text => { proj.doSaveEditComment(editComment.pId,editComment.tId,editComment.comment.id,text).then(()=>toast('Nota actualizada')).catch(()=>toast('Error al guardar','error')); setEditComment(null) }} onClose={()=>setEditComment(null)} />}
+      {editNote    && <EditComment comment={editNote.note}       onSave={text => { proj.doSaveEditNote(editNote.pId,editNote.note.id,text).then(()=>toast('Nota actualizada')).catch(()=>toast('Error al guardar','error')); setEditNote(null) }}           onClose={()=>setEditNote(null)} />}
+      {moveNote    && <MoveNoteModal note={moveNote.note} tasks={proj.allTasks.filter(t=>!t.done)} onMove={taskId => { proj.doMoveNoteToTask(moveNote.note,moveNote.pId,taskId,proj.allTasks).then(()=>toast('Nota movida a tarea')).catch(()=>toast('Error al mover','error')); setMoveNote(null) }} onClose={()=>setMoveNote(null)} />}
+      {moveComment && <MoveCommentModal comment={moveComment.comment} projects={proj.projects} currentProjectId={moveComment.pId} onMove={projectId => { proj.doMoveCommentToProject(moveComment.comment,moveComment.pId,moveComment.tId,projectId).then(()=>toast('Nota movida al proyecto')).catch(()=>toast('Error al mover','error')); setMoveComment(null) }} onClose={()=>setMoveComment(null)} />}
 
       {/* ── Header ── */}
       <Header
@@ -308,7 +319,7 @@ export default function App() {
                 </div>
                 <div style={{ display:'flex', gap:7 }}>
                   <button onClick={() => showConfirm(`¿Restaurar "${project.name}" a la pantalla principal?`, () => proj.doUnarchiveProject(project.id), { title:'↩ Confirmar restauración', okLabel:'Restaurar', okColor:'#059669' })} style={{ background:'#065f46', border:'1px solid #059669', color:'#34d399', padding:'6px 14px', borderRadius:7, cursor:'pointer', fontSize:12, fontWeight:600 }}>↩ Restaurar</button>
-                  <button onClick={() => showConfirm(`¿Eliminar "${project.name}" y TODAS sus tareas y notas? Esta acción no se puede deshacer.`, () => proj.doDeleteProject(project.id))} style={{ ...S.iconBtn, borderColor:'#dc262633', color:'#ef4444' }} title="Eliminar permanentemente">🗑</button>
+                  <button onClick={() => showConfirm(`¿Eliminar "${project.name}" y TODAS sus tareas y notas? Esta acción no se puede deshacer.`, () => proj.doDeleteProject(project.id).then(()=>toast('Proyecto eliminado')).catch(()=>toast('Error al eliminar','error')))} style={{ ...S.iconBtn, borderColor:'#dc262633', color:'#ef4444' }} title="Eliminar permanentemente">🗑</button>
                 </div>
               </div>
               <div style={{ padding:'8px 16px', fontSize:12, color:'var(--text-faint)', display:'flex', gap:16, borderTop:'1px solid var(--border)' }}>
@@ -374,14 +385,14 @@ export default function App() {
               <input placeholder="Nombre del proyecto..." value={newProjName} onChange={e=>setNewProjName(e.target.value)}
                 onKeyDown={e => {
                 if (e.key==='Enter' && newProjName.trim()) {
-                  proj.doAddProject(newProjName, newProjColor).then(() => { setNewProjName(''); setNewProjOpen(false) })
+                  proj.doAddProject(newProjName, newProjColor).then(() => { setNewProjName(''); setNewProjOpen(false); toast('Proyecto creado') }).catch(() => toast('Error al crear proyecto','error'))
                 }
               }}
                 style={{ ...S.input, flex:1 }} autoFocus />
               <div style={{ display:'flex', gap:6 }}>
                 {COLORS.map(c => <div key={c} onClick={() => setNewProjColor(c)} style={{ width:22, height:22, borderRadius:'50%', background:c, cursor:'pointer', border:newProjColor===c?'3px solid white':'3px solid transparent', boxSizing:'border-box' }} />)}
               </div>
-              <button onClick={() => { proj.doAddProject(newProjName,newProjColor).then(()=>{ setNewProjName(''); setNewProjOpen(false) }) }} style={S.btnPrimary}>Crear</button>
+              <button onClick={() => { proj.doAddProject(newProjName,newProjColor).then(()=>{ setNewProjName(''); setNewProjOpen(false); toast('Proyecto creado') }).catch(()=>toast('Error al crear proyecto','error')) }} style={S.btnPrimary}>Crear</button>
               <button onClick={() => setNewProjOpen(false)} style={S.btnSecondary}>Cancelar</button>
             </div>
           )}
@@ -456,18 +467,19 @@ export default function App() {
                   proj.doAddTask(pId, newTask).then(() => {
                     setNewTask({ title:'', responsible:'', due_date:'' })
                     setNewTaskFor(null)
-                  })
+                    toast('Tarea agregada')
+                  }).catch(() => toast('Error al agregar tarea','error'))
                 }}
                 newProjNote={newProjNote}
                 onNewProjNoteChange={(key, val) => setNewProjNote(n => ({ ...n, [key]: val }))}
                 onAddProjectNote={pId => {
-                  proj.doAddProjectNote(pId, newProjNote[pId]||'').then(() =>
-                    setNewProjNote(n => ({ ...n, [pId]:'', [pId+'_open']:false }))
-                  )
+                  proj.doAddProjectNote(pId, newProjNote[pId]||'')
+                    .then(() => { setNewProjNote(n => ({ ...n, [pId]:'', [pId+'_open']:false })); toast('Nota agregada') })
+                    .catch(() => toast('Error al agregar nota','error'))
                 }}
                 onEditProject={setEditProject}
-                onDeleteProject={pId => proj.doDeleteProject(pId)}
-                onArchiveProject={pId => proj.doArchiveProject(pId)}
+                onDeleteProject={pId => proj.doDeleteProject(pId).then(()=>toast('Proyecto eliminado')).catch(()=>toast('Error al eliminar','error'))}
+                onArchiveProject={pId => proj.doArchiveProject(pId).then(()=>toast('Proyecto archivado','warning')).catch(()=>toast('Error al archivar','error'))}
                 onMembersModal={id => { setMembersModal(id); setMemberSearch(''); setMemberResults([]) }}
                 onEditTask={(pId, task) => setEditTask({ pId, task })}
                 onDeleteTask={proj.doDeleteTask}
@@ -475,7 +487,7 @@ export default function App() {
                 onDeleteComment={proj.doDeleteComment}
                 onMoveComment={(comment, pId, tId) => setMoveComment({ comment, pId, tId })}
                 onMoveNote={(note, pId) => setMoveNote({ note, pId })}
-                onAddComment={(pId, tId, text) => proj.doAddComment(pId, tId, text).then(() => setNewComment(p=>({...p,[tId]:''}) ))}
+                onAddComment={(pId, tId, text) => proj.doAddComment(pId, tId, text).then(() => { setNewComment(p=>({...p,[tId]:''})); toast('Nota agregada') }).catch(() => toast('Error al agregar nota','error'))}
                 newComment={newComment}
                 onNewCommentChange={(tId, val) => setNewComment(p=>({...p,[tId]:val}))}
                 onEditNote={(pId, note) => setEditNote({ pId, note })}
@@ -501,6 +513,7 @@ export default function App() {
           )}
         </div>
       )}
+      <Toast toasts={toasts} onDismiss={dismiss} />
     </div>
   )
 }
