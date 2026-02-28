@@ -28,6 +28,8 @@ export default function App() {
     return () => window.removeEventListener('ft_logout', handler)
   }, [])
 
+  useEffect(() => { proj.loadProjects() }, [])
+
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark')
 
   const doLogout = () => {
