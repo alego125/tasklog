@@ -12,61 +12,9 @@ import { Confirm, EditProject, EditTask, EditComment, MoveNoteModal, MoveComment
 
 export default function App() {
 
-  // ── Auth & theme ─────────────────────────────────────────────
-  const [currentUser, setCurrentUser] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('ft_user')) } catch { return null }
-  })
-  const [theme, setTheme] = useState(() => localStorage.getItem('ft_theme') || 'dark')
-
-  useEffect(() => {
-    const hasUser = !!localStorage.getItem('ft_token')
-    document.body.classList.toggle('light', theme === 'light' && hasUser)
-    localStorage.setItem('ft_theme', theme)
-  }, [theme])
-
-  useEffect(() => {
-    const handler = () => setCurrentUser(null)
-    window.addEventListener('ft_logout', handler)
-    return () => window.removeEventListener('ft_logout', handler)
-  }, [])
-
-  useEffect(() => { proj.loadProjects() }, [])
-
-  useEffect(() => {
-    if (!restoreMsg) return
-    if (restoreMsg.ok) toast(restoreMsg.text.replace('✅ ',''), 'success', 5000)
-    else toast(restoreMsg.text.replace('❌ ',''), 'error', 5000)
-  }, [restoreMsg])
-
-  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark')
-
-  const doLogout = () => {
-    localStorage.removeItem('ft_token')
-    localStorage.removeItem('ft_user')
-    localStorage.removeItem('ft_login_time')
-    document.body.classList.remove('light')
-    setCurrentUser(null)
-  }
-
-  useEffect(() => {
-    if (!currentUser) return
-    const SESSION_MS = 90 * 60 * 1000
-    const loginTime  = parseInt(localStorage.getItem('ft_login_time') || '0')
-    const remaining  = SESSION_MS - (Date.now() - loginTime)
-    if (remaining <= 0) { doLogout(); return }
-    const timer = setTimeout(() => { doLogout() }, remaining)
-    const handleFocus = () => { if (Date.now() - parseInt(localStorage.getItem('ft_login_time')||'0') >= SESSION_MS) doLogout() }
-    window.addEventListener('focus', handleFocus)
-    return () => { clearTimeout(timer); window.removeEventListener('focus', handleFocus) }
-  }, [currentUser])
-
-  // ── Data hook ─────────────────────────────────────────────────
-  const proj = useProjects()
-
-  // ── Toast ────────────────────────────────────────────────────
-  const { toasts, toast, dismiss } = useToast()
-
-  // ── UI state ──────────────────────────────────────────────────
+  // ── 1. useState — todos primero ──────────────────────────────
+  const [currentUser,        setCurrentUser]        = useState(() => { try { return JSON.parse(localStorage.getItem('ft_user')) } catch { return null } })
+  const [theme,              setTheme]              = useState(() => localStorage.getItem('ft_theme') || 'dark')
   const [search,             setSearch]             = useState('')
   const [filterStatus,       setFilterStatus]       = useState('all')
   const [filterProject,      setFilterProject]      = useState('all')
@@ -101,6 +49,54 @@ export default function App() {
   const [confirm,            setConfirm]            = useState(null)
   const [moveNote,           setMoveNote]           = useState(null)
   const [moveComment,        setMoveComment]        = useState(null)
+
+  // ── 2. Custom hooks ───────────────────────────────────────────
+  const proj                         = useProjects()
+  const { toasts, toast, dismiss }   = useToast()
+
+  // ── 3. Funciones síncronas ────────────────────────────────────
+  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark')
+
+  const doLogout = () => {
+    localStorage.removeItem('ft_token')
+    localStorage.removeItem('ft_user')
+    localStorage.removeItem('ft_login_time')
+    document.body.classList.remove('light')
+    setCurrentUser(null)
+  }
+
+  // ── 4. useEffect ──────────────────────────────────────────────
+  useEffect(() => {
+    const hasUser = !!localStorage.getItem('ft_token')
+    document.body.classList.toggle('light', theme === 'light' && hasUser)
+    localStorage.setItem('ft_theme', theme)
+  }, [theme])
+
+  useEffect(() => {
+    const handler = () => setCurrentUser(null)
+    window.addEventListener('ft_logout', handler)
+    return () => window.removeEventListener('ft_logout', handler)
+  }, [])
+
+  useEffect(() => { proj.loadProjects() }, [])
+
+  useEffect(() => {
+    if (!restoreMsg) return
+    if (restoreMsg.ok) toast(restoreMsg.text.replace('✅ ',''), 'success', 5000)
+    else toast(restoreMsg.text.replace('❌ ',''), 'error', 5000)
+  }, [restoreMsg])
+
+  useEffect(() => {
+    if (!currentUser) return
+    const SESSION_MS = 90 * 60 * 1000
+    const loginTime  = parseInt(localStorage.getItem('ft_login_time') || '0')
+    const remaining  = SESSION_MS - (Date.now() - loginTime)
+    if (remaining <= 0) { doLogout(); return }
+    const timer = setTimeout(() => { doLogout() }, remaining)
+    const handleFocus = () => { if (Date.now() - parseInt(localStorage.getItem('ft_login_time')||'0') >= SESSION_MS) doLogout() }
+    window.addEventListener('focus', handleFocus)
+    return () => { clearTimeout(timer); window.removeEventListener('focus', handleFocus) }
+  }, [currentUser])
 
   // ── Filters ───────────────────────────────────────────────────
   const filtered = useMemo(() => proj.allTasks.filter(t => {
