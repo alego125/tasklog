@@ -212,6 +212,10 @@ async function getFullProjects(projectIds) {
 app.use(cors({ origin: process.env.FRONTEND_URL || '*' }))
 app.use(express.json())
 
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok' })
+})
+
 // ── AUTH ─────────────────────────────────────────────────────────
 app.post('/api/auth/register', async (req, res) => {
   try {
