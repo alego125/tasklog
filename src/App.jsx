@@ -88,7 +88,7 @@ export default function App() {
 
   useEffect(() => {
     if (!currentUser) return
-    const SESSION_MS = 90 * 60 * 1000
+    const SESSION_MS = 6 * 60 * 60 * 1000
     const loginTime  = parseInt(localStorage.getItem('ft_login_time') || '0')
     const remaining  = SESSION_MS - (Date.now() - loginTime)
     if (remaining <= 0) { doLogout(); return }
@@ -345,7 +345,7 @@ export default function App() {
               </select>
               <select value={filterProject} onChange={e=>setFilterProject(e.target.value)} style={{ ...S.select, flex:'1 1 150px' }}>
                 <option value="all">Todos los proyectos</option>
-                {proj.projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                {[...proj.projects].sort((a,b) => a.name.localeCompare(b.name, 'es', {sensitivity:'base'})).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
               <label style={{ display:'flex', alignItems:'center', gap:7, fontSize:13, cursor:'pointer', whiteSpace:'nowrap' }}>
                 <input type="checkbox" checked={showDone} onChange={e=>setShowDone(e.target.checked)} style={{ accentColor:'#6366f1' }} /> Mostrar completadas
