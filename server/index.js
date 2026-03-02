@@ -593,9 +593,12 @@ app.post('/api/restore', authMiddleware, async (req, res) => {
 })
 
 // ── Start ────────────────────────────────────────────────────────
-initDB().then(() => {
-  app.listen(PORT, () => console.log(`✅ FlowTracker API corriendo en http://localhost:${PORT}`))
-}).catch(err => {
+initDB().catch(err => {
   console.error('❌ Error iniciando BD:', err.message)
-  process.exit(1)
 })
+
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => console.log(`✅ FlowTracker API corriendo en http://localhost:${PORT}`))
+}
+
+module.exports = app
