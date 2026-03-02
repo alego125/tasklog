@@ -4,7 +4,7 @@ import { api } from '../hooks/useApi.js'
 const S = {
   input: { background:'var(--input-bg)', border:'1px solid var(--border-soft)', color:'var(--text-primary)', padding:'10px 14px', borderRadius:8, fontSize:14, outline:'none', width:'100%', boxSizing:'border-box' },
   label: { fontSize:13, color:'var(--text-secondary)', display:'flex', flexDirection:'column', gap:6 },
-  btnPrimary: { background:'linear-gradient(135deg,#6366f1,#8b5cf6)', border:'none', color:'white', padding:'11px 0', borderRadius:8, cursor:'pointer', fontSize:14, fontWeight:600, width:'100%' },
+  btnPrimary: { background:'var(--btn-primary)', border:'none', color:'white', padding:'11px 0', borderRadius:8, cursor:'pointer', fontSize:14, fontWeight:600, width:'100%' },
 }
 
 export default function AuthScreen({ onAuth }) {
@@ -47,8 +47,8 @@ export default function AuthScreen({ onAuth }) {
 
         {/* Logo y título */}
         <div style={{ textAlign:'center', marginBottom:32 }}>
-          <img src="/logo.png" alt="FlowTracker" style={{ width:72, height:72, borderRadius:18, objectFit:'cover', boxShadow:'0 0 40px #6366f155', marginBottom:16 }} />
-          <div style={{ fontSize:26, fontWeight:700, color:'var(--text-primary)', letterSpacing:'-0.5px' }}>FlowTracker</div>
+          <img src="/logo.png" alt="Cursor" style={{ width:72, height:72, borderRadius:18, objectFit:'cover', boxShadow:'0 0 40px #A8D17055', marginBottom:16 }} />
+          <div style={{ fontSize:26, fontWeight:700, color:'var(--text-primary)', letterSpacing:'-0.5px' }}>Cursor</div>
           <div style={{ fontSize:13, color:'var(--text-faint)', marginTop:4 }}>Gestión de proyectos y tareas</div>
         </div>
 

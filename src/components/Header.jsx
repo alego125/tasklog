@@ -33,10 +33,10 @@ export default function Header({
 
       {/* Logo */}
       <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
-        <img src="/logo.png" alt="FlowTracker" style={{ width:34, height:34, borderRadius:8, objectFit:'cover' }} />
+        <img src="/logo.png" alt="Cursor" style={{ width:34, height:34, borderRadius:8, objectFit:'cover' }} />
         <div>
-          <div style={{ fontSize:17, fontWeight:700, letterSpacing:'-0.5px' }}>FlowTracker</div>
-          <div className="ft-header-sub" style={{ fontSize:10, color:'var(--text-muted)' }}><span style={{color:'#22c55e'}}>● PostgreSQL</span> · Datos persistentes en la nube</div>
+          <div style={{ fontSize:17, fontWeight:700, letterSpacing:'-0.5px' }}>Cursor</div>
+          <div className="ft-header-sub" style={{ fontSize:10, color:'var(--text-muted)' }}><span style={{color:'var(--accent)'}}>● PostgreSQL</span> · Datos persistentes en la nube</div>
         </div>
       </div>
 
@@ -52,7 +52,7 @@ export default function Header({
         {/* Avatar desktop */}
         <div style={{ position:'relative', borderLeft:'1px solid var(--border)', paddingLeft:12, marginLeft:4 }}>
           <button onClick={() => setUserMenuOpen(v=>!v)} style={{ display:'flex', alignItems:'center', gap:8, background:'transparent', border:'none', cursor:'pointer', padding:'4px 6px', borderRadius:8 }}>
-            <div style={{ width:30, height:30, borderRadius:'50%', background:'linear-gradient(135deg,#6366f1,#8b5cf6)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, color:'white', flexShrink:0 }}>
+            <div style={{ width:30, height:30, borderRadius:'50%', background:'var(--btn-primary)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, color:'var(--btn-primary-text)', flexShrink:0 }}>
               {currentUser.name.charAt(0).toUpperCase()}
             </div>
             <span style={{ fontSize:13, color:'var(--text-secondary)', maxWidth:120, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{currentUser.name}</span>
@@ -103,7 +103,7 @@ export default function Header({
 
             {/* Fila usuario */}
             <button onClick={() => setMobileSubMenu(v=>!v)} style={{ width:'100%', background:'transparent', border:'none', borderBottom:'1px solid var(--border)', padding:'13px 16px', cursor:'pointer', display:'flex', alignItems:'center', gap:10, textAlign:'left' }}>
-              <div style={{ width:32, height:32, borderRadius:'50%', background:'linear-gradient(135deg,#6366f1,#8b5cf6)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, color:'white', flexShrink:0 }}>
+              <div style={{ width:32, height:32, borderRadius:'50%', background:'var(--btn-primary)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, color:'var(--btn-primary-text)', flexShrink:0 }}>
                 {currentUser.name.charAt(0).toUpperCase()}
               </div>
               <div style={{ flex:1 }}>

@@ -30,7 +30,7 @@ export default function App() {
   const [newTask,            setNewTask]            = useState({ title:'', responsible:'', due_date:'' })
   const [newProjOpen,        setNewProjOpen]        = useState(false)
   const [newProjName,        setNewProjName]        = useState('')
-  const [newProjColor,       setNewProjColor]       = useState('#6366f1')
+  const [newProjColor,       setNewProjColor]       = useState('#A8D170')
   const [archiveView,        setArchiveView]        = useState(false)
   const [backupModal,        setBackupModal]        = useState(false)
   const [restoring,          setRestoring]          = useState(false)
@@ -171,11 +171,11 @@ export default function App() {
   if (proj.loading) return (
     <div style={{ minHeight:'100vh', background:'var(--splash-bg)', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:20, fontFamily:'sans-serif' }}>
       <style>{`@keyframes flowbar{0%{transform:translateX(-100%)}100%{transform:translateX(400%)}}`}</style>
-      <img src="/logo.png" alt="FlowTracker" style={{ width:80, height:80, borderRadius:20, objectFit:'cover', boxShadow:'0 0 40px #6366f155' }} />
-      <div style={{ fontSize:20, fontWeight:700, color:'var(--text-primary)', letterSpacing:'-0.5px' }}>FlowTracker</div>
+      <img src="/logo.png" alt="Cursor" style={{ width:80, height:80, borderRadius:20, objectFit:'cover', boxShadow:'0 0 40px #A8D17055' }} />
+      <div style={{ fontSize:20, fontWeight:700, color:'var(--text-primary)', letterSpacing:'-0.5px' }}>Cursor</div>
       <div style={{ fontSize:13, color:'var(--text-muted)' }}>Conectando con la base de datos...</div>
       <div style={{ width:160, height:4, background:'var(--bg-elevated)', borderRadius:999, overflow:'hidden', marginTop:4 }}>
-        <div style={{ width:'40%', height:'100%', background:'linear-gradient(90deg,#6366f1,#8b5cf6)', borderRadius:999, animation:'flowbar 1.2s ease-in-out infinite' }} />
+        <div style={{ width:'40%', height:'100%', background:'var(--btn-primary)', borderRadius:999, animation:'flowbar 1.2s ease-in-out infinite' }} />
       </div>
     </div>
   )
@@ -185,7 +185,7 @@ export default function App() {
       <div style={{ fontSize:40 }}>⚠️</div>
       <div style={{ fontSize:18, fontWeight:700 }}>Error de conexión</div>
       <div style={{ color:'var(--text-secondary)', maxWidth:400, lineHeight:1.6 }}>{proj.error}</div>
-      <button onClick={proj.loadProjects} style={{ background:'#6366f1', border:'none', color:'white', padding:'10px 24px', borderRadius:8, cursor:'pointer', fontSize:14 }}>Reintentar</button>
+      <button onClick={proj.loadProjects} style={{ background:'var(--btn-primary)', border:'none', color:'var(--btn-primary-text)', padding:'10px 24px', borderRadius:8, cursor:'pointer', fontSize:14 }}>Reintentar</button>
     </div>
   )
 
@@ -207,7 +207,7 @@ export default function App() {
                 {(project.members||[]).map(m => (
                   <div key={m.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 12px', background:'var(--bg-elevated)', borderRadius:8, marginBottom:6 }}>
                     <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                      <div style={{ width:28, height:28, borderRadius:'50%', background:'linear-gradient(135deg,#6366f1,#8b5cf6)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, color:'white' }}>{m.name.charAt(0).toUpperCase()}</div>
+                      <div style={{ width:28, height:28, borderRadius:'50%', background:'var(--btn-primary)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, color:'var(--btn-primary-text)' }}>{m.name.charAt(0).toUpperCase()}</div>
                       <div>
                         <div style={{ fontSize:13, color:'var(--text-primary)' }}>{m.name}</div>
                         <div style={{ fontSize:11, color:'var(--text-faint)' }}>{m.email}</div>
@@ -257,7 +257,7 @@ export default function App() {
             <div style={{ background:'var(--bg-hover)', border:'1px solid var(--border)', borderRadius:10, padding:16, marginBottom:16 }}>
               <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)', marginBottom:4 }}>⬆ Restaurar desde backup</div>
               <div style={{ fontSize:12, color:'var(--text-secondary)', marginBottom:4 }}>⚠ Esto <strong>reemplaza todos los datos actuales</strong> con los del archivo.</div>
-              <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:12 }}>Seleccioná un archivo .json generado por FlowTracker.</div>
+              <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:12 }}>Seleccioná un archivo .json generado por Cursor.</div>
               <label style={{ display:'inline-block', background:'#7c3aed', border:'none', color:'white', padding:'8px 18px', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:600 }}>
                 {restoring ? '⏳ Restaurando...' : '⬆ Seleccionar archivo'}
                 <input type="file" accept=".json" disabled={restoring} onChange={e => proj.doRestore(e.target.files[0], ({ loading:l, msg:m }) => { setRestoring(l); if(m) setRestoreMsg(m) })} style={{ display:'none' }} />
@@ -348,7 +348,7 @@ export default function App() {
                 {[...proj.projects].sort((a,b) => a.name.localeCompare(b.name, 'es', {sensitivity:'base'})).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
               <label style={{ display:'flex', alignItems:'center', gap:7, fontSize:13, cursor:'pointer', whiteSpace:'nowrap' }}>
-                <input type="checkbox" checked={showDone} onChange={e=>setShowDone(e.target.checked)} style={{ accentColor:'#6366f1' }} /> Mostrar completadas
+                <input type="checkbox" checked={showDone} onChange={e=>setShowDone(e.target.checked)} style={{ accentColor:'#A8D170' }} /> Mostrar completadas
               </label>
             </div>
             <div className="ft-filters" style={{ display:'flex', gap:10, flexWrap:'wrap', alignItems:'center' }}>
@@ -362,11 +362,11 @@ export default function App() {
           {/* Stats */}
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(110px,1fr))', gap:10, marginBottom:18 }}>
             {[
-              { label:'Total',       val:proj.allTasks.length,                                                    color:'#6366f1' },
+              { label:'Total',       val:proj.allTasks.length,                                                    color:'#A8D170' },
               { label:'Por vencer',  val:proj.allTasks.filter(t=>getStatus(t.due_date,t.done)==='warning').length, color:'#f59e0b' },
               { label:'Vencidas',    val:proj.allTasks.filter(t=>getStatus(t.due_date,t.done)==='overdue').length, color:'#ef4444' },
               { label:'Completadas', val:doneTasks.length,                                                         color:'#22c55e' },
-              { label:'Proyectos',   val:proj.projects.length,                                                     color:'#8b5cf6' },
+              { label:'Proyectos',   val:proj.projects.length,                                                     color:'#7BC6D9' },
             ].map(s => (
               <div key={s.label} style={{ background:'var(--bg-surface)', border:`1px solid ${s.color}44`, borderRadius:10, padding:'12px 14px', textAlign:'center' }}>
                 <div style={{ fontSize:24, fontWeight:800, color:s.color }}>{s.val}</div>
