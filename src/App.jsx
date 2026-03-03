@@ -483,7 +483,7 @@ export default function App() {
                 onDeleteComment={proj.doDeleteComment}
                 onMoveComment={(comment, pId, tId) => setMoveComment({ comment, pId, tId })}
                 onMoveNote={(note, pId) => setMoveNote({ note, pId })}
-                onAddComment={(pId, tId, text) => proj.doAddComment(pId, tId, text).then(() => { setNewComment(p=>({...p,[tId]:''})); toast('Nota agregada') }).catch(() => toast('Error al agregar nota','error'))}
+                onAddComment={(pId, tId, text) => { setNewComment(p=>({...p,[tId]:''})); proj.doAddComment(pId, tId, text).then(() => toast('Nota agregada')).catch(() => { setNewComment(p=>({...p,[tId]:text})); toast('Error al agregar nota','error') }) }}
                 newComment={newComment}
                 onNewCommentChange={(tId, val) => setNewComment(p=>({...p,[tId]:val}))}
                 onEditNote={(pId, note) => setEditNote({ pId, note })}
