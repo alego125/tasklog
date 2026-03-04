@@ -73,31 +73,47 @@ function toLocalDate(d) {
 
 export function EditTask({ task, onSave, onClose }) {
   const currentYear = new Date().getFullYear()
-  const [f, setF] = useState({
-    title:      task.title,
-    responsible: task.responsible||'',
-    due_date:   task.due_date ? String(task.due_date).slice(0,10) : '',
-    created_at: toLocalDate(task.created_at),
-  })
-  // due_date: si el usuario escribe dd/mm sin año, completar con año actual al guardar
-  const handleDueDate = (val) => setF(p => ({ ...p, due_date: val }))
-  const buildDueDate = (val) => {
-    if (!val) return ''
-    // Si tiene formato YYYY-MM-DD completo, usarlo tal cual
-    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val
-    // Si tiene formato --MM-DD (navegador con año vacío) completar con año actual
-    if (/^--\d{2}-\d{2}$/.test(val)) return currentYear + val.slice(1)
-    return val
+  // Parsear due_date existente en partes dd/mm/yyyy
+  const parseDue = (d) => {
+    if (!d) return { day:'', month:'', year: String(currentYear) }
+    const parts = String(d).slice(0,10).split('-')
+    return { year: parts[0]||String(currentYear), month: parts[1]||'', day: parts[2]||'' }
   }
-  const save = () => f.title && onSave({ ...f, due_date: buildDueDate(f.due_date) })
+  const [f, setF] = useState({
+    title:       task.title,
+    responsible: task.responsible||'',
+    created_at:  toLocalDate(task.created_at),
+  })
+  const [due, setDue] = useState(parseDue(task.due_date))
+
+  const buildDueDate = () => {
+    if (!due.day && !due.month) return ''
+    const d = due.day.padStart(2,'0') || '01'
+    const m = due.month.padStart(2,'0') || '01'
+    const y = due.year || String(currentYear)
+    return y + '-' + m + '-' + d
+  }
+  const save = () => f.title && onSave({ ...f, due_date: buildDueDate() })
+
+  const inputNum = (max, val, setter) => {
+    const n = val.replace(/\D/g,'').slice(0,max===31?2:max===12?2:4)
+    setter(n)
+  }
+
   return (
     <Backdrop onClose={onClose}>
       <div style={{ fontSize:16, fontWeight:700, marginBottom:18 }}>✏️ Editar tarea</div>
       <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
         <label style={S.label}>Descripción tarea *<input value={f.title} onChange={e=>setF(p=>({...p,title:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&save()} style={S.input} autoFocus /></label>
         <label style={S.label}>Responsable <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span><input value={f.responsible} onChange={e=>setF(p=>({...p,responsible:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&save()} style={S.input} /></label>
-        <label style={S.label}>Vencimiento <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional — podés poner solo día y mes)</span>
-          <input type="date" value={f.due_date} onChange={e=>handleDueDate(e.target.value)} style={S.input} placeholder={currentYear + '-MM-DD'} />
+        <label style={S.label}>Vencimiento <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span>
+          <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+            <input value={due.day}   onChange={e=>inputNum(31, e.target.value, v=>setDue(p=>({...p,day:v})))}   placeholder="DD"   maxLength={2} style={{ ...S.input, width:60, textAlign:'center' }} />
+            <span style={{color:'var(--text-muted)'}}>/</span>
+            <input value={due.month} onChange={e=>inputNum(12, e.target.value, v=>setDue(p=>({...p,month:v})))} placeholder="MM"   maxLength={2} style={{ ...S.input, width:60, textAlign:'center' }} />
+            <span style={{color:'var(--text-muted)'}}>/</span>
+            <input value={due.year}  onChange={e=>inputNum(9999, e.target.value, v=>setDue(p=>({...p,year:v})))}  placeholder="AAAA" maxLength={4} style={{ ...S.input, width:80, textAlign:'center' }} />
+          </div>
         </label>
         <label style={S.label}>Fecha de registro <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span><input type="date" value={f.created_at} onChange={e=>setF(p=>({...p,created_at:e.target.value}))} style={S.input} /></label>
       </div>

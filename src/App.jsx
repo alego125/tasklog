@@ -481,8 +481,12 @@ export default function App() {
                 newTask={newTask}
                 onNewTaskChange={setNewTask}
                 onAddTask={pId => {
-                  proj.doAddTask(pId, newTask).then(() => {
-                    setNewTask({ title:'', responsible:'', due_date:'' })
+                  const { due_day, due_month, due_year, ...rest } = newTask
+                  const builtDue = (due_day && due_month)
+                    ? (due_year||String(new Date().getFullYear())) + '-' + String(due_month).padStart(2,'0') + '-' + String(due_day).padStart(2,'0')
+                    : ''
+                  proj.doAddTask(pId, { ...rest, due_date: builtDue }).then(() => {
+                    setNewTask({ title:'', responsible:'', due_date:'', due_day:'', due_month:'', due_year:'' })
                     setNewTaskFor(null)
                     toast('Tarea agregada')
                   }).catch(() => toast('Error al agregar tarea','error'))

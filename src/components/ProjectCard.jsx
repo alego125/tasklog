@@ -66,7 +66,13 @@ export default function ProjectCard({
         <div className="ft-new-task" style={{ background:'var(--bg-elevated)', padding:'12px 16px', display:'flex', gap:8, flexWrap:'wrap', borderBottom:'1px solid var(--border-soft)', alignItems:'center' }}>
           <input placeholder="Descripción tarea *" value={newTask.title} onChange={e=>onNewTaskChange({...newTask,title:e.target.value})} onKeyDown={e=>e.key==='Enter'&&newTask.title&&onAddTask(project.id)} style={{ ...S.input, flex:'2 1 160px' }} autoFocus />
           <input placeholder="Responsable (opcional)" value={newTask.responsible} onChange={e=>onNewTaskChange({...newTask,responsible:e.target.value})} onKeyDown={e=>e.key==='Enter'&&newTask.title&&onAddTask(project.id)} style={{ ...S.input, flex:'1 1 140px' }} />
-          <input type="date" value={newTask.due_date} onChange={e=>onNewTaskChange({...newTask,due_date:e.target.value})} onKeyDown={e=>e.key==='Enter'&&newTask.title&&onAddTask(project.id)} title="Vencimiento (opcional)" style={{ ...S.input, flex:'0 1 148px' }} />
+          <div style={{ display:'flex', gap:4, alignItems:'center', flex:'0 1 180px' }} title="Vencimiento (opcional)">
+            <input value={newTask.due_day||''} onChange={e=>onNewTaskChange({...newTask,due_day:e.target.value.replace(/\D/g,'').slice(0,2)})} placeholder="DD" maxLength={2} style={{ ...S.input, width:44, textAlign:'center', padding:'8px 4px' }} />
+            <span style={{color:'var(--text-muted)',fontSize:13}}>/</span>
+            <input value={newTask.due_month||''} onChange={e=>onNewTaskChange({...newTask,due_month:e.target.value.replace(/\D/g,'').slice(0,2)})} placeholder="MM" maxLength={2} style={{ ...S.input, width:44, textAlign:'center', padding:'8px 4px' }} />
+            <span style={{color:'var(--text-muted)',fontSize:13}}>/</span>
+            <input value={newTask.due_year||String(new Date().getFullYear())} onChange={e=>onNewTaskChange({...newTask,due_year:e.target.value.replace(/\D/g,'').slice(0,4)})} placeholder="AAAA" maxLength={4} style={{ ...S.input, width:58, textAlign:'center', padding:'8px 4px' }} />
+          </div>
           <button onClick={() => onAddTask(project.id)} style={S.btnPrimary} disabled={!newTask.title}>Agregar</button>
           <button onClick={() => onOpenNewTask(null)} style={S.btnSecondary}>✕</button>
         </div>
