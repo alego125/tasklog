@@ -34,7 +34,7 @@ export default function ProjectCard({
             {project.tasks.filter(t=>!t.done).length} tarea{project.tasks.filter(t=>!t.done).length!==1?'s':''} activa{project.tasks.filter(t=>!t.done).length!==1?'s':''} · {project.notes?.length||0} nota{(project.notes?.length||0)!==1?'s':''}
           </span>
           {hasOverdue && <span style={{ background:'#2d0a0a', border:'1px solid #dc2626', borderRadius:20, padding:'1px 9px', fontSize:11, color:'#ef4444', fontWeight:600 }}>⚠ Tareas vencidas</span>}
-          {!hasOverdue && hasWarning && <span style={{ background:'#2d1f00', border:'1px solid #d97706', borderRadius:20, padding:'1px 9px', fontSize:11, color:'#fbbf24', fontWeight:600 }}>⚠ Por vencer</span>}
+          {!hasOverdue && hasWarning && <span style={{ background:'#2d1f00', border:'1px solid #d97706', borderRadius:20, padding:'1px 9px', fontSize:11, color:'#fbbf24', fontWeight:600 }}>⚠ Tareas por vencer</span>}
         </div>
         <div className="ft-proj-actions" style={{ display:'flex', gap:7 }}>
           <button onClick={() => onOpenNewTask(project.id)} style={{ background:'transparent', border:`1px solid ${project.color}`, color:project.color, padding:'5px 12px', borderRadius:7, cursor:'pointer', fontSize:12, fontWeight:600 }}>+ Tarea</button>
