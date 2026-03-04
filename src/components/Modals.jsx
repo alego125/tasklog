@@ -2,13 +2,13 @@ import { useState } from 'react'
 
 const S = {
   input: { background:'var(--input-bg)', border:'1px solid var(--border-soft)', color:'var(--text-primary)', padding:'8px 12px', borderRadius:8, fontSize:13, outline:'none', boxSizing:'border-box', width:'100%' },
-  btnPrimary:   { background:'linear-gradient(135deg,#6366f1,#8b5cf6)', border:'none', color:'white', padding:'8px 16px', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:600 },
+  btnPrimary:   { background:'var(--btn-primary)', border:'none', color:'var(--btn-primary-text)', padding:'8px 16px', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:600 },
   btnSecondary: { background:'var(--bg-elevated)', border:'1px solid var(--border-soft)', color:'var(--text-secondary)', padding:'8px 14px', borderRadius:8, cursor:'pointer', fontSize:13 },
   btnDanger:    { background:'#dc2626', border:'none', color:'white', padding:'8px 16px', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:600 },
   label: { fontSize:13, color:'var(--text-secondary)', display:'flex', flexDirection:'column', gap:4 },
 }
 
-const COLORS = ['#6366f1','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4','#f59e0b','#22c55e']
+const COLORS = ['#22c55e','#A8D170','#06b6d4','#7BC6D9','#6366f1','#8b5cf6','#ec4899','#f97316','#f59e0b','#14b8a6']
 
 function Backdrop({ onClose, children }) {
   return (
@@ -42,7 +42,7 @@ export function EditProject({ project, onSave, onClose }) {
       <div style={{ fontSize:16, fontWeight:700, marginBottom:18 }}>✏️ Editar proyecto</div>
       <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
         <label style={S.label}>Nombre del proyecto
-          <input value={name} onChange={e=>setName(e.target.value)} style={S.input} autoFocus />
+          <input value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>e.key==='Enter'&&name.trim()&&onSave(name,color)} style={S.input} autoFocus />
         </label>
         <label style={S.label}>Color
           <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginTop:4 }}>
@@ -54,25 +54,29 @@ export function EditProject({ project, onSave, onClose }) {
       </div>
       <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:22 }}>
         <button onClick={onClose} style={S.btnSecondary}>Cancelar</button>
-        <button onClick={()=>onSave(name, color)} style={S.btnPrimary}>Guardar</button>
+        <button onClick={()=>name.trim()&&onSave(name, color)} style={S.btnPrimary}>Guardar</button>
       </div>
     </Backdrop>
   )
 }
 
 export function EditTask({ task, onSave, onClose }) {
-  const [f, setF] = useState({ title: task.title, responsible: task.responsible||'', due_date: task.due_date ? String(task.due_date).slice(0,10) : '' })
+  const today = new Date()
+  const defaultDueDate = task.due_date ? String(task.due_date).slice(0,10) : `${today.getFullYear()}-`
+  const [f, setF] = useState({ title: task.title, responsible: task.responsible||'', due_date: task.due_date ? String(task.due_date).slice(0,10) : '', created_at: task.created_at ? String(task.created_at).slice(0,10) : '' })
+  const save = () => f.title && onSave(f)
   return (
     <Backdrop onClose={onClose}>
       <div style={{ fontSize:16, fontWeight:700, marginBottom:18 }}>✏️ Editar tarea</div>
       <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-        <label style={S.label}>Título *<input value={f.title} onChange={e=>setF(p=>({...p,title:e.target.value}))} style={S.input} /></label>
-        <label style={S.label}>Responsable <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span><input value={f.responsible} onChange={e=>setF(p=>({...p,responsible:e.target.value}))} style={S.input} /></label>
+        <label style={S.label}>Título *<input value={f.title} onChange={e=>setF(p=>({...p,title:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&save()} style={S.input} autoFocus /></label>
+        <label style={S.label}>Responsable <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span><input value={f.responsible} onChange={e=>setF(p=>({...p,responsible:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&save()} style={S.input} /></label>
         <label style={S.label}>Vencimiento <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span><input type="date" value={f.due_date} onChange={e=>setF(p=>({...p,due_date:e.target.value}))} style={S.input} /></label>
+        <label style={S.label}>Fecha de registro <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span><input type="date" value={f.created_at} onChange={e=>setF(p=>({...p,created_at:e.target.value}))} style={S.input} /></label>
       </div>
       <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:20 }}>
         <button onClick={onClose} style={S.btnSecondary}>Cancelar</button>
-        <button onClick={()=>f.title&&onSave(f)} style={S.btnPrimary}>Guardar</button>
+        <button onClick={save} style={S.btnPrimary}>Guardar</button>
       </div>
     </Backdrop>
   )
@@ -80,13 +84,15 @@ export function EditTask({ task, onSave, onClose }) {
 
 export function EditComment({ comment, onSave, onClose }) {
   const [text, setText] = useState(comment.text)
+  const [createdAt, setCreatedAt] = useState(comment.created_at ? String(comment.created_at).slice(0,10) : '')
   return (
     <Backdrop onClose={onClose}>
       <div style={{ fontSize:16, fontWeight:700, marginBottom:14 }}>✏️ Editar nota</div>
-      <textarea value={text} onChange={e=>setText(e.target.value)} rows={4} autoFocus style={{ ...S.input, resize:'vertical', lineHeight:1.6 }} />
+      <textarea value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==='Enter'&&e.ctrlKey&&onSave({text,created_at:createdAt})} rows={4} autoFocus style={{ ...S.input, resize:'vertical', lineHeight:1.6 }} />
+      <label style={{ ...S.label, marginTop:10 }}>Fecha de registro <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span><input type="date" value={createdAt} onChange={e=>setCreatedAt(e.target.value)} style={S.input} /></label>
       <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:14 }}>
         <button onClick={onClose} style={S.btnSecondary}>Cancelar</button>
-        <button onClick={()=>onSave(text)} style={S.btnPrimary}>Guardar</button>
+        <button onClick={()=>onSave({text,created_at:createdAt})} style={S.btnPrimary}>Guardar</button>
       </div>
     </Backdrop>
   )

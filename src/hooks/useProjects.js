@@ -32,13 +32,29 @@ export function useProjects() {
     projects.flatMap(p => p.tasks.map(t => ({ ...t, projectId:p.id, projectName:p.name, projectColor:p.color }))),
     [projects])
 
-  const sortedProjects = useMemo(() => [...projects].sort((a, b) => {
-    const aOv = a.tasks.some(t => getStatus(t.due_date, t.done) === 'overdue')
-    const bOv = b.tasks.some(t => getStatus(t.due_date, t.done) === 'overdue')
-    if (aOv && !bOv) return -1
-    if (!aOv && bOv) return 1
-    return b.name.localeCompare(a.name, 'es', { sensitivity:'base' })
-  }), [projects])
+  const sortedProjects = useMemo(() => {
+    const now = new Date()
+    const getCategory = (p) => {
+      const pending = p.tasks.filter(t => !t.done)
+      if (pending.some(t => getStatus(t.due_date, t.done) === 'overdue')) return 0   // vencidas
+      if (pending.some(t => getStatus(t.due_date, t.done) === 'warning')) return 1   // por vencer
+      if (pending.some(t => t.due_date))                                   return 2   // a tiempo con fecha
+      if (pending.length > 0)                                              return 3   // a tiempo sin fecha
+      return 4                                                                        // todas completadas
+    }
+    const getNearestDue = (p) => {
+      const dates = p.tasks.filter(t=>!t.done&&t.due_date).map(t=>new Date(t.due_date))
+      if (!dates.length) return Infinity
+      return Math.min(...dates.map(d => Math.abs(d - now)))
+    }
+    return [...projects].sort((a, b) => {
+      const ca = getCategory(a), cb = getCategory(b)
+      if (ca !== cb) return ca - cb
+      // dentro de categoría 0,1,2: ordenar por fecha más cercana primero
+      if (ca <= 2) return getNearestDue(a) - getNearestDue(b)
+      return a.name.localeCompare(b.name, 'es', { sensitivity:'base' })
+    })
+  }, [projects])
 
   const mutTask = (pId, tId, fn) =>
     setProjects(prev => prev.map(p => p.id===pId ? { ...p, tasks:p.tasks.map(t => t.id===tId ? fn(t) : t) } : p))
@@ -173,11 +189,12 @@ export function useProjects() {
     }
   }
 
-  const doSaveEditComment = async (pId, tId, commentId, text) => {
+  const doSaveEditComment = async (pId, tId, commentId, data) => {
+    const text = typeof data === 'string' ? data : data.text
     const snapshot = projects
     return withRollback(
-      () => mutTask(pId, tId, t => ({ ...t, comments:t.comments.map(c => c.id===commentId ? { ...c, text } : c) })),
-      () => api.updateComment(commentId, text),
+      () => mutTask(pId, tId, t => ({ ...t, comments:t.comments.map(c => c.id===commentId ? { ...c, ...( typeof data === 'object' ? data : {text} ) } : c) })),
+      () => api.updateComment(commentId, data),
       () => setProjects(snapshot)
     )
   }
@@ -216,12 +233,13 @@ export function useProjects() {
     }
   }
 
-  const doSaveEditNote = async (pId, noteId, text) => {
+  const doSaveEditNote = async (pId, noteId, data) => {
+    const text = typeof data === 'string' ? data : data.text
     const snapshot = projects
     return withRollback(
       () => setProjects(prev => prev.map(p => p.id===pId
-        ? { ...p, notes:(p.notes||[]).map(n => n.id===noteId ? { ...n, text } : n) } : p)),
-      () => api.updateProjectNote(noteId, text),
+        ? { ...p, notes:(p.notes||[]).map(n => n.id===noteId ? { ...n, ...( typeof data === 'object' ? data : {text} ) } : n) } : p)),
+      () => api.updateProjectNote(noteId, data),
       () => setProjects(snapshot)
     )
   }

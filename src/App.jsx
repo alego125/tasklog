@@ -30,7 +30,7 @@ export default function App() {
   const [newTask,            setNewTask]            = useState({ title:'', responsible:'', due_date:'' })
   const [newProjOpen,        setNewProjOpen]        = useState(false)
   const [newProjName,        setNewProjName]        = useState('')
-  const [newProjColor,       setNewProjColor]       = useState('#A8D170')
+  const [newProjColor,       setNewProjColor]       = useState('#22c55e')
   const [archiveView,        setArchiveView]        = useState(false)
   const [backupModal,        setBackupModal]        = useState(false)
   const [restoring,          setRestoring]          = useState(false)
@@ -274,8 +274,8 @@ export default function App() {
       {confirm     && <Confirm msg={confirm.msg} onOk={()=>{confirm.action();setConfirm(null)}} onCancel={()=>setConfirm(null)} title={confirm.title} okLabel={confirm.okLabel} okColor={confirm.okColor} />}
       {editProject && <EditProject project={editProject} onSave={(name,color) => { proj.doSaveEditProject(editProject,name,color).then(()=>toast('Proyecto actualizado')).catch(()=>toast('Error al guardar','error')); setEditProject(null) }} onClose={()=>setEditProject(null)} />}
       {editTask    && <EditTask task={editTask.task} onSave={form => { proj.doSaveEditTask(editTask.pId,editTask.task.id,form).then(()=>toast('Tarea actualizada')).catch(()=>toast('Error al guardar','error')); setEditTask(null) }} onClose={()=>setEditTask(null)} />}
-      {editComment && <EditComment comment={editComment.comment} onSave={text => { proj.doSaveEditComment(editComment.pId,editComment.tId,editComment.comment.id,text).then(()=>toast('Nota actualizada')).catch(()=>toast('Error al guardar','error')); setEditComment(null) }} onClose={()=>setEditComment(null)} />}
-      {editNote    && <EditComment comment={editNote.note}       onSave={text => { proj.doSaveEditNote(editNote.pId,editNote.note.id,text).then(()=>toast('Nota actualizada')).catch(()=>toast('Error al guardar','error')); setEditNote(null) }}           onClose={()=>setEditNote(null)} />}
+      {editComment && <EditComment comment={editComment.comment} onSave={data => { proj.doSaveEditComment(editComment.pId,editComment.tId,editComment.comment.id,data).then(()=>toast('Nota actualizada')).catch(()=>toast('Error al guardar','error')); setEditComment(null) }} onClose={()=>setEditComment(null)} />}
+      {editNote    && <EditComment comment={editNote.note}       onSave={data => { proj.doSaveEditNote(editNote.pId,editNote.note.id,data).then(()=>toast('Nota actualizada')).catch(()=>toast('Error al guardar','error')); setEditNote(null) }}           onClose={()=>setEditNote(null)} />}
       {moveNote    && <MoveNoteModal note={moveNote.note} tasks={proj.allTasks.filter(t=>!t.done)} onMove={taskId => { proj.doMoveNoteToTask(moveNote.note,moveNote.pId,taskId,proj.allTasks).then(()=>toast('Nota movida a tarea')).catch(()=>toast('Error al mover','error')); setMoveNote(null) }} onClose={()=>setMoveNote(null)} />}
       {moveComment && <MoveCommentModal comment={moveComment.comment} projects={proj.projects} currentProjectId={moveComment.pId} onMove={projectId => { proj.doMoveCommentToProject(moveComment.comment,moveComment.pId,moveComment.tId,projectId).then(()=>toast('Nota movida al proyecto')).catch(()=>toast('Error al mover','error')); setMoveComment(null) }} onClose={()=>setMoveComment(null)} />}
 
@@ -337,12 +337,7 @@ export default function App() {
                 <input placeholder="🔍 Buscar por tarea, proyecto o responsable..." value={search} onChange={e=>setSearch(e.target.value)} style={{ ...S.input, width:'100%', paddingRight:search?'32px':'12px' }} />
                 {search && <button onClick={() => setSearch('')} style={{ position:'absolute', right:8, background:'none', border:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:16, lineHeight:1, padding:'2px 4px', display:'flex', alignItems:'center' }}>✕</button>}
               </div>
-              <select value={filterStatus}  onChange={e=>setFilterStatus(e.target.value)}  style={{ ...S.select, flex:'1 1 150px' }}>
-                <option value="all">Todos los estados</option>
-                <option value="warning">Por vencer (≤3 días)</option>
-                <option value="overdue">Vencidas</option>
-                <option value="done">Completadas</option>
-              </select>
+
               <select value={filterProject} onChange={e=>setFilterProject(e.target.value)} style={{ ...S.select, flex:'1 1 150px' }}>
                 <option value="all">Todos los proyectos</option>
                 {[...proj.projects].sort((a,b) => a.name.localeCompare(b.name, 'es', {sensitivity:'base'})).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -359,20 +354,46 @@ export default function App() {
             </div>
           </div>
 
-          {/* Stats */}
+          {/* Stats — botones filtrables */}
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(110px,1fr))', gap:10, marginBottom:18 }}>
             {[
-              { label:'Total',       val:proj.allTasks.length,                                                    color:'#A8D170' },
-              { label:'Por vencer',  val:proj.allTasks.filter(t=>getStatus(t.due_date,t.done)==='warning').length, color:'#f59e0b' },
-              { label:'Vencidas',    val:proj.allTasks.filter(t=>getStatus(t.due_date,t.done)==='overdue').length, color:'#ef4444' },
-              { label:'Completadas', val:doneTasks.length,                                                         color:'#22c55e' },
-              { label:'Proyectos',   val:proj.projects.length,                                                     color:'#7BC6D9' },
-            ].map(s => (
-              <div key={s.label} style={{ background:'var(--bg-surface)', border:`1px solid ${s.color}44`, borderRadius:10, padding:'12px 14px', textAlign:'center' }}>
-                <div style={{ fontSize:24, fontWeight:800, color:s.color }}>{s.val}</div>
-                <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>{s.label}</div>
-              </div>
-            ))}
+              { label:'Total',       val:proj.allTasks.length,                                                    color:'#A8D170', filter:null },
+              { label:'Por vencer',  val:proj.allTasks.filter(t=>getStatus(t.due_date,t.done)==='warning').length, color:'#f59e0b', filter:'warning' },
+              { label:'Vencidas',    val:proj.allTasks.filter(t=>getStatus(t.due_date,t.done)==='overdue').length, color:'#ef4444', filter:'overdue' },
+              { label:'Completadas', val:doneTasks.length,                                                         color:'#22c55e', filter:'done' },
+              { label:'Proyectos',   val:proj.projects.length,                                                     color:'#7BC6D9', filter:'__projects__' },
+            ].map(s => {
+              const active = s.filter === null ? filterStatus === 'all' : filterStatus === s.filter
+              return (
+                <button
+                  key={s.label}
+                  onClick={() => {
+                    if (s.filter === '__projects__') return
+                    setFilterStatus(active && s.filter !== null ? 'all' : (s.filter || 'all'))
+                    if (s.filter === 'done') setShowDone(true)
+                  }}
+                  style={{ background:'var(--bg-surface)', border:`1.5px solid ${active ? s.color : s.color+'44'}`, borderRadius:10, padding:'12px 14px', textAlign:'center', cursor: s.filter === '__projects__' ? 'default' : 'pointer', outline:'none', transition:'all .15s', boxShadow: active && s.filter !== null ? `0 0 0 2px ${s.color}44` : 'none' }}
+                >
+                  <div style={{ fontSize:24, fontWeight:800, color:s.color }}>{s.val}</div>
+                  <div style={{ fontSize:11, color: active && s.filter !== null ? s.color : 'var(--text-muted)', marginTop:2, fontWeight: active && s.filter !== null ? 700 : 400 }}>{s.label}</div>
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Colapsar / Expandir todos */}
+          <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:10 }}>
+            <button
+              onClick={() => {
+                const allCollapsed = proj.sortedProjects.every(p => collapsedProjects[p.id])
+                const next = {}
+                if (!allCollapsed) proj.sortedProjects.forEach(p => { next[p.id] = true })
+                setCollapsedProjects(next)
+              }}
+              style={{ ...S.btnSecondary, padding:'5px 12px', fontSize:12, display:'flex', alignItems:'center', gap:5 }}
+            >
+              {proj.sortedProjects.every(p => collapsedProjects[p.id]) ? '▼ Expandir todos' : '▲ Colapsar todos'}
+            </button>
           </div>
 
           {/* Nuevo proyecto */}

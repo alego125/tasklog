@@ -56,12 +56,12 @@ export const api = {
   deleteTask: (id)       => request('DELETE',`/tasks/${id}`),
   // Task comments
   createComment:        (data)           => request('POST',   '/comments', data),
-  updateComment:        (id, text)       => request('PUT',    `/comments/${id}`, { text }),
+  updateComment:        (id, data)       => request('PUT',    `/comments/${id}`, typeof data === 'string' ? { text: data } : data),
   deleteComment:        (id)             => request('DELETE', `/comments/${id}`),
   moveCommentToProject: (id, project_id) => request('POST',   `/comments/${id}/move-to-project`, { project_id }),
   // Project notes
   createProjectNote:  (data)       => request('POST',   '/project-notes', data),
-  updateProjectNote:  (id, text)   => request('PUT',    `/project-notes/${id}`, { text }),
+  updateProjectNote:  (id, data)   => request('PUT',    `/project-notes/${id}`, typeof data === 'string' ? { text: data } : data),
   deleteProjectNote:  (id)         => request('DELETE', `/project-notes/${id}`),
   moveNoteToTask:     (id, task_id)=> request('POST',   `/project-notes/${id}/move-to-task`, { task_id }),
   // Backup

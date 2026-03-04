@@ -416,10 +416,12 @@ app.put('/api/tasks/:id', authMiddleware, async (req, res) => {
   try {
     const projectId = await getTaskProject(req.params.id)
     if (!projectId || !await isMember(projectId, req.user.id)) return forbidden(res)
-    const { title, responsible, due_date } = req.body
+    const { title, responsible, due_date, created_at } = req.body
     await db.query(
-      'UPDATE tasks SET title=$1, responsible=$2, due_date=$3 WHERE id=$4',
-      [title, responsible || null, (due_date && due_date.trim()) ? due_date : null, req.params.id]
+      'UPDATE tasks SET title=$1, responsible=$2, due_date=$3' + (created_at ? ', created_at=$5' : '') + ' WHERE id=$4',
+      created_at
+        ? [title, responsible || null, (due_date && due_date.trim()) ? due_date : null, req.params.id, created_at]
+        : [title, responsible || null, (due_date && due_date.trim()) ? due_date : null, req.params.id]
     )
     const tRes = await db.query('SELECT * FROM tasks WHERE id = $1', [req.params.id])
     const task = { ...tRes.rows[0] }
@@ -473,7 +475,12 @@ app.put('/api/comments/:id', authMiddleware, async (req, res) => {
   try {
     const projectId = await getCommentProject(req.params.id)
     if (!projectId || !await isMember(projectId, req.user.id)) return forbidden(res)
-    await db.query('UPDATE task_comments SET text=$1 WHERE id=$2', [req.body.text, req.params.id])
+    const { text, created_at } = req.body
+    if (created_at) {
+      await db.query('UPDATE task_comments SET text=$1, created_at=$2 WHERE id=$3', [text, created_at, req.params.id])
+    } else {
+      await db.query('UPDATE task_comments SET text=$1 WHERE id=$2', [text, req.params.id])
+    }
     res.json((await db.query('SELECT * FROM task_comments WHERE id=$1', [req.params.id])).rows[0])
   } catch(e) { res.status(500).json({ error: e.message }) }
 })
@@ -505,7 +512,12 @@ app.put('/api/project-notes/:id', authMiddleware, async (req, res) => {
   try {
     const projectId = await getNoteProject(req.params.id)
     if (!projectId || !await isMember(projectId, req.user.id)) return forbidden(res)
-    await db.query('UPDATE project_notes SET text=$1 WHERE id=$2', [req.body.text, req.params.id])
+    const { text, created_at } = req.body
+    if (created_at) {
+      await db.query('UPDATE project_notes SET text=$1, created_at=$2 WHERE id=$3', [text, created_at, req.params.id])
+    } else {
+      await db.query('UPDATE project_notes SET text=$1 WHERE id=$2', [text, req.params.id])
+    }
     res.json((await db.query('SELECT * FROM project_notes WHERE id=$1', [req.params.id])).rows[0])
   } catch(e) { res.status(500).json({ error: e.message }) }
 })
@@ -593,11 +605,12 @@ app.post('/api/restore', authMiddleware, async (req, res) => {
 })
 
 // ── Start ────────────────────────────────────────────────────────
-initDB().then(() => {
-  app.listen(PORT, () => console.log(`✅ Cursor API corriendo en http://localhost:${PORT}`))
-}).catch(err => {
+initDB().catch(err => {
   console.error('❌ Error iniciando BD:', err.message)
-  process.exit(1)
 })
+
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => console.log(`✅ FlowTracker API corriendo en http://localhost:${PORT}`))
+}
 
 module.exports = app
