@@ -86,7 +86,7 @@ export function EditTask({ task, onSave, onClose }) {
     // Si tiene formato YYYY-MM-DD completo, usarlo tal cual
     if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val
     // Si tiene formato --MM-DD (navegador con año vacío) completar con año actual
-    if (/^--\d{2}-\d{2}$/.test(val)) return \`\${currentYear}\${val.slice(1)}\`
+    if (/^--\d{2}-\d{2}$/.test(val)) return currentYear + val.slice(1)
     return val
   }
   const save = () => f.title && onSave({ ...f, due_date: buildDueDate(f.due_date) })
@@ -97,7 +97,7 @@ export function EditTask({ task, onSave, onClose }) {
         <label style={S.label}>Descripción tarea *<input value={f.title} onChange={e=>setF(p=>({...p,title:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&save()} style={S.input} autoFocus /></label>
         <label style={S.label}>Responsable <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span><input value={f.responsible} onChange={e=>setF(p=>({...p,responsible:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&save()} style={S.input} /></label>
         <label style={S.label}>Vencimiento <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional — podés poner solo día y mes)</span>
-          <input type="date" value={f.due_date} onChange={e=>handleDueDate(e.target.value)} style={S.input} placeholder={`${currentYear}-MM-DD`} />
+          <input type="date" value={f.due_date} onChange={e=>handleDueDate(e.target.value)} style={S.input} placeholder={currentYear + '-MM-DD'} />
         </label>
         <label style={S.label}>Fecha de registro <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span><input type="date" value={f.created_at} onChange={e=>setF(p=>({...p,created_at:e.target.value}))} style={S.input} /></label>
       </div>
