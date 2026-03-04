@@ -60,18 +60,45 @@ export function EditProject({ project, onSave, onClose }) {
   )
 }
 
+// Aplica la misma corrección de -3hs que fmtDate para mostrar la fecha local correcta
+function toLocalDate(d) {
+  if (!d) return ''
+  if (String(d).includes('T') || String(d).includes(' ')) {
+    const date = new Date(String(d).replace(' ', 'T') + (String(d).includes('Z') ? '' : 'Z'))
+    date.setHours(date.getHours() - 3)
+    return date.toISOString().slice(0, 10)
+  }
+  return String(d).slice(0, 10)
+}
+
 export function EditTask({ task, onSave, onClose }) {
-  const today = new Date()
-  const defaultDueDate = task.due_date ? String(task.due_date).slice(0,10) : `${today.getFullYear()}-`
-  const [f, setF] = useState({ title: task.title, responsible: task.responsible||'', due_date: task.due_date ? String(task.due_date).slice(0,10) : '', created_at: task.created_at ? String(task.created_at).slice(0,10) : '' })
-  const save = () => f.title && onSave(f)
+  const currentYear = new Date().getFullYear()
+  const [f, setF] = useState({
+    title:      task.title,
+    responsible: task.responsible||'',
+    due_date:   task.due_date ? String(task.due_date).slice(0,10) : '',
+    created_at: toLocalDate(task.created_at),
+  })
+  // due_date: si el usuario escribe dd/mm sin año, completar con año actual al guardar
+  const handleDueDate = (val) => setF(p => ({ ...p, due_date: val }))
+  const buildDueDate = (val) => {
+    if (!val) return ''
+    // Si tiene formato YYYY-MM-DD completo, usarlo tal cual
+    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val
+    // Si tiene formato --MM-DD (navegador con año vacío) completar con año actual
+    if (/^--\d{2}-\d{2}$/.test(val)) return \`\${currentYear}\${val.slice(1)}\`
+    return val
+  }
+  const save = () => f.title && onSave({ ...f, due_date: buildDueDate(f.due_date) })
   return (
     <Backdrop onClose={onClose}>
       <div style={{ fontSize:16, fontWeight:700, marginBottom:18 }}>✏️ Editar tarea</div>
       <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-        <label style={S.label}>Título *<input value={f.title} onChange={e=>setF(p=>({...p,title:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&save()} style={S.input} autoFocus /></label>
+        <label style={S.label}>Descripción tarea *<input value={f.title} onChange={e=>setF(p=>({...p,title:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&save()} style={S.input} autoFocus /></label>
         <label style={S.label}>Responsable <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span><input value={f.responsible} onChange={e=>setF(p=>({...p,responsible:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&save()} style={S.input} /></label>
-        <label style={S.label}>Vencimiento <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span><input type="date" value={f.due_date} onChange={e=>setF(p=>({...p,due_date:e.target.value}))} style={S.input} /></label>
+        <label style={S.label}>Vencimiento <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional — podés poner solo día y mes)</span>
+          <input type="date" value={f.due_date} onChange={e=>handleDueDate(e.target.value)} style={S.input} placeholder={`${currentYear}-MM-DD`} />
+        </label>
         <label style={S.label}>Fecha de registro <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span><input type="date" value={f.created_at} onChange={e=>setF(p=>({...p,created_at:e.target.value}))} style={S.input} /></label>
       </div>
       <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:20 }}>

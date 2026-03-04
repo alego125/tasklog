@@ -64,7 +64,7 @@ export default function ProjectCard({
       {/* Nueva tarea */}
       {newTaskFor === project.id && (
         <div className="ft-new-task" style={{ background:'var(--bg-elevated)', padding:'12px 16px', display:'flex', gap:8, flexWrap:'wrap', borderBottom:'1px solid var(--border-soft)', alignItems:'center' }}>
-          <input placeholder="Título *" value={newTask.title} onChange={e=>onNewTaskChange({...newTask,title:e.target.value})} onKeyDown={e=>e.key==='Enter'&&newTask.title&&onAddTask(project.id)} style={{ ...S.input, flex:'2 1 160px' }} autoFocus />
+          <input placeholder="Descripción tarea *" value={newTask.title} onChange={e=>onNewTaskChange({...newTask,title:e.target.value})} onKeyDown={e=>e.key==='Enter'&&newTask.title&&onAddTask(project.id)} style={{ ...S.input, flex:'2 1 160px' }} autoFocus />
           <input placeholder="Responsable (opcional)" value={newTask.responsible} onChange={e=>onNewTaskChange({...newTask,responsible:e.target.value})} onKeyDown={e=>e.key==='Enter'&&newTask.title&&onAddTask(project.id)} style={{ ...S.input, flex:'1 1 140px' }} />
           <input type="date" value={newTask.due_date} onChange={e=>onNewTaskChange({...newTask,due_date:e.target.value})} onKeyDown={e=>e.key==='Enter'&&newTask.title&&onAddTask(project.id)} title="Vencimiento (opcional)" style={{ ...S.input, flex:'0 1 148px' }} />
           <button onClick={() => onAddTask(project.id)} style={S.btnPrimary} disabled={!newTask.title}>Agregar</button>
