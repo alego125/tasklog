@@ -72,50 +72,17 @@ function toLocalDate(d) {
 }
 
 export function EditTask({ task, onSave, onClose }) {
-  const currentYear = new Date().getFullYear()
-  // Parsear due_date existente en partes dd/mm/yyyy
-  const parseDue = (d) => {
-    if (!d) return { day:'', month:'', year: String(currentYear) }
-    const parts = String(d).slice(0,10).split('-')
-    return { year: parts[0]||String(currentYear), month: parts[1]||'', day: parts[2]||'' }
-  }
   const [f, setF] = useState({
     title:       task.title,
     responsible: task.responsible||'',
-    created_at:  toLocalDate(task.created_at),
   })
-  const [due, setDue] = useState(parseDue(task.due_date))
-
-  const buildDueDate = () => {
-    if (!due.day && !due.month) return ''
-    const d = due.day.padStart(2,'0') || '01'
-    const m = due.month.padStart(2,'0') || '01'
-    const y = due.year || String(currentYear)
-    return y + '-' + m + '-' + d
-  }
-  const save = () => f.title && onSave({ ...f, due_date: buildDueDate() })
-
-  const inputNum = (max, val, setter) => {
-    const n = val.replace(/\D/g,'').slice(0,max===31?2:max===12?2:4)
-    setter(n)
-  }
-
+  const save = () => f.title && onSave(f)
   return (
     <Backdrop onClose={onClose}>
       <div style={{ fontSize:16, fontWeight:700, marginBottom:18 }}>✏️ Editar tarea</div>
       <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
         <label style={S.label}>Descripción tarea *<input value={f.title} onChange={e=>setF(p=>({...p,title:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&save()} style={S.input} autoFocus /></label>
         <label style={S.label}>Responsable <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span><input value={f.responsible} onChange={e=>setF(p=>({...p,responsible:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&save()} style={S.input} /></label>
-        <label style={S.label}>Vencimiento <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span>
-          <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-            <input value={due.day}   onChange={e=>inputNum(31, e.target.value, v=>setDue(p=>({...p,day:v})))}   placeholder="DD"   maxLength={2} style={{ ...S.input, width:60, textAlign:'center' }} />
-            <span style={{color:'var(--text-muted)'}}>/</span>
-            <input value={due.month} onChange={e=>inputNum(12, e.target.value, v=>setDue(p=>({...p,month:v})))} placeholder="MM"   maxLength={2} style={{ ...S.input, width:60, textAlign:'center' }} />
-            <span style={{color:'var(--text-muted)'}}>/</span>
-            <input value={due.year}  onChange={e=>inputNum(9999, e.target.value, v=>setDue(p=>({...p,year:v})))}  placeholder="AAAA" maxLength={4} style={{ ...S.input, width:80, textAlign:'center' }} />
-          </div>
-        </label>
-        <label style={S.label}>Fecha de registro <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span><input type="date" value={f.created_at} onChange={e=>setF(p=>({...p,created_at:e.target.value}))} style={S.input} /></label>
       </div>
       <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:20 }}>
         <button onClick={onClose} style={S.btnSecondary}>Cancelar</button>
@@ -127,20 +94,73 @@ export function EditTask({ task, onSave, onClose }) {
 
 export function EditComment({ comment, onSave, onClose }) {
   const [text, setText] = useState(comment.text)
-  const [createdAt, setCreatedAt] = useState(comment.created_at ? String(comment.created_at).slice(0,10) : '')
   return (
     <Backdrop onClose={onClose}>
       <div style={{ fontSize:16, fontWeight:700, marginBottom:14 }}>✏️ Editar nota</div>
-      <textarea value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==='Enter'&&e.ctrlKey&&onSave({text,created_at:createdAt})} rows={4} autoFocus style={{ ...S.input, resize:'vertical', lineHeight:1.6 }} />
-      <label style={{ ...S.label, marginTop:10 }}>Fecha de registro <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span><input type="date" value={createdAt} onChange={e=>setCreatedAt(e.target.value)} style={S.input} /></label>
+      <textarea value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==='Enter'&&e.ctrlKey&&onSave({text})} rows={4} autoFocus style={{ ...S.input, resize:'vertical', lineHeight:1.6 }} />
       <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:14 }}>
         <button onClick={onClose} style={S.btnSecondary}>Cancelar</button>
-        <button onClick={()=>onSave({text,created_at:createdAt})} style={S.btnPrimary}>Guardar</button>
+        <button onClick={()=>onSave({text})} style={S.btnPrimary}>Guardar</button>
       </div>
     </Backdrop>
   )
 }
 
+
+export function EditDueDateModal({ task, onSave, onClose }) {
+  const currentYear = new Date().getFullYear()
+  const parseDue = (d) => {
+    if (!d) return { day:'', month:'', year: String(currentYear) }
+    const parts = String(d).slice(0,10).split('-')
+    return { year: parts[0]||String(currentYear), month: parts[1]||'', day: parts[2]||'' }
+  }
+  const [due, setDue] = useState(parseDue(task.due_date))
+  const inputNum = (max, val, setter) => setter(val.replace(/\D/g,'').slice(0, max <= 12 ? 2 : max <= 31 ? 2 : 4))
+  const buildDueDate = () => {
+    if (!due.day && !due.month) return ''
+    return (due.year||String(currentYear)) + '-' + due.month.padStart(2,'0') + '-' + due.day.padStart(2,'0')
+  }
+  const save = () => onSave(buildDueDate())
+  return (
+    <Backdrop onClose={onClose}>
+      <div style={{ fontSize:16, fontWeight:700, marginBottom:6 }}>📅 Fecha de vencimiento</div>
+      <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:18 }}>{task.title}</div>
+      <label style={S.label}>Vencimiento <span style={{color:'var(--text-faint)',fontSize:11}}>(dejá vacío para quitar)</span>
+        <div style={{ display:'flex', gap:8, alignItems:'center', marginTop:4 }}>
+          <input value={due.day}   onChange={e=>inputNum(31,  e.target.value, v=>setDue(p=>({...p,day:v})))}   placeholder="DD"   maxLength={2} style={{ ...S.input, width:64, textAlign:'center' }} />
+          <span style={{color:'var(--text-muted)',fontSize:16}}>/</span>
+          <input value={due.month} onChange={e=>inputNum(12,  e.target.value, v=>setDue(p=>({...p,month:v})))} placeholder="MM"   maxLength={2} style={{ ...S.input, width:64, textAlign:'center' }} />
+          <span style={{color:'var(--text-muted)',fontSize:16}}>/</span>
+          <input value={due.year}  onChange={e=>inputNum(9999,e.target.value, v=>setDue(p=>({...p,year:v})))}  placeholder="AAAA" maxLength={4} style={{ ...S.input, width:88, textAlign:'center' }} />
+        </div>
+      </label>
+      {(due.day || due.month) && (
+        <button onClick={()=>setDue({day:'',month:'',year:String(currentYear)})} style={{ ...S.btnSecondary, marginTop:10, fontSize:12, padding:'4px 10px' }}>✕ Quitar fecha</button>
+      )}
+      <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:20 }}>
+        <button onClick={onClose} style={S.btnSecondary}>Cancelar</button>
+        <button onClick={save} style={S.btnPrimary}>Guardar</button>
+      </div>
+    </Backdrop>
+  )
+}
+
+export function EditCreatedAtModal({ item, label, onSave, onClose }) {
+  const [date, setDate] = useState(item.created_at ? toLocalDate(item.created_at) : '')
+  return (
+    <Backdrop onClose={onClose}>
+      <div style={{ fontSize:16, fontWeight:700, marginBottom:6 }}>🗓 Fecha de registro</div>
+      <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:18 }}>{label}</div>
+      <label style={S.label}>Fecha de registro
+        <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{ ...S.input, marginTop:4 }} autoFocus />
+      </label>
+      <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:20 }}>
+        <button onClick={onClose} style={S.btnSecondary}>Cancelar</button>
+        <button onClick={()=>onSave(date)} style={S.btnPrimary}>Guardar</button>
+      </div>
+    </Backdrop>
+  )
+}
 export function MoveNoteModal({ note, tasks, onMove, onClose }) {
   const [selectedTask, setSelectedTask] = useState('')
   return (

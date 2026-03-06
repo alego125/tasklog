@@ -8,7 +8,7 @@ import AuthScreen    from './components/AuthScreen.jsx'
 import ProfileScreen from './components/ProfileScreen.jsx'
 import Header        from './components/Header.jsx'
 import ProjectCard   from './components/ProjectCard.jsx'
-import { Confirm, EditProject, EditTask, EditComment, MoveNoteModal, MoveCommentModal } from './components/Modals.jsx'
+import { Confirm, EditProject, EditTask, EditComment, EditDueDateModal, EditCreatedAtModal, MoveNoteModal, MoveCommentModal } from './components/Modals.jsx'
 
 export default function App() {
 
@@ -47,6 +47,8 @@ export default function App() {
   const [editTask,           setEditTask]           = useState(null)
   const [editComment,        setEditComment]        = useState(null)
   const [editNote,           setEditNote]           = useState(null)
+  const [editDueDate,        setEditDueDate]        = useState(null) // { pId, task }
+  const [editCreatedAt,      setEditCreatedAt]      = useState(null) // { type:'task'|'comment'|'note', pId, tId, item }
   const [confirm,            setConfirm]            = useState(null)
   const [moveNote,           setMoveNote]           = useState(null)
   const [moveComment,        setMoveComment]        = useState(null)
@@ -277,6 +279,10 @@ export default function App() {
       {editTask    && <EditTask task={editTask.task} onSave={form => { proj.doSaveEditTask(editTask.pId,editTask.task.id,form).then(()=>toast('Tarea actualizada')).catch(()=>toast('Error al guardar','error')); setEditTask(null) }} onClose={()=>setEditTask(null)} />}
       {editComment && <EditComment comment={editComment.comment} onSave={data => { proj.doSaveEditComment(editComment.pId,editComment.tId,editComment.comment.id,data).then(()=>toast('Nota actualizada')).catch(()=>toast('Error al guardar','error')); setEditComment(null) }} onClose={()=>setEditComment(null)} />}
       {editNote    && <EditComment comment={editNote.note}       onSave={data => { proj.doSaveEditNote(editNote.pId,editNote.note.id,data).then(()=>toast('Nota actualizada')).catch(()=>toast('Error al guardar','error')); setEditNote(null) }}           onClose={()=>setEditNote(null)} />}
+      {editDueDate && <EditDueDateModal task={editDueDate.task} onSave={due_date => { proj.doSaveEditTask(editDueDate.pId,editDueDate.task.id,{title:editDueDate.task.title,responsible:editDueDate.task.responsible||'',due_date}).then(()=>toast('Fecha actualizada')).catch(()=>toast('Error al guardar','error')); setEditDueDate(null) }} onClose={()=>setEditDueDate(null)} />}
+      {editCreatedAt && editCreatedAt.type==='task'    && <EditCreatedAtModal item={editCreatedAt.item} label={editCreatedAt.item.title} onSave={d => { proj.doSaveEditTask(editCreatedAt.pId,editCreatedAt.item.id,{title:editCreatedAt.item.title,responsible:editCreatedAt.item.responsible||'',due_date:editCreatedAt.item.due_date||'',created_at:d}).then(()=>toast('Fecha actualizada')).catch(()=>toast('Error','error')); setEditCreatedAt(null) }} onClose={()=>setEditCreatedAt(null)} />}
+      {editCreatedAt && editCreatedAt.type==='comment' && <EditCreatedAtModal item={editCreatedAt.item} label={editCreatedAt.item.text?.slice(0,60)} onSave={d => { proj.doSaveEditComment(editCreatedAt.pId,editCreatedAt.tId,editCreatedAt.item.id,{text:editCreatedAt.item.text,created_at:d}).then(()=>toast('Fecha actualizada')).catch(()=>toast('Error','error')); setEditCreatedAt(null) }} onClose={()=>setEditCreatedAt(null)} />}
+      {editCreatedAt && editCreatedAt.type==='note'    && <EditCreatedAtModal item={editCreatedAt.item} label={editCreatedAt.item.text?.slice(0,60)} onSave={d => { proj.doSaveEditNote(editCreatedAt.pId,editCreatedAt.item.id,{text:editCreatedAt.item.text,created_at:d}).then(()=>toast('Fecha actualizada')).catch(()=>toast('Error','error')); setEditCreatedAt(null) }} onClose={()=>setEditCreatedAt(null)} />}
       {moveNote    && <MoveNoteModal note={moveNote.note} tasks={proj.allTasks.filter(t=>!t.done)} onMove={taskId => { proj.doMoveNoteToTask(moveNote.note,moveNote.pId,taskId,proj.allTasks).then(()=>toast('Nota movida a tarea')).catch(()=>toast('Error al mover','error')); setMoveNote(null) }} onClose={()=>setMoveNote(null)} />}
       {moveComment && <MoveCommentModal comment={moveComment.comment} projects={proj.projects} currentProjectId={moveComment.pId} onMove={projectId => { proj.doMoveCommentToProject(moveComment.comment,moveComment.pId,moveComment.tId,projectId).then(()=>toast('Nota movida al proyecto')).catch(()=>toast('Error al mover','error')); setMoveComment(null) }} onClose={()=>setMoveComment(null)} />}
 
@@ -569,11 +575,12 @@ export default function App() {
                   const builtDue = (due_day && due_month)
                     ? (due_year||String(new Date().getFullYear())) + '-' + String(due_month).padStart(2,'0') + '-' + String(due_day).padStart(2,'0')
                     : ''
-                  proj.doAddTask(pId, { ...rest, due_date: builtDue }).then(() => {
-                    setNewTask({ title:'', responsible:'', due_date:'', due_day:'', due_month:'', due_year:'' })
-                    setNewTaskFor(null)
-                    toast('Tarea agregada')
-                  }).catch(() => toast('Error al agregar tarea','error'))
+                  const taskData = { ...rest, due_date: builtDue }
+                  setNewTask({ title:'', responsible:'', due_date:'', due_day:'', due_month:'', due_year:'' })
+                  setNewTaskFor(null)
+                  proj.doAddTask(pId, taskData)
+                    .then(() => toast('Tarea agregada'))
+                    .catch(() => toast('Error al agregar tarea','error'))
                 }}
                 newProjNote={newProjNote}
                 onNewProjNoteChange={(key, val) => setNewProjNote(n => ({ ...n, [key]: val }))}
@@ -587,6 +594,8 @@ export default function App() {
                 onArchiveProject={pId => proj.doArchiveProject(pId).then(()=>toast('Proyecto archivado','warning')).catch(()=>toast('Error al archivar','error'))}
                 onMembersModal={id => { setMembersModal(id); setMemberSearch(''); setMemberResults([]) }}
                 onEditTask={(pId, task) => setEditTask({ pId, task })}
+                onEditDueDate={(pId, task) => setEditDueDate({ pId, task })}
+                onEditCreatedAt={(type, pId, tId, item) => setEditCreatedAt({ type, pId, tId, item })}
                 onDeleteTask={proj.doDeleteTask}
                 onEditComment={(pId, tId, comment) => setEditComment({ pId, tId, comment })}
                 onDeleteComment={proj.doDeleteComment}

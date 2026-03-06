@@ -1,6 +1,6 @@
 import { S, STATUS, getStatus, fmtDate, fmtSimpleDate } from '../utils/helpers.js'
 
-export default function TaskItem({ task, expanded, onToggle, onExpand, onEdit, onDelete, onEditComment, onDeleteComment, onMoveComment, onAddComment, newComment, onNewCommentChange, onConfirm }) {
+export default function TaskItem({ task, expanded, onToggle, onExpand, onEdit, onDelete, onEditComment, onDeleteComment, onMoveComment, onAddComment, newComment, onNewCommentChange, onConfirm, onEditDueDate, onEditCreatedAt }) {
   const status = getStatus(task.due_date, task.done)
   const cfg    = STATUS[status]
   const isExp  = expanded === task.id
@@ -17,13 +17,13 @@ export default function TaskItem({ task, expanded, onToggle, onExpand, onEdit, o
 
         {/* Title + meta */}
         <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontWeight:600, fontSize:14, textDecoration:task.done?'line-through':'none', color:task.done?'var(--text-faint)':(status==='overdue'?'#ef4444':status==='warning'?'#f59e0b':'var(--task-title)'), wordBreak:'break-word', overflowWrap:'break-word' }}>
+          <div style={{ fontWeight:600, fontSize:14, textDecoration:task.done?'line-through':'none', color:task.done?'var(--text-faint)':(status==='overdue'?'#ef4444':status==='warning'?'#f59e0b':'var(--task-title)'), whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
             {task.title}
           </div>
           <div className="ft-task-meta" style={{ fontSize:11, color:'var(--text-muted)', marginTop:2, display:'flex', gap:10, flexWrap:'wrap' }}>
             {task.responsible && <span>👤 {task.responsible}</span>}
-            {task.due_date    && <span>📅 Vence: {fmtSimpleDate(task.due_date)}</span>}
-            <span>🗓 Registro: {fmtDate(task.created_at)}</span>
+            {task.due_date    && <span onClick={()=>onEditDueDate&&onEditDueDate(task)} style={{ cursor:'pointer', textDecoration:'underline dotted' }} title="Editar vencimiento">📅 Vence: {fmtSimpleDate(task.due_date)}</span>}
+<span onClick={()=>onEditCreatedAt&&onEditCreatedAt('task', null, task)} style={{ cursor:'pointer', textDecoration:'underline dotted' }} title="Editar fecha de registro">🗓 Registro: {fmtDate(task.created_at)}</span>
             <span>💬 {task.comments.length} nota{task.comments.length!==1?'s':''}</span>
           </div>
         </div>
@@ -46,10 +46,10 @@ export default function TaskItem({ task, expanded, onToggle, onExpand, onEdit, o
         <div className="ft-task-comments" style={{ padding:'0 16px 14px 50px', borderLeft:`3px solid ${cfg.border}` }}>
           <div style={{ fontSize:11, color:'var(--text-secondary)', fontWeight:700, marginBottom:8, textTransform:'uppercase', letterSpacing:1 }}>💬 Bitácora de la tarea</div>
           {task.comments.length === 0 && <div style={{ fontSize:13, color:'var(--text-faint)', marginBottom:10 }}>Sin notas aún.</div>}
-          {[...task.comments].sort((a,b) => (b.created_at||'') > (a.created_at||'') ? 1 : -1).map(c => (
+          {task.comments.map(c => (
             <div key={c.id} style={{ background:'var(--bg-elevated)', border:'1px solid var(--border-soft)', borderRadius:8, padding:'9px 12px', marginBottom:7, display:'flex', gap:10, alignItems:'flex-start' }}>
               <div style={{ flex:1 }}>
-                <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:3 }}>{c.author||'—'} · {fmtDate(c.created_at)}</div>
+                <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:3 }}>{c.author||'—'} · <span onClick={()=>onEditCreatedAt&&onEditCreatedAt('comment', task.id, c)} style={{ cursor:'pointer', textDecoration:'underline dotted', color:'var(--text-secondary)' }} title="Editar fecha de registro">{fmtDate(c.created_at)}</span></div>
                 <div style={{ fontSize:13, color:'var(--text-content)' }}>{c.text}</div>
               </div>
               <div style={{ display:'flex', gap:4 }}>

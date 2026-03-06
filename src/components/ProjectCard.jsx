@@ -11,6 +11,7 @@ export default function ProjectCard({
   onEditComment, onDeleteComment, onMoveComment, onMoveNote,
   onAddComment, newComment, onNewCommentChange,
   onEditNote, onDeleteNote, onConfirm, showNotes,
+  onEditDueDate, onEditCreatedAt,
 }) {
   const hasOverdue  = project.tasks.some(t => getStatus(t.due_date, t.done) === 'overdue')
   const hasWarning  = project.tasks.some(t => getStatus(t.due_date, t.done) === 'warning')
@@ -98,7 +99,7 @@ export default function ProjectCard({
                     <span style={{ background:'#1e1b4b', border:'1px solid #4338ca', color:'#818cf8', padding:'2px 7px', borderRadius:10, fontSize:10, fontWeight:700 }}>📝 NOTA</span>
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:3 }}>{item.author||'—'} · {fmtDate(item.created_at)}</div>
+                    <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:3 }}>{item.author||'—'} · <span onClick={()=>onEditCreatedAt('note', project.id, null, item)} style={{ cursor:'pointer', textDecoration:'underline dotted', color:'var(--text-secondary)' }} title="Editar fecha de registro">{fmtDate(item.created_at)}</span></div>
                     <div style={{ fontSize:13, color:'var(--text-content)', lineHeight:1.5 }}>{item.text}</div>
                   </div>
                   <div style={{ display:'flex', gap:4, flexShrink:0 }}>
@@ -126,6 +127,8 @@ export default function ProjectCard({
                 newComment={newComment[item.id]}
                 onNewCommentChange={onNewCommentChange}
                 onConfirm={onConfirm}
+                onEditDueDate={task => onEditDueDate(item.projectId, task)}
+                onEditCreatedAt={(type, tId, item2) => onEditCreatedAt(type, project.id, tId, item2)}
               />
             )
           })}
