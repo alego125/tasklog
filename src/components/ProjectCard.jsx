@@ -20,7 +20,12 @@ export default function ProjectCard({
 
   const taskItems = filteredTasks
     .map(t => ({ ...t, _type:'task' }))
-    .sort((a,b) => (a.created_at||'') < (b.created_at||'') ? -1 : 1) // antigua → reciente
+    .sort((a,b) => {
+      if (!a.due_date && !b.due_date) return 0
+      if (!a.due_date) return 1
+      if (!b.due_date) return -1
+      return a.due_date.localeCompare(b.due_date)
+    })
   const noteItems = showNotes
     ? [...(project.notes||[])].map(n => ({ ...n, _type:'note', projectId:project.id }))
         .sort((a,b) => (b.created_at||'') < (a.created_at||'') ? -1 : 1) // reciente → antigua
