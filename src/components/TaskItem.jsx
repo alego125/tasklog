@@ -17,7 +17,7 @@ export default function TaskItem({ task, expanded, onToggle, onExpand, onEdit, o
 
         {/* Title + meta */}
         <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontWeight:600, fontSize:14, textDecoration:task.done?'line-through':'none', color:task.done?'var(--text-faint)':(status==='overdue'?'#ef4444':status==='warning'?'#f59e0b':'var(--task-title)'), whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+          <div style={{ fontWeight:600, fontSize:14, textDecoration:task.done?'line-through':'none', color:task.done?'var(--text-faint)':(status==='overdue'?'#ef4444':status==='warning'?'#f59e0b':'var(--task-title)'), wordBreak:'break-word', overflowWrap:'break-word' }}>
             {task.title}
           </div>
           <div className="ft-task-meta" style={{ fontSize:11, color:'var(--text-muted)', marginTop:2, display:'flex', gap:10, flexWrap:'wrap' }}>
@@ -46,7 +46,7 @@ export default function TaskItem({ task, expanded, onToggle, onExpand, onEdit, o
         <div className="ft-task-comments" style={{ padding:'0 16px 14px 50px', borderLeft:`3px solid ${cfg.border}` }}>
           <div style={{ fontSize:11, color:'var(--text-secondary)', fontWeight:700, marginBottom:8, textTransform:'uppercase', letterSpacing:1 }}>💬 Bitácora de la tarea</div>
           {task.comments.length === 0 && <div style={{ fontSize:13, color:'var(--text-faint)', marginBottom:10 }}>Sin notas aún.</div>}
-          {task.comments.map(c => (
+          {[...task.comments].sort((a,b) => (b.created_at||'') > (a.created_at||'') ? 1 : -1).map(c => (
             <div key={c.id} style={{ background:'var(--bg-elevated)', border:'1px solid var(--border-soft)', borderRadius:8, padding:'9px 12px', marginBottom:7, display:'flex', gap:10, alignItems:'flex-start' }}>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:3 }}>{c.author||'—'} · {fmtDate(c.created_at)}</div>

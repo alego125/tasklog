@@ -3,7 +3,7 @@ import { api } from './hooks/useApi.js'
 import { useProjects } from './hooks/useProjects.js'
 import { useToast } from './hooks/useToast.js'
 import Toast from './components/Toast.jsx'
-import { getStatus, COLORS, S, exportExcel } from './utils/helpers.js'
+import { getStatus, STATUS, COLORS, S, fmtDate, exportExcel } from './utils/helpers.js'
 import AuthScreen    from './components/AuthScreen.jsx'
 import ProfileScreen from './components/ProfileScreen.jsx'
 import Header        from './components/Header.jsx'
@@ -21,6 +21,7 @@ export default function App() {
   const [filterDateFrom,     setFilterDateFrom]     = useState('')
   const [filterDateTo,       setFilterDateTo]       = useState('')
   const [showDone,           setShowDone]           = useState(false)
+  const [viewMode,           setViewMode]           = useState('projects') // 'projects' | 'tasks' | 'bitacoras'
   const [expanded,           setExpanded]           = useState(null)
   const [expandedNotes,      setExpandedNotes]      = useState({})
   const [collapsedProjects,  setCollapsedProjects]  = useState({})
@@ -345,6 +346,11 @@ export default function App() {
               <label style={{ display:'flex', alignItems:'center', gap:7, fontSize:13, cursor:'pointer', whiteSpace:'nowrap' }}>
                 <input type="checkbox" checked={showDone} onChange={e=>setShowDone(e.target.checked)} style={{ accentColor:'#A8D170' }} /> Mostrar completadas
               </label>
+              <div style={{ display:'flex', gap:6, marginLeft:'auto' }}>
+                {[{id:'projects',label:'🗂 Proyectos'},{id:'tasks',label:'📋 Tareas'},{id:'bitacoras',label:'💬 Bitácoras'}].map(v => (
+                  <button key={v.id} onClick={()=>setViewMode(v.id)} style={{ ...S.btnSecondary, padding:'5px 12px', fontSize:12, fontWeight: viewMode===v.id?700:400, border: viewMode===v.id?'1.5px solid var(--accent)':'1px solid var(--border-soft)', color: viewMode===v.id?'var(--accent)':'var(--text-secondary)' }}>{v.label}</button>
+                ))}
+              </div>
             </div>
             <div className="ft-filters" style={{ display:'flex', gap:10, flexWrap:'wrap', alignItems:'center' }}>
               <span style={{ fontSize:12, color:'var(--text-muted)', whiteSpace:'nowrap' }}>📅 Filtrar por fecha de registro:</span>
@@ -369,8 +375,12 @@ export default function App() {
                   key={s.label}
                   onClick={() => {
                     if (s.filter === '__projects__') return
-                    setFilterStatus(active && s.filter !== null ? 'all' : (s.filter || 'all'))
-                    if (s.filter === 'done') setShowDone(true)
+                    if (s.filter === 'done') {
+                      if (active) { setShowDone(false); setFilterStatus('all') }
+                      else { setShowDone(true); setFilterStatus('done') }
+                    } else {
+                      setFilterStatus(active && s.filter !== null ? 'all' : (s.filter || 'all'))
+                    }
                   }}
                   style={{ background:'var(--bg-surface)', border:`1.5px solid ${active ? s.color : s.color+'44'}`, borderRadius:10, padding:'12px 14px', textAlign:'center', cursor: s.filter === '__projects__' ? 'default' : 'pointer', outline:'none', transition:'all .15s', boxShadow: active && s.filter !== null ? `0 0 0 2px ${s.color}44` : 'none' }}
                 >
@@ -460,7 +470,81 @@ export default function App() {
           )}
 
           {/* Proyectos */}
-          {proj.sortedProjects.map(project => {
+          {/* Vista Tareas */}
+          {viewMode === 'tasks' && (() => {
+            const allTasks = [...proj.allTasks]
+              .filter(t => !t.done || showDone)
+              .filter(t => filterProject==='all' || t.projectId===parseInt(filterProject))
+              .filter(t => !search.trim() || t.title.toLowerCase().includes(search.toLowerCase()) || t.projectName.toLowerCase().includes(search.toLowerCase()) || (t.responsible||'').toLowerCase().includes(search.toLowerCase()))
+              .sort((a,b) => {
+                const stA = getStatus(a.due_date, a.done), stB = getStatus(b.due_date, b.done)
+                const order = {overdue:0, warning:1, ok:2, done:3}
+                if (order[stA] !== order[stB]) return order[stA] - order[stB]
+                if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date)
+                if (a.due_date) return -1
+                if (b.due_date) return 1
+                return 0
+              })
+            return (
+              <div style={{ background:'var(--bg-surface)', border:'1px solid var(--border)', borderRadius:14, overflow:'hidden' }}>
+                <div style={{ padding:'12px 16px', borderBottom:'1px solid var(--border)', background:'var(--bg-elevated)', fontWeight:700, fontSize:13 }}>📋 Listado de tareas — {allTasks.length} resultado{allTasks.length!==1?'s':''}</div>
+                {allTasks.length === 0 && <div style={{ padding:24, textAlign:'center', color:'var(--text-faint)', fontSize:13 }}>Sin tareas.</div>}
+                {allTasks.map(t => {
+                  const cfg = STATUS[getStatus(t.due_date, t.done)]
+                  return (
+                    <div key={t.id} style={{ padding:'10px 16px', borderBottom:'1px solid var(--border)', borderLeft:`3px solid ${cfg.border}`, display:'flex', alignItems:'center', gap:10 }}>
+                      <div style={{ width:18, height:18, borderRadius:4, border:`2px solid ${cfg.badge}`, background:t.done?cfg.badge:'transparent', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, color:'#0f172a', fontWeight:900, flexShrink:0 }}>{t.done&&'✓'}</div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontWeight:600, fontSize:13, color:t.done?'var(--text-faint)':(getStatus(t.due_date,t.done)==='overdue'?'#ef4444':getStatus(t.due_date,t.done)==='warning'?'#f59e0b':'var(--task-title)'), whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{t.title}</div>
+                        <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2, display:'flex', gap:8, flexWrap:'wrap' }}>
+                          <span style={{ color:t.projectColor, fontWeight:600 }}>📁 {t.projectName}</span>
+                          {t.responsible && <span>👤 {t.responsible}</span>}
+                          {t.due_date && <span>📅 {t.due_date.slice(0,10)}</span>}
+                        </div>
+                      </div>
+                      <div style={{ background:`${cfg.badge}22`, border:`1px solid ${cfg.badge}55`, color:cfg.badge, padding:'2px 8px', borderRadius:20, fontSize:11, fontWeight:600, whiteSpace:'nowrap', flexShrink:0 }}>● {cfg.label}</div>
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })()}
+
+          {/* Vista Bitácoras */}
+          {viewMode === 'bitacoras' && (() => {
+            const allNotes = [
+              ...proj.projects
+                .filter(p => filterProject==='all' || p.id===parseInt(filterProject))
+                .flatMap(p => (p.notes||[]).map(n => ({ ...n, _kind:'proyecto', projectName:p.name, projectColor:p.color, taskTitle:null }))),
+              ...proj.allTasks
+                .filter(t => filterProject==='all' || t.projectId===parseInt(filterProject))
+                .flatMap(t => t.comments.map(c => ({ ...c, _kind:'tarea', projectName:t.projectName, projectColor:t.projectColor, taskTitle:t.title })))
+            ]
+            .filter(n => !search.trim() || n.text.toLowerCase().includes(search.toLowerCase()) || n.projectName.toLowerCase().includes(search.toLowerCase()) || (n.taskTitle||'').toLowerCase().includes(search.toLowerCase()))
+            .sort((a,b) => (b.created_at||'') > (a.created_at||'') ? 1 : -1)
+            return (
+              <div style={{ background:'var(--bg-surface)', border:'1px solid var(--border)', borderRadius:14, overflow:'hidden' }}>
+                <div style={{ padding:'12px 16px', borderBottom:'1px solid var(--border)', background:'var(--bg-elevated)', fontWeight:700, fontSize:13 }}>💬 Listado de bitácoras — {allNotes.length} resultado{allNotes.length!==1?'s':''}</div>
+                {allNotes.length === 0 && <div style={{ padding:24, textAlign:'center', color:'var(--text-faint)', fontSize:13 }}>Sin bitácoras.</div>}
+                {allNotes.map((n,i) => (
+                  <div key={i} style={{ padding:'10px 16px', borderBottom:'1px solid var(--border)', borderLeft:`3px solid ${n.projectColor}`, display:'flex', alignItems:'flex-start', gap:10 }}>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:4, display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
+                        <span style={{ color:n.projectColor, fontWeight:600 }}>📁 {n.projectName}</span>
+                        {n.taskTitle && <><span>›</span><span style={{ color:'var(--text-secondary)', fontWeight:600 }}>📌 {n.taskTitle}</span></>}
+                        <span style={{ background: n._kind==='tarea'?'#0f2a1e':'#1e1b4b', color: n._kind==='tarea'?'#4ade80':'#818cf8', padding:'1px 7px', borderRadius:10, fontSize:10 }}>{n._kind==='tarea'?'Bitácora de tarea':'Bitácora de proyecto'}</span>
+                        <span>·</span><span>{n.author||'—'}</span><span>·</span><span>{fmtDate(n.created_at)}</span>
+                      </div>
+                      <div style={{ fontSize:13, color:'var(--text-content)', lineHeight:1.5 }}>{n.text}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
+
+          {/* Proyectos */}
+          {viewMode === 'projects' && proj.sortedProjects.map(project => {
             if (filterProject!=='all' && project.id!==parseInt(filterProject)) return null
             const ptasks = filtered.filter(t => t.projectId===project.id)
             if (filterStatus!=='all' && ptasks.length===0) return null
@@ -518,8 +602,8 @@ export default function App() {
             )
           })}
 
-          {/* Completadas */}
-          {showDone && doneTasks.length > 0 && (
+          {/* Completadas — solo en vista proyectos */}
+          {viewMode === 'projects' && showDone && doneTasks.length > 0 && (
             <div style={{ background:'#052e16', border:'1px solid #16a34a44', borderRadius:14, padding:18 }}>
               <div style={{ fontWeight:700, color:'#22c55e', marginBottom:4 }}>✅ Archivo — completadas</div>
               <div style={{ fontSize:12, color:'#4ade80', marginBottom:10 }}>{doneTasks.length} tarea(s) completada(s)</div>

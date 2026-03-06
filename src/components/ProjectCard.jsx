@@ -17,10 +17,14 @@ export default function ProjectCard({
   const isCollapsed = collapsed || false
   const noteOpen    = newProjNote[project.id + '_open']
 
-  const mixedItems = [
-    ...filteredTasks.map(t => ({ ...t, _type:'task' })),
-    ...(showNotes ? (project.notes||[]).map(n => ({ ...n, _type:'note', projectId:project.id })) : [])
-  ].sort((a,b) => (a.created_at||'') > (b.created_at||'') ? 1 : -1)
+  const taskItems = filteredTasks
+    .map(t => ({ ...t, _type:'task' }))
+    .sort((a,b) => (a.created_at||'') < (b.created_at||'') ? -1 : 1) // antigua → reciente
+  const noteItems = showNotes
+    ? [...(project.notes||[])].map(n => ({ ...n, _type:'note', projectId:project.id }))
+        .sort((a,b) => (b.created_at||'') < (a.created_at||'') ? -1 : 1) // reciente → antigua
+    : []
+  const mixedItems = [...taskItems, ...noteItems]
 
   return (
     <div id={`project-${project.id}`} style={{ background:'var(--bg-surface)', border:`1px solid ${hasOverdue?'#dc262644':'#1e293b'}`, borderRadius:14, marginBottom:16, overflow:'hidden' }}>
@@ -69,11 +73,11 @@ export default function ProjectCard({
           <input placeholder="Descripción tarea *" value={newTask.title} onChange={e=>onNewTaskChange({...newTask,title:e.target.value})} onKeyDown={e=>e.key==='Enter'&&newTask.title&&onAddTask(project.id)} style={{ ...S.input, flex:'2 1 160px' }} autoFocus />
           <input placeholder="Responsable (opcional)" value={newTask.responsible} onChange={e=>onNewTaskChange({...newTask,responsible:e.target.value})} onKeyDown={e=>e.key==='Enter'&&newTask.title&&onAddTask(project.id)} style={{ ...S.input, flex:'1 1 140px' }} />
           <div style={{ display:'flex', gap:4, alignItems:'center', flex:'0 1 180px' }} title="Vencimiento (opcional)">
-            <input value={newTask.due_day||''} onChange={e=>onNewTaskChange({...newTask,due_day:e.target.value.replace(/\D/g,'').slice(0,2)})} placeholder="DD" maxLength={2} style={{ ...S.input, width:44, textAlign:'center', padding:'8px 4px' }} />
+            <input value={newTask.due_day||''} onChange={e=>onNewTaskChange({...newTask,due_day:e.target.value.replace(/\D/g,'').slice(0,2)})} onKeyDown={e=>e.key==='Enter'&&newTask.title&&onAddTask(project.id)} placeholder="DD" maxLength={2} style={{ ...S.input, width:44, textAlign:'center', padding:'8px 4px' }} />
             <span style={{color:'var(--text-muted)',fontSize:13}}>/</span>
-            <input value={newTask.due_month||''} onChange={e=>onNewTaskChange({...newTask,due_month:e.target.value.replace(/\D/g,'').slice(0,2)})} placeholder="MM" maxLength={2} style={{ ...S.input, width:44, textAlign:'center', padding:'8px 4px' }} />
+            <input value={newTask.due_month||''} onChange={e=>onNewTaskChange({...newTask,due_month:e.target.value.replace(/\D/g,'').slice(0,2)})} onKeyDown={e=>e.key==='Enter'&&newTask.title&&onAddTask(project.id)} placeholder="MM" maxLength={2} style={{ ...S.input, width:44, textAlign:'center', padding:'8px 4px' }} />
             <span style={{color:'var(--text-muted)',fontSize:13}}>/</span>
-            <input value={newTask.due_year||String(new Date().getFullYear())} onChange={e=>onNewTaskChange({...newTask,due_year:e.target.value.replace(/\D/g,'').slice(0,4)})} placeholder="AAAA" maxLength={4} style={{ ...S.input, width:58, textAlign:'center', padding:'8px 4px' }} />
+            <input value={newTask.due_year||String(new Date().getFullYear())} onChange={e=>onNewTaskChange({...newTask,due_year:e.target.value.replace(/\D/g,'').slice(0,4)})} onKeyDown={e=>e.key==='Enter'&&newTask.title&&onAddTask(project.id)} placeholder="AAAA" maxLength={4} style={{ ...S.input, width:58, textAlign:'center', padding:'8px 4px' }} />
           </div>
           <button onClick={() => onAddTask(project.id)} style={S.btnPrimary} disabled={!newTask.title}>Agregar</button>
           <button onClick={() => onOpenNewTask(null)} style={S.btnSecondary}>✕</button>
