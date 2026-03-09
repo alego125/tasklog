@@ -5,7 +5,7 @@ export const getStatus = (due, done) => {
   const dueStr   = String(due).slice(0, 10)
   const today    = new Date()
   const todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0')
-  if (dueStr < todayStr) return 'overdue'
+  if (dueStr <= todayStr) return 'overdue'
   const diff = (new Date(dueStr + 'T12:00:00') - new Date(todayStr + 'T12:00:00')) / 86400000
   if (diff <= 3) return 'warning'
   return 'ok'
@@ -23,17 +23,27 @@ export const COLORS = ['#6366f1','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d
 // ── Date formatters ───────────────────────────────────────────────
 export const fmtDate = d => {
   if (!d) return ''
-  if (d.includes(' ') || d.includes('T')) {
-    const date = new Date(d.replace(' ', 'T') + (d.includes('Z') ? '' : 'Z'))
+  if (String(d).includes(' ') || String(d).includes('T')) {
+    const date = new Date(String(d).replace(' ', 'T') + (String(d).includes('Z') ? '' : 'Z'))
     date.setHours(date.getHours() - 3)
-    return date.toISOString().slice(0, 16).replace('T', ' ')
+    const dd = String(date.getDate()).padStart(2,'0')
+    const mm = String(date.getMonth()+1).padStart(2,'0')
+    const yy = date.getFullYear()
+    const hh = String(date.getHours()).padStart(2,'0')
+    const min = String(date.getMinutes()).padStart(2,'0')
+    return dd + '/' + mm + '/' + yy + ' ' + hh + ':' + min
   }
+  // Solo fecha YYYY-MM-DD → dd/mm/yyyy
+  const parts = String(d).slice(0,10).split('-')
+  if (parts.length === 3) return parts[2] + '/' + parts[1] + '/' + parts[0]
   return d
 }
 
 export const fmtSimpleDate = d => {
   if (!d) return ''
-  return String(d).slice(0, 10)
+  const parts = String(d).slice(0,10).split('-')
+  if (parts.length === 3) return parts[2] + '/' + parts[1] + '/' + parts[0]
+  return String(d).slice(0,10)
 }
 
 // ── Shared styles ─────────────────────────────────────────────────
