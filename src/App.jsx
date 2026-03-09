@@ -112,8 +112,8 @@ export default function App() {
       (filterStatus==='all' || st===filterStatus) &&
       (filterProject==='all' || t.projectId===parseInt(filterProject)) &&
       (showDone || !t.done) &&
-      (!filterDateFrom || (t.created_at && t.created_at >= filterDateFrom)) &&
-      (!filterDateTo   || (t.created_at && t.created_at <= filterDateTo + 'T99'))
+      (!filterDateFrom || (t.due_date && String(t.due_date).slice(0,10) >= filterDateFrom)) &&
+      (!filterDateTo   || (t.due_date && String(t.due_date).slice(0,10) <= filterDateTo))
   }), [proj.allTasks, search, filterStatus, filterProject, showDone, filterDateFrom, filterDateTo])
 
   const filteredProjectNotes = useMemo(() => {
@@ -138,9 +138,12 @@ export default function App() {
     const result = {}
     proj.allTasks.forEach(t => {
       if (filterProject!=='all' && t.projectId!==parseInt(filterProject)) return
-      if (filterDateFrom && t.created_at && t.created_at < filterDateFrom) return
-      if (filterDateTo   && t.created_at && t.created_at > filterDateTo + 'T99') return
-      const hits = t.comments.filter(c => c.text.toLowerCase().includes(q) || (c.author||'').toLowerCase().includes(q))
+      const hits = t.comments.filter(c => {
+        if (!c.text.toLowerCase().includes(q) && !(c.author||'').toLowerCase().includes(q)) return false
+        if (filterDateFrom && String(c.created_at).slice(0,10) < filterDateFrom) return false
+        if (filterDateTo   && String(c.created_at).slice(0,10) > filterDateTo)   return false
+        return true
+      })
       if (hits.length) result[t.id] = hits
     })
     return result
