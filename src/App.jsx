@@ -504,7 +504,7 @@ export default function App() {
                     <div key={t.id} style={{ padding:'10px 16px', borderBottom:'1px solid var(--border)', borderLeft:`3px solid ${cfg.border}`, display:'flex', alignItems:'center', gap:10 }}>
                       <div style={{ width:18, height:18, borderRadius:4, border:`2px solid ${cfg.badge}`, background:t.done?cfg.badge:'transparent', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, color:'#0f172a', fontWeight:900, flexShrink:0 }}>{t.done&&'✓'}</div>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontWeight:600, fontSize:13, color:t.done?'var(--text-faint)':(getStatus(t.due_date,t.done)==='overdue'?'#ef4444':getStatus(t.due_date,t.done)==='warning'?'#f59e0b':'var(--task-title)'), whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{t.title}</div>
+                        <div style={{ fontWeight:600, fontSize:13, color:t.done?'var(--text-faint)':(getStatus(t.due_date,t.done)==='overdue'?'#ef4444':getStatus(t.due_date,t.done)==='warning'?'#f59e0b':'var(--task-title)'), wordBreak:'break-word', overflowWrap:'break-word' }}>{t.title}</div>
                         <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2, display:'flex', gap:8, flexWrap:'wrap' }}>
                           <span style={{ color:t.projectColor, fontWeight:600 }}>📁 {t.projectName}</span>
                           {t.responsible && <span>👤 {t.responsible}</span>}
