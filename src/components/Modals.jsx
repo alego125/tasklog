@@ -24,11 +24,13 @@ export function Confirm({ msg, onOk, onCancel, title, okLabel, okColor }) {
   const btnStyle = { ...S.btnDanger, background: okColor || '#dc2626' }
   return (
     <Backdrop onClose={onCancel}>
-      <div style={{ fontSize:16, fontWeight:700, marginBottom:8 }}>{title || '⚠️ Confirmar eliminación'}</div>
-      <div style={{ fontSize:14, color:'var(--text-secondary)', marginBottom:24 }}>{msg}</div>
-      <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
-        <button onClick={onCancel} style={S.btnSecondary}>Cancelar</button>
-        <button onClick={onOk} style={btnStyle}>{okLabel || 'Eliminar'}</button>
+      <div onKeyDown={e=>e.key==='Enter'&&onOk()} tabIndex={-1} style={{ outline:'none' }}>
+        <div style={{ fontSize:16, fontWeight:700, marginBottom:8 }}>{title || '⚠️ Confirmar eliminación'}</div>
+        <div style={{ fontSize:14, color:'var(--text-secondary)', marginBottom:24 }}>{msg}</div>
+        <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
+          <button onClick={onCancel} style={S.btnSecondary}>Cancelar</button>
+          <button onClick={onOk} autoFocus style={btnStyle}>{okLabel || 'Eliminar'}</button>
+        </div>
       </div>
     </Backdrop>
   )
@@ -97,7 +99,7 @@ export function EditComment({ comment, onSave, onClose }) {
   return (
     <Backdrop onClose={onClose}>
       <div style={{ fontSize:16, fontWeight:700, marginBottom:14 }}>✏️ Editar nota</div>
-      <textarea value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==='Enter'&&e.ctrlKey&&onSave({text})} rows={4} autoFocus style={{ ...S.input, resize:'vertical', lineHeight:1.6 }} />
+      <textarea value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==='Enter'&&e.ctrlKey&&onSave({text})} placeholder="Ctrl+Enter para guardar" rows={4} autoFocus style={{ ...S.input, resize:'vertical', lineHeight:1.6 }} />
       <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:14 }}>
         <button onClick={onClose} style={S.btnSecondary}>Cancelar</button>
         <button onClick={()=>onSave({text})} style={S.btnPrimary}>Guardar</button>
@@ -127,11 +129,11 @@ export function EditDueDateModal({ task, onSave, onClose }) {
       <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:18 }}>{task.title}</div>
       <label style={S.label}>Vencimiento <span style={{color:'var(--text-faint)',fontSize:11}}>(dejá vacío para quitar)</span>
         <div style={{ display:'flex', gap:8, alignItems:'center', marginTop:4 }}>
-          <input value={due.day}   onChange={e=>inputNum(31,  e.target.value, v=>setDue(p=>({...p,day:v})))}   placeholder="DD"   maxLength={2} style={{ ...S.input, width:64, textAlign:'center' }} />
+          <input value={due.day}   onChange={e=>inputNum(31,  e.target.value, v=>setDue(p=>({...p,day:v})))}   onKeyDown={e=>e.key==='Enter'&&save()} placeholder="DD"   maxLength={2} style={{ ...S.input, width:64, textAlign:'center' }} />
           <span style={{color:'var(--text-muted)',fontSize:16}}>/</span>
-          <input value={due.month} onChange={e=>inputNum(12,  e.target.value, v=>setDue(p=>({...p,month:v})))} placeholder="MM"   maxLength={2} style={{ ...S.input, width:64, textAlign:'center' }} />
+          <input value={due.month} onChange={e=>inputNum(12,  e.target.value, v=>setDue(p=>({...p,month:v})))} onKeyDown={e=>e.key==='Enter'&&save()} placeholder="MM"   maxLength={2} style={{ ...S.input, width:64, textAlign:'center' }} />
           <span style={{color:'var(--text-muted)',fontSize:16}}>/</span>
-          <input value={due.year}  onChange={e=>inputNum(9999,e.target.value, v=>setDue(p=>({...p,year:v})))}  placeholder="AAAA" maxLength={4} style={{ ...S.input, width:88, textAlign:'center' }} />
+          <input value={due.year}  onChange={e=>inputNum(9999,e.target.value, v=>setDue(p=>({...p,year:v})))}  onKeyDown={e=>e.key==='Enter'&&save()} placeholder="AAAA" maxLength={4} style={{ ...S.input, width:88, textAlign:'center' }} />
         </div>
       </label>
       {(due.day || due.month) && (
@@ -152,7 +154,7 @@ export function EditCreatedAtModal({ item, label, onSave, onClose }) {
       <div style={{ fontSize:16, fontWeight:700, marginBottom:6 }}>🗓 Fecha de registro</div>
       <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:18 }}>{label}</div>
       <label style={S.label}>Fecha de registro
-        <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{ ...S.input, marginTop:4 }} autoFocus />
+        <input type="date" value={date} onChange={e=>setDate(e.target.value)} onKeyDown={e=>e.key==='Enter'&&onSave(date)} style={{ ...S.input, marginTop:4 }} autoFocus />
       </label>
       <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:20 }}>
         <button onClick={onClose} style={S.btnSecondary}>Cancelar</button>
