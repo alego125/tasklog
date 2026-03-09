@@ -17,7 +17,7 @@ export default function TaskItem({ task, expanded, onToggle, onExpand, onEdit, o
 
         {/* Title + meta */}
         <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontWeight:600, fontSize:14, textDecoration:task.done?'line-through':'none', color:task.done?'var(--text-faint)':(status==='overdue'?'#ef4444':status==='warning'?'#f59e0b':'var(--task-title)'), whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+          <div style={{ fontWeight:600, fontSize:14, textDecoration:task.done?'line-through':'none', color:task.done?'var(--text-faint)':(status==='overdue'?'#ef4444':status==='warning'?'#f59e0b':'var(--task-title)'), wordBreak:'break-word', overflowWrap:'break-word' }}>
             {task.title}
           </div>
           <div className="ft-task-meta" style={{ fontSize:11, color:'var(--text-muted)', marginTop:2, display:'flex', gap:10, flexWrap:'wrap' }}>
