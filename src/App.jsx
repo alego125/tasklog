@@ -557,11 +557,32 @@ export default function App() {
             if (filterProject!=='all' && project.id!==parseInt(filterProject)) return null
             const ptasks = filtered.filter(t => t.projectId===project.id)
             if (filterStatus!=='all' && ptasks.length===0) return null
-            if (search.trim() && ptasks.length===0 && !(project.notes||[]).some(n=>n.text.toLowerCase().includes(search.toLowerCase()))) return null
+            // Filtrar notas del proyecto por fecha de registro
+            const filteredNotes = (project.notes||[]).filter(n => {
+              const d = String(n.created_at||'').slice(0,10)
+              if (filterDateFrom && d < filterDateFrom) return false
+              if (filterDateTo   && d > filterDateTo)   return false
+              return true
+            })
+            // Filtrar bitácoras de tareas por fecha de registro
+            const projectWithFilteredNotes = {
+              ...project,
+              notes: filteredNotes,
+              tasks: project.tasks.map(t => ({
+                ...t,
+                comments: t.comments.filter(c => {
+                  const d = String(c.created_at||'').slice(0,10)
+                  if (filterDateFrom && d < filterDateFrom) return false
+                  if (filterDateTo   && d > filterDateTo)   return false
+                  return true
+                })
+              }))
+            }
+            if (search.trim() && ptasks.length===0 && !filteredNotes.some(n=>n.text.toLowerCase().includes(search.toLowerCase()))) return null
             return (
               <ProjectCard
                 key={project.id}
-                project={project}
+                project={projectWithFilteredNotes}
                 filteredTasks={ptasks}
                 collapsed={collapsedProjects[project.id]}
                 onToggleCollapse={id => setCollapsedProjects(c=>({...c,[id]:!c[id]}))}
