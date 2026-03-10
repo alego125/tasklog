@@ -146,7 +146,8 @@ export default function ProjectCard({
           <span>📌 {project.tasks.filter(t=>!t.done).length} pendiente{project.tasks.filter(t=>!t.done).length!==1?'s':''}</span>
           <span>✅ {project.tasks.filter(t=>t.done).length} completada{project.tasks.filter(t=>t.done).length!==1?'s':''}</span>
           <span>📝 {project.notes?.length||0} nota{(project.notes?.length||0)!==1?'s':''}</span>
-          {hasOverdue && <span style={{color:'#ef4444'}}>⚠ {project.tasks.filter(t=>getStatus(t.due_date,t.done)==='overdue').length} vencida{project.tasks.filter(t=>getStatus(t.due_date,t.done)==='overdue').length!==1?'s':''}</span>}
+          {hasOverdue  && <span style={{color:'#ef4444'}}>⚠ {project.tasks.filter(t=>getStatus(t.due_date,t.done)==='overdue').length} vencida{project.tasks.filter(t=>getStatus(t.due_date,t.done)==='overdue').length!==1?'s':''}</span>}
+          {hasWarning  && <span style={{color:'#f59e0b'}}>⚠ {project.tasks.filter(t=>getStatus(t.due_date,t.done)==='warning').length} por vencer</span>}
         </div>
       )}
     </div>
