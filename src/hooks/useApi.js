@@ -2,6 +2,10 @@ const BASE = import.meta.env.VITE_API_URL
   ? `${import.meta.env.VITE_API_URL}/api`
   : '/api'
 
+export function isNetworkError(e) {
+  return e instanceof TypeError || (e?.message || '').toLowerCase().includes('failed to fetch') || (e?.message || '').toLowerCase().includes('network')
+}
+
 function getToken() {
   return localStorage.getItem('ft_token')
 }
@@ -11,11 +15,16 @@ async function request(method, path, body) {
   const token = getToken()
   if (token) headers['Authorization'] = `Bearer ${token}`
 
-  const res = await fetch(`${BASE}${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined
-  })
+  let res
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined
+    })
+  } catch(e) {
+    throw new Error('SIN_CONEXION')
+  }
 
   if (res.status === 401) {
     localStorage.removeItem('ft_token')
