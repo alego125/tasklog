@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { api } from './hooks/useApi.js'
+import { api, isNetworkError } from './hooks/useApi.js'
 import { useProjects } from './hooks/useProjects.js'
 import { useToast } from './hooks/useToast.js'
 import Toast from './components/Toast.jsx'
@@ -56,6 +56,9 @@ export default function App() {
   // ── 2. Custom hooks ───────────────────────────────────────────
   const proj                         = useProjects()
   const { toasts, toast, dismiss }   = useToast()
+  const errMsg = (e) => isNetworkError(e) || e?.message==='SIN_CONEXION'
+    ? '⚠️ Sin conexión con la base de datos. La información no fue guardada.'
+    : 'Error al guardar. Intentá nuevamente.'
 
   // ── 3. Funciones síncronas ────────────────────────────────────
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark')
@@ -278,16 +281,16 @@ export default function App() {
       )}
 
       {confirm     && <Confirm msg={confirm.msg} onOk={()=>{confirm.action();setConfirm(null)}} onCancel={()=>setConfirm(null)} title={confirm.title} okLabel={confirm.okLabel} okColor={confirm.okColor} />}
-      {editProject && <EditProject project={editProject} onSave={(name,color) => { proj.doSaveEditProject(editProject,name,color).then(()=>toast('Proyecto actualizado')).catch(()=>toast('Error al guardar','error')); setEditProject(null) }} onClose={()=>setEditProject(null)} />}
-      {editTask    && <EditTask task={editTask.task} onSave={form => { proj.doSaveEditTask(editTask.pId,editTask.task.id,form).then(()=>toast('Tarea actualizada')).catch(()=>toast('Error al guardar','error')); setEditTask(null) }} onClose={()=>setEditTask(null)} />}
-      {editComment && <EditComment comment={editComment.comment} onSave={data => { proj.doSaveEditComment(editComment.pId,editComment.tId,editComment.comment.id,data).then(()=>toast('Nota actualizada')).catch(()=>toast('Error al guardar','error')); setEditComment(null) }} onClose={()=>setEditComment(null)} />}
-      {editNote    && <EditComment comment={editNote.note}       onSave={data => { proj.doSaveEditNote(editNote.pId,editNote.note.id,data).then(()=>toast('Nota actualizada')).catch(()=>toast('Error al guardar','error')); setEditNote(null) }}           onClose={()=>setEditNote(null)} />}
-      {editDueDate && <EditDueDateModal task={editDueDate.task} onSave={due_date => { proj.doSaveEditTask(editDueDate.pId,editDueDate.task.id,{title:editDueDate.task.title,responsible:editDueDate.task.responsible||'',due_date}).then(()=>toast('Fecha actualizada')).catch(()=>toast('Error al guardar','error')); setEditDueDate(null) }} onClose={()=>setEditDueDate(null)} />}
-      {editCreatedAt && editCreatedAt.type==='task'    && <EditCreatedAtModal item={editCreatedAt.item} label={editCreatedAt.item.title} onSave={d => { proj.doSaveEditTask(editCreatedAt.pId,editCreatedAt.item.id,{title:editCreatedAt.item.title,responsible:editCreatedAt.item.responsible||'',due_date:editCreatedAt.item.due_date||'',created_at:d}).then(()=>toast('Fecha actualizada')).catch(()=>toast('Error','error')); setEditCreatedAt(null) }} onClose={()=>setEditCreatedAt(null)} />}
-      {editCreatedAt && editCreatedAt.type==='comment' && <EditCreatedAtModal item={editCreatedAt.item} label={editCreatedAt.item.text?.slice(0,60)} onSave={d => { proj.doSaveEditComment(editCreatedAt.pId,editCreatedAt.tId,editCreatedAt.item.id,{text:editCreatedAt.item.text,created_at:d}).then(()=>toast('Fecha actualizada')).catch(()=>toast('Error','error')); setEditCreatedAt(null) }} onClose={()=>setEditCreatedAt(null)} />}
-      {editCreatedAt && editCreatedAt.type==='note'    && <EditCreatedAtModal item={editCreatedAt.item} label={editCreatedAt.item.text?.slice(0,60)} onSave={d => { proj.doSaveEditNote(editCreatedAt.pId,editCreatedAt.item.id,{text:editCreatedAt.item.text,created_at:d}).then(()=>toast('Fecha actualizada')).catch(()=>toast('Error','error')); setEditCreatedAt(null) }} onClose={()=>setEditCreatedAt(null)} />}
-      {moveNote    && <MoveNoteModal note={moveNote.note} tasks={proj.allTasks.filter(t=>!t.done)} onMove={taskId => { proj.doMoveNoteToTask(moveNote.note,moveNote.pId,taskId,proj.allTasks).then(()=>toast('Nota movida a tarea')).catch(()=>toast('Error al mover','error')); setMoveNote(null) }} onClose={()=>setMoveNote(null)} />}
-      {moveComment && <MoveCommentModal comment={moveComment.comment} projects={proj.projects} currentProjectId={moveComment.pId} onMove={projectId => { proj.doMoveCommentToProject(moveComment.comment,moveComment.pId,moveComment.tId,projectId).then(()=>toast('Nota movida al proyecto')).catch(()=>toast('Error al mover','error')); setMoveComment(null) }} onClose={()=>setMoveComment(null)} />}
+      {editProject && <EditProject project={editProject} onSave={(name,color) => { proj.doSaveEditProject(editProject,name,color).then(()=>toast('Proyecto actualizado')).catch(e=>toast(errMsg(e),'error')); setEditProject(null) }} onClose={()=>setEditProject(null)} />}
+      {editTask    && <EditTask task={editTask.task} onSave={form => { proj.doSaveEditTask(editTask.pId,editTask.task.id,form).then(()=>toast('Tarea actualizada')).catch(e=>toast(errMsg(e),'error')); setEditTask(null) }} onClose={()=>setEditTask(null)} />}
+      {editComment && <EditComment comment={editComment.comment} onSave={data => { proj.doSaveEditComment(editComment.pId,editComment.tId,editComment.comment.id,data).then(()=>toast('Nota actualizada')).catch(e=>toast(errMsg(e),'error')); setEditComment(null) }} onClose={()=>setEditComment(null)} />}
+      {editNote    && <EditComment comment={editNote.note}       onSave={data => { proj.doSaveEditNote(editNote.pId,editNote.note.id,data).then(()=>toast('Nota actualizada')).catch(e=>toast(errMsg(e),'error')); setEditNote(null) }}           onClose={()=>setEditNote(null)} />}
+      {editDueDate && <EditDueDateModal task={editDueDate.task} onSave={due_date => { proj.doSaveEditTask(editDueDate.pId,editDueDate.task.id,{title:editDueDate.task.title,responsible:editDueDate.task.responsible||'',due_date}).then(()=>toast('Fecha actualizada')).catch(e=>toast(errMsg(e),'error')); setEditDueDate(null) }} onClose={()=>setEditDueDate(null)} />}
+      {editCreatedAt && editCreatedAt.type==='task'    && <EditCreatedAtModal item={editCreatedAt.item} label={editCreatedAt.item.title} onSave={d => { proj.doSaveEditTask(editCreatedAt.pId,editCreatedAt.item.id,{title:editCreatedAt.item.title,responsible:editCreatedAt.item.responsible||'',due_date:editCreatedAt.item.due_date||'',created_at:d}).then(()=>toast('Fecha actualizada')).catch(e=>toast(errMsg(e),'error')); setEditCreatedAt(null) }} onClose={()=>setEditCreatedAt(null)} />}
+      {editCreatedAt && editCreatedAt.type==='comment' && <EditCreatedAtModal item={editCreatedAt.item} label={editCreatedAt.item.text?.slice(0,60)} onSave={d => { proj.doSaveEditComment(editCreatedAt.pId,editCreatedAt.tId,editCreatedAt.item.id,{text:editCreatedAt.item.text,created_at:d}).then(()=>toast('Fecha actualizada')).catch(e=>toast(errMsg(e),'error')); setEditCreatedAt(null) }} onClose={()=>setEditCreatedAt(null)} />}
+      {editCreatedAt && editCreatedAt.type==='note'    && <EditCreatedAtModal item={editCreatedAt.item} label={editCreatedAt.item.text?.slice(0,60)} onSave={d => { proj.doSaveEditNote(editCreatedAt.pId,editCreatedAt.item.id,{text:editCreatedAt.item.text,created_at:d}).then(()=>toast('Fecha actualizada')).catch(e=>toast(errMsg(e),'error')); setEditCreatedAt(null) }} onClose={()=>setEditCreatedAt(null)} />}
+      {moveNote    && <MoveNoteModal note={moveNote.note} tasks={proj.allTasks.filter(t=>!t.done)} onMove={taskId => { proj.doMoveNoteToTask(moveNote.note,moveNote.pId,taskId,proj.allTasks).then(()=>toast('Nota movida a tarea')).catch(e=>toast(errMsg(e),'error')); setMoveNote(null) }} onClose={()=>setMoveNote(null)} />}
+      {moveComment && <MoveCommentModal comment={moveComment.comment} projects={proj.projects} currentProjectId={moveComment.pId} onMove={projectId => { proj.doMoveCommentToProject(moveComment.comment,moveComment.pId,moveComment.tId,projectId).then(()=>toast('Nota movida al proyecto')).catch(e=>toast(errMsg(e),'error')); setMoveComment(null) }} onClose={()=>setMoveComment(null)} />}
 
       {/* ── Header ── */}
       <Header
@@ -325,7 +328,7 @@ export default function App() {
                 </div>
                 <div style={{ display:'flex', gap:7 }}>
                   <button onClick={() => showConfirm(`¿Restaurar "${project.name}" a la pantalla principal?`, () => proj.doUnarchiveProject(project.id), { title:'↩ Confirmar restauración', okLabel:'Restaurar', okColor:'#059669' })} style={{ background:'#065f46', border:'1px solid #059669', color:'#34d399', padding:'6px 14px', borderRadius:7, cursor:'pointer', fontSize:12, fontWeight:600 }}>↩ Restaurar</button>
-                  <button onClick={() => showConfirm(`¿Eliminar "${project.name}" y TODAS sus tareas y notas? Esta acción no se puede deshacer.`, () => proj.doDeleteProject(project.id).then(()=>toast('Proyecto eliminado')).catch(()=>toast('Error al eliminar','error')))} style={{ ...S.iconBtn, borderColor:'#dc262633', color:'#ef4444' }} title="Eliminar permanentemente">🗑</button>
+                  <button onClick={() => showConfirm(`¿Eliminar "${project.name}" y TODAS sus tareas y notas? Esta acción no se puede deshacer.`, () => proj.doDeleteProject(project.id).then(()=>toast('Proyecto eliminado')).catch(e=>toast(errMsg(e),'error')))} style={{ ...S.iconBtn, borderColor:'#dc262633', color:'#ef4444' }} title="Eliminar permanentemente">🗑</button>
                 </div>
               </div>
               <div style={{ padding:'8px 16px', fontSize:12, color:'var(--text-faint)', display:'flex', gap:16, borderTop:'1px solid var(--border)' }}>
@@ -421,14 +424,14 @@ export default function App() {
               <input placeholder="Nombre del proyecto..." value={newProjName} onChange={e=>setNewProjName(e.target.value)}
                 onKeyDown={e => {
                 if (e.key==='Enter' && newProjName.trim()) {
-                  proj.doAddProject(newProjName, newProjColor).then(() => { setNewProjName(''); setNewProjOpen(false); toast('Proyecto creado') }).catch(() => toast('Error al crear proyecto','error'))
+                  proj.doAddProject(newProjName, newProjColor).then(() => { setNewProjName(''); setNewProjOpen(false); toast('Proyecto creado') }).catch(e => toast(errMsg(e),'error'))
                 }
               }}
                 style={{ ...S.input, flex:1 }} autoFocus />
               <div style={{ display:'flex', gap:6 }}>
                 {COLORS.map(c => <div key={c} onClick={() => setNewProjColor(c)} style={{ width:22, height:22, borderRadius:'50%', background:c, cursor:'pointer', border:newProjColor===c?'3px solid white':'3px solid transparent', boxSizing:'border-box' }} />)}
               </div>
-              <button onClick={() => { proj.doAddProject(newProjName,newProjColor).then(()=>{ setNewProjName(''); setNewProjOpen(false); toast('Proyecto creado') }).catch(()=>toast('Error al crear proyecto','error')) }} style={S.btnPrimary}>Crear</button>
+              <button onClick={() => { proj.doAddProject(newProjName,newProjColor).then(()=>{ setNewProjName(''); setNewProjOpen(false); toast('Proyecto creado') }).catch(e=>toast(errMsg(e),'error')) }} style={S.btnPrimary}>Crear</button>
               <button onClick={() => setNewProjOpen(false)} style={S.btnSecondary}>Cancelar</button>
             </div>
           )}
@@ -604,18 +607,18 @@ export default function App() {
                   setNewTaskFor(null)
                   proj.doAddTask(pId, taskData)
                     .then(() => toast('Tarea agregada'))
-                    .catch(() => toast('Error al agregar tarea','error'))
+                    .catch(e => toast(errMsg(e),'error'))
                 }}
                 newProjNote={newProjNote}
                 onNewProjNoteChange={(key, val) => setNewProjNote(n => ({ ...n, [key]: val }))}
                 onAddProjectNote={pId => {
                   proj.doAddProjectNote(pId, newProjNote[pId]||'')
                     .then(() => { setNewProjNote(n => ({ ...n, [pId]:'', [pId+'_open']:false })); toast('Nota agregada') })
-                    .catch(() => toast('Error al agregar nota','error'))
+                    .catch(e => toast(errMsg(e),'error'))
                 }}
                 onEditProject={setEditProject}
-                onDeleteProject={pId => proj.doDeleteProject(pId).then(()=>toast('Proyecto eliminado')).catch(()=>toast('Error al eliminar','error'))}
-                onArchiveProject={pId => proj.doArchiveProject(pId).then(()=>toast('Proyecto archivado','warning')).catch(()=>toast('Error al archivar','error'))}
+                onDeleteProject={pId => proj.doDeleteProject(pId).then(()=>toast('Proyecto eliminado')).catch(e=>toast(errMsg(e),'error'))}
+                onArchiveProject={pId => proj.doArchiveProject(pId).then(()=>toast('Proyecto archivado','warning')).catch(e=>toast(errMsg(e),'error'))}
                 onMembersModal={id => { setMembersModal(id); setMemberSearch(''); setMemberResults([]) }}
                 onEditTask={(pId, task) => setEditTask({ pId, task })}
                 onEditDueDate={(pId, task) => setEditDueDate({ pId, task })}
@@ -625,7 +628,7 @@ export default function App() {
                 onDeleteComment={proj.doDeleteComment}
                 onMoveComment={(comment, pId, tId) => setMoveComment({ comment, pId, tId })}
                 onMoveNote={(note, pId) => setMoveNote({ note, pId })}
-                onAddComment={(pId, tId, text) => { setNewComment(p=>({...p,[tId]:''})); proj.doAddComment(pId, tId, text).then(() => toast('Nota agregada')).catch(() => { setNewComment(p=>({...p,[tId]:text})); toast('Error al agregar nota','error') }) }}
+                onAddComment={(pId, tId, text) => { setNewComment(p=>({...p,[tId]:''})); proj.doAddComment(pId, tId, text).then(() => toast('Nota agregada')).catch(e => { setNewComment(p=>({...p,[tId]:text})); toast(errMsg(e),'error') }) }}
                 newComment={newComment}
                 onNewCommentChange={(tId, val) => setNewComment(p=>({...p,[tId]:val}))}
                 onEditNote={(pId, note) => setEditNote({ pId, note })}
