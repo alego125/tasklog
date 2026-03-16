@@ -94,14 +94,22 @@ export default function App() {
 
   useEffect(() => {
     if (!currentUser) return
-    const SESSION_MS = 6 * 60 * 60 * 1000
-    const loginTime  = parseInt(localStorage.getItem('ft_login_time') || '0')
-    const remaining  = SESSION_MS - (Date.now() - loginTime)
-    if (remaining <= 0) { doLogout(); return }
-    const timer = setTimeout(() => { doLogout() }, remaining)
-    const handleFocus = () => { if (Date.now() - parseInt(localStorage.getItem('ft_login_time')||'0') >= SESSION_MS) doLogout() }
-    window.addEventListener('focus', handleFocus)
-    return () => { clearTimeout(timer); window.removeEventListener('focus', handleFocus) }
+    const INACTIVITY_MS = 20 * 60 * 1000 // 20 minutos
+    let timer
+
+    const reset = () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => { doLogout(); window.location.reload() }, INACTIVITY_MS)
+    }
+
+    const EVENTS = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click']
+    EVENTS.forEach(e => window.addEventListener(e, reset, { passive: true }))
+    reset() // arrancar el timer
+
+    return () => {
+      clearTimeout(timer)
+      EVENTS.forEach(e => window.removeEventListener(e, reset))
+    }
   }, [currentUser])
 
   // ── Filters ───────────────────────────────────────────────────
