@@ -18,13 +18,15 @@ export default function ProjectCard({
   const isCollapsed = collapsed || false
   const noteOpen    = newProjNote[project.id + '_open']
 
+  const STATUS_ORDER = { overdue:0, warning:1, ok:2, done:3 }
   const taskItems = filteredTasks
     .map(t => ({ ...t, _type:'task' }))
     .sort((a,b) => {
-      if (!a.due_date && !b.due_date) return 0
-      if (!a.due_date) return 1
-      if (!b.due_date) return -1
-      return a.due_date.localeCompare(b.due_date)
+      const sa = STATUS_ORDER[getStatus(a.due_date, a.done)] ?? 2
+      const sb = STATUS_ORDER[getStatus(b.due_date, b.done)] ?? 2
+      if (sa !== sb) return sa - sb
+      // Dentro del mismo grupo: más antigua primero (por fecha de registro)
+      return (a.created_at||'') < (b.created_at||'') ? -1 : 1
     })
   const noteItems = showNotes
     ? [...(project.notes||[])].map(n => ({ ...n, _type:'note', projectId:project.id }))
