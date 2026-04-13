@@ -20,7 +20,7 @@ export default function App() {
   const [filterProject,      setFilterProject]      = useState('all')
   const [filterDateFrom,     setFilterDateFrom]     = useState('')
   const [filterDateTo,       setFilterDateTo]       = useState('')
-  const [showDone,           setShowDone]           = useState(false)
+  const [showDone,           setShowDone]           = useState(true)
   const [viewMode,           setViewMode]           = useState('projects') // 'projects' | 'tasks' | 'bitacoras'
   const [expanded,           setExpanded]           = useState(null)
   const [expandedNotes,      setExpandedNotes]      = useState({})
