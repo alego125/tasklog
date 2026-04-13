@@ -647,19 +647,7 @@ export default function App() {
           })}
 
           {/* Completadas — solo en vista proyectos */}
-          {viewMode === 'projects' && showDone && doneTasks.length > 0 && (
-            <div style={{ background:'#052e16', border:'1px solid #16a34a44', borderRadius:14, padding:18 }}>
-              <div style={{ fontWeight:700, color:'#22c55e', marginBottom:4 }}>✅ Archivo — completadas</div>
-              <div style={{ fontSize:12, color:'#4ade80', marginBottom:10 }}>{doneTasks.length} tarea(s) completada(s)</div>
-              {doneTasks.map(t => (
-                <div key={t.id} style={{ background:'#0a3d1f', borderRadius:8, padding:'9px 14px', marginBottom:5, display:'flex', gap:10, fontSize:13, alignItems:'center' }}>
-                  <span style={{ color:'#22c55e' }}>✓</span>
-                  <span style={{ color:'#4ade80', textDecoration:'line-through', flex:1 }}>{t.title}</span>
-                  <span style={{ color:'#166534', fontSize:11 }}>{t.projectName}{t.responsible?` · ${t.responsible}`:''}</span>
-                </div>
-              ))}
-            </div>
-          )}
+
         </div>
       )}
       <Toast toasts={toasts} onDismiss={dismiss} />
