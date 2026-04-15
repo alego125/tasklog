@@ -41,7 +41,7 @@ export default function ProjectCard({
       <div className="ft-proj-header" style={{ borderLeft:`4px solid ${project.color}`, padding:'12px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', background:`linear-gradient(90deg,${project.color}11,transparent)` }}>
         <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
           <div style={{ width:9, height:9, borderRadius:'50%', background:project.color, flexShrink:0 }} />
-          <span style={{ fontWeight:700, fontSize:15 }}>{project.name}</span>
+          <span onClick={() => onToggleCollapse(project.id)} style={{ fontWeight:700, fontSize:15, cursor:'pointer' }} title={isCollapsed?'Expandir':'Colapsar'}>{project.name}</span>
           <span style={{ background:'var(--bg-elevated)', border:'1px solid var(--border-soft)', borderRadius:20, padding:'1px 9px', fontSize:11, color:'var(--text-muted)' }}>
             {project.tasks.filter(t=>!t.done).length} tarea{project.tasks.filter(t=>!t.done).length!==1?'s':''} activa{project.tasks.filter(t=>!t.done).length!==1?'s':''} · {project.notes?.length||0} nota{(project.notes?.length||0)!==1?'s':''}
           </span>
