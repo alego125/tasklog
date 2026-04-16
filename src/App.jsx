@@ -3,7 +3,7 @@ import { api, isNetworkError } from './hooks/useApi.js'
 import { useProjects } from './hooks/useProjects.js'
 import { useToast } from './hooks/useToast.js'
 import Toast from './components/Toast.jsx'
-import { getStatus, STATUS, COLORS, S, fmtDate, exportExcel } from './utils/helpers.js'
+import { getStatus, STATUS, COLORS, S, fmtDate, exportExcel, exportPDF } from './utils/helpers.js'
 import AuthScreen    from './components/AuthScreen.jsx'
 import ProfileScreen from './components/ProfileScreen.jsx'
 import Header        from './components/Header.jsx'
@@ -343,6 +343,7 @@ export default function App() {
         onNewProject={() => setNewProjOpen(true)}
         onArchiveView={v => setArchiveView(typeof v === 'function' ? v(archiveView) : v)}
         onExportExcel={exportExcel}
+        onExportPDF={exportPDF}
         onBackup={() => { setBackupModal(true); setRestoreMsg(null) }}
         onToggleTheme={toggleTheme}
         onProfile={() => setProfileOpen(true)}
