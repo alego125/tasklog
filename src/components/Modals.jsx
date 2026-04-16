@@ -73,7 +73,7 @@ function toLocalDate(d) {
   return String(d).slice(0, 10)
 }
 
-export function EditTask({ task, onSave, onClose }) {
+export function EditTask({ task, projects, onSave, onClose }) {
   const currentYear = new Date().getFullYear()
   const parseDue = (d) => {
     if (!d) return { day:'', month:'', year:String(currentYear) }
@@ -83,6 +83,7 @@ export function EditTask({ task, onSave, onClose }) {
   const [f, setF] = useState({
     title:       task.title,
     responsible: task.responsible||'',
+    project_id:  task.projectId || task.project_id,
   })
   const [due, setDue] = useState(parseDue(task.due_date))
   const inputNum = (max, val, setter) => setter(val.replace(/\D/g,'').slice(0, max <= 31 ? 2 : 4))
@@ -97,6 +98,13 @@ export function EditTask({ task, onSave, onClose }) {
       <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
         <label style={S.label}>Descripción tarea *<input value={f.title} onChange={e=>setF(p=>({...p,title:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&save()} style={S.input} autoFocus /></label>
         <label style={S.label}>Responsable <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span><input value={f.responsible} onChange={e=>setF(p=>({...p,responsible:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&save()} style={S.input} /></label>
+        {projects && projects.length > 1 && (
+          <label style={S.label}>Proyecto
+            <select value={f.project_id} onChange={e=>setF(p=>({...p,project_id:Number(e.target.value)}))} style={{ ...S.input, cursor:'pointer' }}>
+              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </label>
+        )}
         <label style={S.label}>Fecha de vencimiento <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional — dejá vacío para quitar)</span>
           <div style={{ display:'flex', gap:8, alignItems:'center', marginTop:4 }}>
             <input value={due.day}   onChange={e=>inputNum(31,  e.target.value, v=>setDue(p=>({...p,day:v})))}   onKeyDown={e=>e.key==='Enter'&&save()} placeholder="DD"   maxLength={2} style={{ ...S.input, width:64, textAlign:'center' }} />
