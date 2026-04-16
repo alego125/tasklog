@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { api, isNetworkError } from './hooks/useApi.js'
 import { useProjects } from './hooks/useProjects.js'
 import { useToast } from './hooks/useToast.js'
@@ -9,6 +9,23 @@ import ProfileScreen from './components/ProfileScreen.jsx'
 import Header        from './components/Header.jsx'
 import ProjectCard   from './components/ProjectCard.jsx'
 import { Confirm, EditProject, EditTask, EditComment, EditDueDateModal, EditCreatedAtModal, MoveNoteModal, MoveCommentModal } from './components/Modals.jsx'
+
+function ScrollToTop() {
+  const [visible, setVisible] = React.useState(false)
+  React.useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 300)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+  if (!visible) return null
+  return (
+    <button
+      onClick={() => window.scrollTo({ top:0, behavior:'smooth' })}
+      title="Volver arriba"
+      style={{ position:'fixed', bottom:24, right:24, zIndex:200, width:44, height:44, borderRadius:'50%', background:'var(--btn-primary)', border:'none', color:'var(--btn-primary-text)', fontSize:20, cursor:'pointer', boxShadow:'0 4px 16px #0006', display:'flex', alignItems:'center', justifyContent:'center' }}
+    >↑</button>
+  )
+}
 
 export default function App() {
 
@@ -84,7 +101,16 @@ export default function App() {
     return () => window.removeEventListener('ft_logout', handler)
   }, [])
 
-  useEffect(() => { proj.loadProjects() }, [])
+  useEffect(() => {
+    proj.loadProjects().then(() => {
+      // Al cargar, colapsar todos los proyectos por defecto
+      setCollapsedProjects(prev => {
+        const next = { ...prev }
+        proj.projects.forEach(p => { if (!(p.id in next)) next[p.id] = true })
+        return next
+      })
+    })
+  }, [])
 
   useEffect(() => {
     if (!restoreMsg) return
@@ -111,6 +137,17 @@ export default function App() {
       EVENTS.forEach(e => window.removeEventListener(e, reset))
     }
   }, [currentUser])
+
+  // Colapsar proyectos nuevos al cargar por primera vez
+  useEffect(() => {
+    if (proj.projects.length === 0) return
+    setCollapsedProjects(prev => {
+      const next = { ...prev }
+      let changed = false
+      proj.projects.forEach(p => { if (!(p.id in next)) { next[p.id] = true; changed = true } })
+      return changed ? next : prev
+    })
+  }, [proj.projects])
 
   // ── Filters ───────────────────────────────────────────────────
   const filtered = useMemo(() => proj.allTasks.filter(t => {
@@ -651,6 +688,7 @@ export default function App() {
         </div>
       )}
       <Toast toasts={toasts} onDismiss={dismiss} />
+      <ScrollToTop />
     </div>
   )
 }
