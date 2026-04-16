@@ -416,13 +416,21 @@ app.put('/api/tasks/:id', authMiddleware, async (req, res) => {
   try {
     const projectId = await getTaskProject(req.params.id)
     if (!projectId || !await isMember(projectId, req.user.id)) return forbidden(res)
-    const { title, responsible, due_date, created_at } = req.body
-    await db.query(
-      'UPDATE tasks SET title=$1, responsible=$2, due_date=$3' + (created_at ? ', created_at=$5' : '') + ' WHERE id=$4',
-      created_at
-        ? [title, responsible || null, (due_date && due_date.trim()) ? due_date : null, req.params.id, created_at]
-        : [title, responsible || null, (due_date && due_date.trim()) ? due_date : null, req.params.id]
-    )
+    const { title, responsible, due_date, created_at, project_id } = req.body
+    // Si viene project_id distinto, verificar que el usuario sea miembro del proyecto destino
+    if (project_id && project_id !== projectId) {
+      if (!await isMember(project_id, req.user.id)) return forbidden(res)
+    }
+    const targetProject = project_id || projectId
+    let query, params
+    if (created_at) {
+      query = 'UPDATE tasks SET title=$1, responsible=$2, due_date=$3, created_at=$5, project_id=$6 WHERE id=$4'
+      params = [title, responsible || null, (due_date && due_date.trim()) ? due_date : null, req.params.id, created_at, targetProject]
+    } else {
+      query = 'UPDATE tasks SET title=$1, responsible=$2, due_date=$3, project_id=$5 WHERE id=$4'
+      params = [title, responsible || null, (due_date && due_date.trim()) ? due_date : null, req.params.id, targetProject]
+    }
+    await db.query(query, params)
     const tRes = await db.query('SELECT * FROM tasks WHERE id = $1', [req.params.id])
     const task = { ...tRes.rows[0] }
     const cRes = await db.query('SELECT * FROM task_comments WHERE task_id=$1 ORDER BY id', [task.id])
