@@ -74,17 +74,39 @@ function toLocalDate(d) {
 }
 
 export function EditTask({ task, onSave, onClose }) {
+  const currentYear = new Date().getFullYear()
+  const parseDue = (d) => {
+    if (!d) return { day:'', month:'', year:String(currentYear) }
+    const parts = String(d).slice(0,10).split('-')
+    return { year:parts[0]||String(currentYear), month:parts[1]||'', day:parts[2]||'' }
+  }
   const [f, setF] = useState({
     title:       task.title,
     responsible: task.responsible||'',
   })
-  const save = () => f.title && onSave(f)
+  const [due, setDue] = useState(parseDue(task.due_date))
+  const inputNum = (max, val, setter) => setter(val.replace(/\D/g,'').slice(0, max <= 31 ? 2 : 4))
+  const buildDueDate = () => {
+    if (!due.day && !due.month) return ''
+    return (due.year||String(currentYear)) + '-' + due.month.padStart(2,'0') + '-' + due.day.padStart(2,'0')
+  }
+  const save = () => f.title && onSave({ ...f, due_date: buildDueDate() })
   return (
     <Backdrop onClose={onClose}>
       <div style={{ fontSize:16, fontWeight:700, marginBottom:18 }}>✏️ Editar tarea</div>
       <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
         <label style={S.label}>Descripción tarea *<input value={f.title} onChange={e=>setF(p=>({...p,title:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&save()} style={S.input} autoFocus /></label>
         <label style={S.label}>Responsable <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span><input value={f.responsible} onChange={e=>setF(p=>({...p,responsible:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&save()} style={S.input} /></label>
+        <label style={S.label}>Fecha de vencimiento <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional — dejá vacío para quitar)</span>
+          <div style={{ display:'flex', gap:8, alignItems:'center', marginTop:4 }}>
+            <input value={due.day}   onChange={e=>inputNum(31,  e.target.value, v=>setDue(p=>({...p,day:v})))}   onKeyDown={e=>e.key==='Enter'&&save()} placeholder="DD"   maxLength={2} style={{ ...S.input, width:64, textAlign:'center' }} />
+            <span style={{color:'var(--text-muted)',fontSize:16}}>/</span>
+            <input value={due.month} onChange={e=>inputNum(12,  e.target.value, v=>setDue(p=>({...p,month:v})))} onKeyDown={e=>e.key==='Enter'&&save()} placeholder="MM"   maxLength={2} style={{ ...S.input, width:64, textAlign:'center' }} />
+            <span style={{color:'var(--text-muted)',fontSize:16}}>/</span>
+            <input value={due.year}  onChange={e=>inputNum(9999,e.target.value, v=>setDue(p=>({...p,year:v})))}  onKeyDown={e=>e.key==='Enter'&&save()} placeholder="AAAA" maxLength={4} style={{ ...S.input, width:88, textAlign:'center' }} />
+            {(due.day||due.month) && <button onClick={()=>setDue({day:'',month:'',year:String(currentYear)})} style={{ ...S.btnSecondary, padding:'6px 10px', fontSize:12 }}>✕</button>}
+          </div>
+        </label>
       </div>
       <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:20 }}>
         <button onClick={onClose} style={S.btnSecondary}>Cancelar</button>
