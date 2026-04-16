@@ -3,7 +3,7 @@ import { S } from '../utils/helpers.js'
 export default function Header({
   currentUser, theme, archiveView, projects,
   onNewProject, onArchiveView,
-  onExportExcel, onBackup, onToggleTheme,
+  onExportExcel, onExportPDF, onBackup, onToggleTheme,
   onProfile, onLogout,
   userMenuOpen, setUserMenuOpen,
   mobileMenuOpen, setMobileMenuOpen,
@@ -68,6 +68,7 @@ export default function Header({
                   <div style={{ fontSize:11, color:'var(--text-faint)', marginTop:2 }}>@{currentUser.username||currentUser.email}</div>
                 </div>
                 {!archiveView && menuBtn(() => { onExportExcel(projects); setUserMenuOpen(false) }, '#34d399', '⬇ Exportar Excel')}
+                {!archiveView && menuBtn(() => { onExportPDF(projects); setUserMenuOpen(false) }, '#f97316', '📄 Exportar PDF')}
                 {menuBtn(() => { if(!archiveView) loadArchived(); onArchiveView(v=>!v); setUserMenuOpen(false) }, '#fbbf24', `📦 ${archiveView?'Volver a proyectos':'Archivados'}`)}
                 {!archiveView && menuBtn(() => { onBackup(); setUserMenuOpen(false) }, 'var(--text-secondary)', '💾 Backup y restauración')}
                 {menuBtn(() => { onToggleTheme(); setUserMenuOpen(false) }, 'var(--text-secondary)', theme==='dark'?'☀️ Modo claro':'🌙 Modo oscuro', { borderTop:'1px solid var(--border)' })}
@@ -129,6 +130,7 @@ export default function Header({
 
             {/* Opciones generales */}
             {!archiveView && mobileMenuBtn(() => { onExportExcel(projects); setMobileMenuOpen(false) }, '#34d399', '⬇ Exportar Excel')}
+            {!archiveView && mobileMenuBtn(() => { onExportPDF(projects); setMobileMenuOpen(false) }, '#f97316', '📄 Exportar PDF')}
             {mobileMenuBtn(() => { if(!archiveView) loadArchived(); onArchiveView(v=>!v); setMobileMenuOpen(false) }, '#fbbf24', `📦 ${archiveView?'Volver a proyectos':'Archivados'}`)}
             {!archiveView && (
               <button onClick={() => { onBackup(); setMobileMenuOpen(false) }}
