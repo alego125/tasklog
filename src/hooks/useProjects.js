@@ -135,8 +135,25 @@ export function useProjects() {
 
   const doSaveEditTask = async (pId, taskId, form) => {
     const snapshot = projects
+    const targetPId = form.project_id ? Number(form.project_id) : pId
+    const optimisticFn = () => {
+      if (targetPId !== pId) {
+        setProjects(prev => {
+          const task = prev.find(p => p.id===pId)?.tasks.find(t => t.id===taskId)
+          if (!task) return prev
+          const updated = { ...task, ...form, project_id: targetPId }
+          return prev.map(p => {
+            if (p.id === pId)       return { ...p, tasks: p.tasks.filter(t => t.id !== taskId) }
+            if (p.id === targetPId) return { ...p, tasks: [...p.tasks, updated] }
+            return p
+          })
+        })
+      } else {
+        mutTask(pId, taskId, t => ({ ...t, ...form }))
+      }
+    }
     return withRollback(
-      () => mutTask(pId, taskId, t => ({ ...t, ...form })),
+      optimisticFn,
       () => api.updateTask(taskId, form),
       () => setProjects(snapshot)
     )
