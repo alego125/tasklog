@@ -91,182 +91,104 @@ export function exportExcel(projects) {
   URL.revokeObjectURL(a.href)
 }
 
-// ── PDF export ────────────────────────────────────────────────────
-export async function exportPDF(projects) {
-  // Carga jsPDF dinámicamente desde CDN
-  if (!window.jspdf) {
-    await new Promise((resolve, reject) => {
-      const s = document.createElement('script')
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
-      s.onload = resolve
-      s.onerror = reject
-      document.head.appendChild(s)
-    })
-  }
-  const { jsPDF } = window.jspdf
-  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' })
-  const PW = 210, ML = 14, MR = 196, LH = 6
-  let y = 0
-
-  const checkPage = (need = 10) => {
-    if (y + need > 280) { doc.addPage(); y = 16 }
-  }
-
-  const header = () => {
-    doc.setFillColor(30, 36, 51)
-    doc.rect(0, 0, PW, 18, 'F')
-    doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.setTextColor(168, 209, 112)
-    doc.text('Cursor — Reporte de Proyectos', ML, 12)
-    doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(148, 163, 184)
-    const now = new Date()
-    const dd = String(now.getDate()).padStart(2,'0')
-    const mm = String(now.getMonth()+1).padStart(2,'0')
-    doc.text(`${dd}/${mm}/${now.getFullYear()}`, MR, 12, { align:'right' })
-    y = 24
-  }
-
-  const statusLabel = (due, done) => {
-    if (done) return { label:'Completada', r:34,  g:197, b:94  }
-    if (!due)  return { label:'Sin fecha',  r:100, g:116, b:139 }
-    const dueStr   = String(due).slice(0,10)
-    const today    = new Date()
-    const todayStr = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0')
-    if (dueStr <= todayStr) return { label:'Vencida',    r:239, g:68,  b:68  }
-    const diff = (new Date(dueStr+'T12:00:00') - new Date(todayStr+'T12:00:00')) / 86400000
-    if (diff <= 3)          return { label:'Por vencer', r:245, g:158, b:11  }
-    return                          { label:'A tiempo',  r:100, g:116, b:139 }
-  }
-
+// ── AI Report Prompt export ──────────────────────────────────────
+export function exportPDF(projects) {
   const fmtD = d => {
     if (!d) return '—'
     const parts = String(d).slice(0,10).split('-')
     return parts.length === 3 ? parts[2]+'/'+parts[1]+'/'+parts[0] : String(d).slice(0,10)
   }
-
-  header()
-
-  const activeProjects = projects.filter(p => !p.archived)
-
-  for (const project of activeProjects) {
-    checkPage(20)
-
-    // ── Proyecto header ──
-    const hex = project.color || '#6366f1'
-    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16)
-    doc.setFillColor(r, g, b, 0.15)
-    doc.roundedRect(ML, y, MR-ML, 10, 2, 2, 'F')
-    doc.setDrawColor(r, g, b)
-    doc.setLineWidth(0.8)
-    doc.line(ML, y, ML, y+10)
-    doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(r, g, b)
-    doc.text(project.name, ML+4, y+7)
-    const pendientes = project.tasks.filter(t=>!t.done).length
-    const completadas = project.tasks.filter(t=>t.done).length
-    doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(148,163,184)
-    doc.text(`${pendientes} pendiente${pendientes!==1?'s':''} · ${completadas} completada${completadas!==1?'s':''} · ${project.notes?.length||0} nota${(project.notes?.length||0)!==1?'s':''}`, MR, y+7, { align:'right' })
-    y += 13
-
-    // ── Tareas ──
-    if (project.tasks.length === 0) {
-      checkPage(8)
-      doc.setFontSize(8); doc.setFont('helvetica','italic'); doc.setTextColor(100,116,139)
-      doc.text('Sin tareas.', ML+4, y+4)
-      y += 8
-    }
-
-    for (const task of project.tasks) {
-      checkPage(14)
-      const st = statusLabel(task.due_date, task.done)
-
-      // Badge de estado
-      doc.setFillColor(st.r, st.g, st.b)
-      doc.setDrawColor(st.r, st.g, st.b)
-      doc.roundedRect(ML+2, y+1, 22, 5, 1, 1, 'F')
-      doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255)
-      doc.text(st.label, ML+13, y+4.5, { align:'center' })
-
-      // Título
-      doc.setFontSize(9); doc.setFont('helvetica', task.done ? 'normal' : 'bold')
-      doc.setTextColor(task.done ? 100 : 233, task.done ? 116 : 236, task.done ? 139 : 239)
-      const titleLines = doc.splitTextToSize(task.title, 110)
-      doc.text(titleLines, ML+27, y+5)
-      const titleH = titleLines.length * LH
-
-      // Meta: responsable y fechas
-      doc.setFontSize(7.5); doc.setFont('helvetica','normal'); doc.setTextColor(100,116,139)
-      const meta = [
-        task.responsible ? `👤 ${task.responsible}` : null,
-        task.due_date    ? `📅 Vence: ${fmtD(task.due_date)}` : null,
-        `🗓 Registro: ${fmtD(task.created_at)}`
-      ].filter(Boolean).join('   ')
-      doc.text(meta, ML+27, y+5+titleH)
-      y += Math.max(titleH + LH + 3, 12)
-
-      // ── Bitácora ──
-      if (task.comments && task.comments.length > 0) {
-        for (const c of task.comments) {
-          checkPage(10)
-          doc.setFillColor(15, 23, 42)
-          doc.roundedRect(ML+6, y, MR-ML-6, 0, 1, 1, 'F')
-          doc.setDrawColor(51, 65, 85)
-          doc.setLineWidth(0.3)
-          doc.line(ML+8, y, ML+8, y+1) // será reemplazado por altura real
-
-          doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(100,116,139)
-          doc.text(`${c.author||'—'}  ·  ${fmtD(c.created_at)}`, ML+11, y+4)
-
-          doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(203,213,225)
-          const lines = doc.splitTextToSize(c.text, MR-ML-20)
-          doc.text(lines, ML+11, y+9)
-          const h = 10 + lines.length * 4.5
-          doc.setFillColor(30, 41, 59)
-          doc.roundedRect(ML+6, y, MR-ML-6, h, 1, 1, 'F')
-          doc.setLineWidth(0.4); doc.setDrawColor(71, 85, 105)
-          doc.roundedRect(ML+6, y, MR-ML-6, h, 1, 1, 'S')
-          // redibuja texto encima del rect
-          doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(100,116,139)
-          doc.text(`${c.author||'—'}  ·  ${fmtD(c.created_at)}`, ML+11, y+4)
-          doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(203,213,225)
-          doc.text(lines, ML+11, y+9)
-          y += h + 3
-        }
-      }
-    }
-
-    // ── Notas del proyecto ──
-    if (project.notes && project.notes.length > 0) {
-      checkPage(10)
-      doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(129,140,248)
-      doc.text('📝 Notas del proyecto', ML+2, y+4)
-      y += 7
-      for (const note of project.notes) {
-        checkPage(10)
-        doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(100,116,139)
-        doc.text(`${note.author||'—'}  ·  ${fmtD(note.created_at)}`, ML+4, y+4)
-        doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(203,213,225)
-        const lines = doc.splitTextToSize(note.text, MR-ML-10)
-        doc.text(lines, ML+4, y+9)
-        y += 9 + lines.length * 4.5 + 3
-      }
-    }
-
-    y += 8
-    // Línea separadora entre proyectos
-    checkPage(4)
-    doc.setDrawColor(30, 36, 51); doc.setLineWidth(0.3)
-    doc.line(ML, y-4, MR, y-4)
-  }
-
-  // Pie de página en todas las páginas
-  const pageCount = doc.getNumberOfPages()
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i)
-    doc.setFontSize(7.5); doc.setFont('helvetica','normal'); doc.setTextColor(71,85,105)
-    doc.text(`Página ${i} de ${pageCount}`, PW/2, 291, { align:'center' })
+  const statusLabel = (due, done) => {
+    if (done) return 'Completada'
+    if (!due)  return 'Sin fecha de vencimiento'
+    const dueStr   = String(due).slice(0,10)
+    const today    = new Date()
+    const todayStr = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0')
+    if (dueStr <= todayStr) return 'VENCIDA'
+    const diff = (new Date(dueStr+'T12:00:00') - new Date(todayStr+'T12:00:00')) / 86400000
+    if (diff <= 3) return 'Por vencer (próximos 3 días)'
+    return 'A tiempo'
   }
 
   const now = new Date()
-  const dd = String(now.getDate()).padStart(2,'0')
-  const mm = String(now.getMonth()+1).padStart(2,'0')
-  doc.save(`cursor_reporte_${dd}-${mm}-${now.getFullYear()}.pdf`)
+  const fecha = String(now.getDate()).padStart(2,'0')+'/'+String(now.getMonth()+1).padStart(2,'0')+'/'+now.getFullYear()
+  const activeProjects = projects.filter(p => !p.archived)
+
+  let lines = []
+  lines.push(`PROMPT PARA GENERACIÓN DE INFORME — CURSOR APP`)
+  lines.push(`Fecha de generación: ${fecha}`)
+  lines.push(``)
+  lines.push(`---`)
+  lines.push(``)
+  lines.push(`Sos un asistente de gestión de proyectos. A continuación te proporciono los datos actuales de todos los proyectos activos de la aplicación Cursor. Tu tarea es generar un informe ejecutivo completo, visualmente organizado y fácil de leer, que incluya:`)
+  lines.push(``)
+  lines.push(`1. Un resumen general del estado de todos los proyectos`)
+  lines.push(`2. Un análisis detallado de cada proyecto con sus tareas, responsables y estado`)
+  lines.push(`3. Alertas de tareas vencidas o por vencer`)
+  lines.push(`4. Un resumen de las notas y bitácoras más relevantes`)
+  lines.push(`5. Conclusiones y recomendaciones de acción inmediata`)
+  lines.push(``)
+  lines.push(`Usá formato Markdown con encabezados, tablas, listas y emojis para que sea visualmente agradable.`)
+  lines.push(``)
+  lines.push(`---`)
+  lines.push(``)
+  lines.push(`## DATOS DE LOS PROYECTOS`)
+  lines.push(``)
+  lines.push(`Total de proyectos activos: ${activeProjects.length}`)
+  lines.push(``)
+
+  for (const p of activeProjects) {
+    const pending   = p.tasks.filter(t => !t.done)
+    const done      = p.tasks.filter(t => t.done)
+    const overdue   = pending.filter(t => statusLabel(t.due_date, t.done) === 'VENCIDA')
+    const warning   = pending.filter(t => statusLabel(t.due_date, t.done).startsWith('Por vencer'))
+
+    lines.push(`### PROYECTO: ${p.name}`)
+    lines.push(`- Tareas pendientes: ${pending.length}`)
+    lines.push(`- Tareas completadas: ${done.length}`)
+    lines.push(`- Tareas vencidas: ${overdue.length}`)
+    lines.push(`- Tareas por vencer (próx. 3 días): ${warning.length}`)
+    lines.push(`- Notas del proyecto: ${p.notes?.length||0}`)
+    lines.push(``)
+
+    if (p.tasks.length > 0) {
+      lines.push(`#### Tareas:`)
+      for (const t of p.tasks) {
+        lines.push(``)
+        lines.push(`  TAREA: ${t.title}`)
+        lines.push(`  - Estado: ${statusLabel(t.due_date, t.done)}`)
+        lines.push(`  - Responsable: ${t.responsible || '—'}`)
+        lines.push(`  - Fecha de registro: ${fmtD(t.created_at)}`)
+        lines.push(`  - Fecha de vencimiento: ${t.due_date ? fmtD(t.due_date) : '—'}`)
+        if (t.comments && t.comments.length > 0) {
+          lines.push(`  - Bitácora (${t.comments.length} entrada${t.comments.length!==1?'s':''}):`)
+          for (const c of t.comments) {
+            lines.push(`    [${fmtD(c.created_at)} — ${c.author||'—'}]: ${c.text}`)
+          }
+        }
+      }
+      lines.push(``)
+    }
+
+    if (p.notes && p.notes.length > 0) {
+      lines.push(`#### Notas del proyecto:`)
+      for (const n of p.notes) {
+        lines.push(`  [${fmtD(n.created_at)} — ${n.author||'—'}]: ${n.text}`)
+      }
+      lines.push(``)
+    }
+
+    lines.push(`---`)
+    lines.push(``)
+  }
+
+  lines.push(`FIN DE LOS DATOS. Generá el informe ahora.`)
+
+  const text = lines.join('\n')
+  const blob = new Blob([text], { type:'text/plain;charset=utf-8' })
+  const a    = document.createElement('a')
+  a.href     = URL.createObjectURL(blob)
+  a.download = `cursor_prompt_informe_${fecha.replace(/\//g,'-')}.txt`
+  a.click()
+  URL.revokeObjectURL(a.href)
 }

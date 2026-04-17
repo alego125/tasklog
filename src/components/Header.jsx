@@ -68,7 +68,7 @@ export default function Header({
                   <div style={{ fontSize:11, color:'var(--text-faint)', marginTop:2 }}>@{currentUser.username||currentUser.email}</div>
                 </div>
                 {!archiveView && menuBtn(() => { onExportExcel(projects); setUserMenuOpen(false) }, '#34d399', '⬇ Exportar Excel')}
-                {!archiveView && menuBtn(() => { onExportPDF(projects); setUserMenuOpen(false) }, '#f97316', '📄 Exportar PDF')}
+                {!archiveView && menuBtn(() => { onExportPDF(projects); setUserMenuOpen(false) }, '#f97316', '📄 Generar prompt informe')}
                 {menuBtn(() => { if(!archiveView) loadArchived(); onArchiveView(v=>!v); setUserMenuOpen(false) }, '#fbbf24', `📦 ${archiveView?'Volver a proyectos':'Archivados'}`)}
                 {!archiveView && menuBtn(() => { onBackup(); setUserMenuOpen(false) }, 'var(--text-secondary)', '💾 Backup y restauración')}
                 {menuBtn(() => { onToggleTheme(); setUserMenuOpen(false) }, 'var(--text-secondary)', theme==='dark'?'☀️ Modo claro':'🌙 Modo oscuro', { borderTop:'1px solid var(--border)' })}
@@ -130,7 +130,7 @@ export default function Header({
 
             {/* Opciones generales */}
             {!archiveView && mobileMenuBtn(() => { onExportExcel(projects); setMobileMenuOpen(false) }, '#34d399', '⬇ Exportar Excel')}
-            {!archiveView && mobileMenuBtn(() => { onExportPDF(projects); setMobileMenuOpen(false) }, '#f97316', '📄 Exportar PDF')}
+            {!archiveView && mobileMenuBtn(() => { onExportPDF(projects); setMobileMenuOpen(false) }, '#f97316', '📄 Generar prompt informe')}
             {mobileMenuBtn(() => { if(!archiveView) loadArchived(); onArchiveView(v=>!v); setMobileMenuOpen(false) }, '#fbbf24', `📦 ${archiveView?'Volver a proyectos':'Archivados'}`)}
             {!archiveView && (
               <button onClick={() => { onBackup(); setMobileMenuOpen(false) }}
