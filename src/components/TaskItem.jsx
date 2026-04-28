@@ -6,7 +6,7 @@ export default function TaskItem({ task, expanded, onToggle, onExpand, onEdit, o
   const isExp  = expanded === task.id
 
   return (
-    <div id={`task-${task.id}`} style={{ borderTop:'1px solid #1e293b', background:isExp?cfg.bg:'transparent', transition:'background .2s' }}>
+    <div id={`task-${task.id}`} style={{ borderTop:'1px solid var(--border)', background:isExp?cfg.bg:'transparent', transition:'background .2s' }}>
       <div className="ft-task-row" style={{ padding:'11px 16px', display:'flex', alignItems:'center', gap:10, borderLeft:`3px solid ${cfg.border}` }}>
         {/* Checkbox */}
         <div
@@ -17,7 +17,7 @@ export default function TaskItem({ task, expanded, onToggle, onExpand, onEdit, o
 
         {/* Title + meta */}
         <div style={{ flex:1, minWidth:0 }}>
-          <div onClick={() => onExpand(isExp ? null : task.id)} style={{ fontWeight:600, fontSize:14, textDecoration:task.done?'line-through':'none', color:task.done?cfg.badge:(status==='overdue'?'#ef4444':status==='warning'?'#f59e0b':'var(--task-title)'), wordBreak:'break-word', overflowWrap:'break-word', cursor:'pointer' }} title={isExp?'Colapsar':'Expandir bitácora'}>
+          <div onClick={() => onExpand(isExp ? null : task.id)} style={{ fontWeight:600, fontSize:14, textDecoration:task.done?'line-through':'none', color:task.done?'var(--text-faint)':(status==='overdue'?cfg.badge:status==='warning'?cfg.badge:'var(--task-title)'), wordBreak:'break-word', overflowWrap:'break-word', cursor:'pointer', fontFamily:"'Plus Jakarta Sans',sans-serif" }} title={isExp?'Colapsar':'Expandir bitácora'}>
             {task.title}
           </div>
           <div className="ft-task-meta" style={{ fontSize:11, color:'var(--text-muted)', marginTop:2, display:'flex', gap:10, flexWrap:'wrap' }}>
@@ -29,8 +29,8 @@ export default function TaskItem({ task, expanded, onToggle, onExpand, onEdit, o
         </div>
 
         {/* Badge */}
-        <div className="ft-task-badge" style={{ background:`${cfg.badge}22`, border:`1px solid ${cfg.badge}55`, color:cfg.badge, padding:'3px 9px', borderRadius:20, fontSize:11, fontWeight:600, whiteSpace:'nowrap', flexShrink:0 }}>
-          ● {cfg.label}
+        <div className="ft-task-badge status-badge" style={{ background:`${cfg.badge}22`, border:`1px solid ${cfg.badge}55`, color:cfg.badge, padding:'3px 9px', borderRadius:20, fontSize:11, fontWeight:600, whiteSpace:'nowrap', flexShrink:0 }}>
+          {cfg.label}
         </div>
 
         {/* Actions */}
@@ -53,7 +53,7 @@ export default function TaskItem({ task, expanded, onToggle, onExpand, onEdit, o
                 <div style={{ fontSize:13, color:'var(--text-content)' }}>{c.text}</div>
               </div>
               <div style={{ display:'flex', gap:4 }}>
-                <button onClick={() => onMoveComment(c, task.projectId, task.id)} title="Mover a proyecto" style={{ ...S.iconBtn, borderColor:'#6366f133', color:'#818cf8' }}>🔀</button>
+                <button onClick={() => onMoveComment(c, task.projectId, task.id)} title="Mover a proyecto" style={{ ...S.iconBtn, borderColor:'var(--accent)44', color:'var(--accent)' }}>🔀</button>
                 <button onClick={() => onEditComment(task.projectId, task.id, c)} style={S.iconBtn} title="Editar">✏️</button>
                 <button onClick={() => onConfirm('¿Eliminar esta nota?', () => onDeleteComment(task.projectId, task.id, c.id))} style={{ ...S.iconBtn, borderColor:'#dc262633' }} title="Eliminar">🗑️</button>
               </div>

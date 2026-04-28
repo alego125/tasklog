@@ -8,11 +8,11 @@ const S = {
   label: { fontSize:13, color:'var(--text-secondary)', display:'flex', flexDirection:'column', gap:4 },
 }
 
-const COLORS = ['#22c55e','#A8D170','#06b6d4','#7BC6D9','#6366f1','#8b5cf6','#ec4899','#f97316','#f59e0b','#14b8a6']
+const COLORS = ['#7a9e7e','#c4784a','#4a8ea0','#9a7a5a','#887ab0','#4a8a70','#b07840','#7a8a4a','#4a6e4e','#a07060']
 
 function Backdrop({ onClose, children }) {
   return (
-    <div onClick={onClose} style={{ position:'fixed', inset:0, background:'#000b', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center' }}>
+    <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(44,38,32,0.45)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center' }}>
       <div onClick={e=>e.stopPropagation()} style={{ background:'var(--bg-surface)', border:'1px solid var(--border-soft)', borderRadius:14, padding:28, width:'100%', maxWidth:480, boxShadow:'0 30px 80px #0009' }}>
         {children}
       </div>
@@ -25,7 +25,7 @@ export function Confirm({ msg, onOk, onCancel, title, okLabel, okColor }) {
   return (
     <Backdrop onClose={onCancel}>
       <div onKeyDown={e=>e.key==='Enter'&&onOk()} tabIndex={-1} style={{ outline:'none' }}>
-        <div style={{ fontSize:16, fontWeight:700, marginBottom:8 }}>{title || '⚠️ Confirmar eliminación'}</div>
+        <div className="proj-title" style={{ fontSize:16, marginBottom:8 }}>{title || '⚠️ Confirmar eliminación'}</div>
         <div style={{ fontSize:14, color:'var(--text-secondary)', marginBottom:24 }}>{msg}</div>
         <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
           <button onClick={onCancel} style={S.btnSecondary}>Cancelar</button>
@@ -41,7 +41,7 @@ export function EditProject({ project, onSave, onClose }) {
   const [color, setColor] = useState(project.color)
   return (
     <Backdrop onClose={onClose}>
-      <div style={{ fontSize:16, fontWeight:700, marginBottom:18 }}>✏️ Editar proyecto</div>
+      <div className="proj-title" style={{ fontSize:16, marginBottom:18 }}>✏️ Editar proyecto</div>
       <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
         <label style={S.label}>Nombre del proyecto
           <input value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>e.key==='Enter'&&name.trim()&&onSave(name,color)} style={S.input} autoFocus />
@@ -94,7 +94,7 @@ export function EditTask({ task, projects, onSave, onClose }) {
   const save = () => f.title && onSave({ ...f, due_date: buildDueDate() })
   return (
     <Backdrop onClose={onClose}>
-      <div style={{ fontSize:16, fontWeight:700, marginBottom:18 }}>✏️ Editar tarea</div>
+      <div className="proj-title" style={{ fontSize:16, marginBottom:18 }}>✏️ Editar tarea</div>
       <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
         <label style={S.label}>Descripción tarea *<input value={f.title} onChange={e=>setF(p=>({...p,title:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&save()} style={S.input} autoFocus /></label>
         <label style={S.label}>Responsable <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span><input value={f.responsible} onChange={e=>setF(p=>({...p,responsible:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&save()} style={S.input} /></label>
@@ -128,7 +128,7 @@ export function EditComment({ comment, onSave, onClose }) {
   const [text, setText] = useState(comment.text)
   return (
     <Backdrop onClose={onClose}>
-      <div style={{ fontSize:16, fontWeight:700, marginBottom:14 }}>✏️ Editar nota</div>
+      <div className="proj-title" style={{ fontSize:16, marginBottom:14 }}>✏️ Editar nota</div>
       <textarea value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==='Enter'&&e.ctrlKey&&onSave({text})} placeholder="Ctrl+Enter para guardar" rows={4} autoFocus style={{ ...S.input, resize:'vertical', lineHeight:1.6 }} />
       <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:14 }}>
         <button onClick={onClose} style={S.btnSecondary}>Cancelar</button>
@@ -197,9 +197,9 @@ export function MoveNoteModal({ note, tasks, onMove, onClose }) {
   const [selectedTask, setSelectedTask] = useState('')
   return (
     <Backdrop onClose={onClose}>
-      <div style={{ fontSize:16, fontWeight:700, marginBottom:8 }}>🔀 Mover nota a tarea</div>
+      <div className="proj-title" style={{ fontSize:16, marginBottom:8 }}>🔀 Mover nota a tarea</div>
       <div style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:16 }}>Seleccioná la tarea donde querés mover esta nota de bitácora:</div>
-      <div style={{ background:'var(--bg-elevated)', borderRadius:8, padding:'10px 12px', marginBottom:16, fontSize:13, color:'#cbd5e1', fontStyle:'italic' }}>"{note.text}"</div>
+      <div style={{ background:'var(--bg-elevated)', borderRadius:8, padding:'10px 12px', marginBottom:16, fontSize:13, color:'var(--text-secondary)', fontStyle:'italic' }}>"{note.text}"</div>
       <select value={selectedTask} onChange={e=>setSelectedTask(e.target.value)} style={{ ...S.input, marginBottom:20, cursor:'pointer' }}>
         <option value="">-- Seleccioná una tarea --</option>
         {tasks.map(t=><option key={t.id} value={t.id}>{t.title}</option>)}
@@ -216,9 +216,9 @@ export function MoveCommentModal({ comment, projects, currentProjectId, onMove, 
   const [selectedProject, setSelectedProject] = useState('')
   return (
     <Backdrop onClose={onClose}>
-      <div style={{ fontSize:16, fontWeight:700, marginBottom:8 }}>🔀 Mover nota a proyecto</div>
+      <div className="proj-title" style={{ fontSize:16, marginBottom:8 }}>🔀 Mover nota a proyecto</div>
       <div style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:16 }}>Esta nota pasará a la bitácora del proyecto seleccionado:</div>
-      <div style={{ background:'var(--bg-elevated)', borderRadius:8, padding:'10px 12px', marginBottom:16, fontSize:13, color:'#cbd5e1', fontStyle:'italic' }}>"{comment.text}"</div>
+      <div style={{ background:'var(--bg-elevated)', borderRadius:8, padding:'10px 12px', marginBottom:16, fontSize:13, color:'var(--text-secondary)', fontStyle:'italic' }}>"{comment.text}"</div>
       <select value={selectedProject} onChange={e=>setSelectedProject(e.target.value)} style={{ ...S.input, marginBottom:20, cursor:'pointer' }}>
         <option value="">-- Seleccioná un proyecto --</option>
         {projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}

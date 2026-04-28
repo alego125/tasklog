@@ -35,8 +35,8 @@ export default function Header({
       <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
         <img src="/logo.png" alt="Cursor" style={{ width:34, height:34, borderRadius:8, objectFit:'cover' }} />
         <div>
-          <div style={{ fontSize:17, fontWeight:700, letterSpacing:'-0.5px' }}>Cursor</div>
-          <div className="ft-header-sub" style={{ fontSize:10, color:'var(--text-muted)' }}><span style={{color:'var(--accent)'}}>● PostgreSQL</span> · Datos persistentes en la nube</div>
+          <div className="app-logo-text" style={{ fontSize:17, letterSpacing:'-0.5px' }}>Cursor</div>
+          <div className="ft-header-sub" style={{ fontSize:10, color:'var(--text-muted)', fontFamily:"'DM Mono',monospace", letterSpacing:'0.5px' }}><span style={{color:'var(--accent)'}}>● PostgreSQL</span> · Datos en la nube</div>
         </div>
       </div>
 
