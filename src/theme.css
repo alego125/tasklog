@@ -1,47 +1,47 @@
-/* ── Tema oscuro (default) ──────────────────────────────────── */
+/* ── Japandi Light (default) ────────────────────────────────── */
 :root {
-  --bg-base:       #1E2433;
-  --bg-surface:    #2A3245;
-  --bg-elevated:   #323d56;
-  --bg-hover:      #242d42;
-  --border:        #3a4560;
-  --border-soft:   #4a5570;
-  --text-primary:  #E9ECEF;
-  --text-secondary:#94A3B8;
-  --text-muted:    #94A3B8;
-  --text-faint:    #64748b;
-  --input-bg:      #323d56;
-  --accent:        #A8D170;
-  --accent-deep:   #3D4663;
-  --header-bg:     linear-gradient(135deg, #1E2433, #2A3245);
-  --splash-bg:     linear-gradient(135deg, #1E2433 0%, #2A3245 50%, #3D4663 100%);
-  --text-content:  #E9ECEF;
-  --task-title:    #E9ECEF;
-  --btn-primary:   linear-gradient(135deg, #A8D170, #7faa4a);
-  --btn-primary-text: #1E2433;
+  --bg-base:        #f5f0e8;
+  --bg-surface:     #ede8df;
+  --bg-elevated:    #e6e0d4;
+  --bg-hover:       #ede2d0;
+  --border:         #ddd5c5;
+  --border-soft:    #e8e0d0;
+  --text-primary:   #2c2620;
+  --text-secondary: #6b5e52;
+  --text-muted:     #9c8e82;
+  --text-faint:     #b8a898;
+  --input-bg:       #f5f0e8;
+  --accent:         #7a9e7e;
+  --accent-deep:    #4a6e4e;
+  --header-bg:      #ede8df;
+  --splash-bg:      linear-gradient(135deg, #f5f0e8, #ede8df, #e6e0d4);
+  --text-content:   #2c2620;
+  --task-title:     #3a2e28;
+  --btn-primary:    #2c2620;
+  --btn-primary-text: #f5f0e8;
 }
 
-/* ── Tema claro ──────────────────────────────────────────────── */
-.light {
-  --bg-base:       #F8F9FA;
-  --bg-surface:    #FFFFFF;
-  --bg-elevated:   #F0F2F5;
-  --bg-hover:      #EEF0F3;
-  --border:        #dee2e6;
-  --border-soft:   #ced4da;
-  --text-primary:  #3D4663;
-  --text-secondary:#3D4663;
-  --text-muted:    #6c757d;
-  --text-faint:    #94a3b8;
-  --input-bg:      #FFFFFF;
-  --accent:        #97C05C;
-  --accent-deep:   #3D4663;
-  --header-bg:     linear-gradient(135deg, #FFFFFF, #F0F4FF);
-  --splash-bg:     linear-gradient(135deg, #F8F9FA 0%, #FFFFFF 50%, #EEF4E8 100%);
-  --text-content:  #3D4663;
-  --task-title:    #3D4663;
-  --btn-primary:   linear-gradient(135deg, #97C05C, #7aa84a);
-  --btn-primary-text: #FFFFFF;
+/* ── Japandi Dark ────────────────────────────────────────────── */
+.dark {
+  --bg-base:        #1e1a15;
+  --bg-surface:     #2a241c;
+  --bg-elevated:    #332b22;
+  --bg-hover:       #3a3028;
+  --border:         #3a3028;
+  --border-soft:    #4a3e32;
+  --text-primary:   #e8dfc8;
+  --text-secondary: #b8a888;
+  --text-muted:     #7a6e60;
+  --text-faint:     #5a4e42;
+  --input-bg:       #2a241c;
+  --accent:         #7a9e7e;
+  --accent-deep:    #9abf9e;
+  --header-bg:      #2a241c;
+  --splash-bg:      linear-gradient(135deg, #1e1a15, #2a241c, #332b22);
+  --text-content:   #e8dfc8;
+  --task-title:     #e8dfc8;
+  --btn-primary:    #7a9e7e;
+  --btn-primary-text: #1e1a15;
 }
 
 /* ── Transición suave al cambiar tema ────────────────────────── */
@@ -49,9 +49,15 @@
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
-/* ── Responsive / Mobile ─────────────────────────────────────── */
+/* ── Scrollbar ───────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f5f0e8; }
+::-webkit-scrollbar-thumb { background: #ddd5c5; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #c8b8a8; }
+.dark ::-webkit-scrollbar-track { background: #1e1a15; }
+.dark ::-webkit-scrollbar-thumb { background: #3a3028; }
 
-/* Ocultar en mobile */
+/* ── Responsive / Mobile ─────────────────────────────────────── */
 @media (max-width: 600px) {
   .hide-mobile { display: none !important; }
   .mobile-only { display: flex !important; }
@@ -60,19 +66,14 @@
   .mobile-only { display: none !important; }
 }
 
-/* Header mobile */
 @media (max-width: 600px) {
-  .ft-header {
-    padding: 10px 14px !important;
-    gap: 8px !important;
-  }
+  .ft-header { padding: 10px 14px !important; gap: 8px !important; }
   .ft-header-logo { font-size: 15px !important; }
   .ft-header-sub  { display: none !important; }
   .ft-header-btns { gap: 6px !important; }
   .ft-header-btns button { padding: 7px 10px !important; font-size: 12px !important; }
 }
 
-/* Filtros mobile: stack vertical */
 @media (max-width: 600px) {
   .ft-filters { flex-direction: column !important; }
   .ft-filters > * { width: 100% !important; flex: none !important; box-sizing: border-box; }
@@ -81,14 +82,12 @@
   .ft-filters label { width: 100% !important; }
   .ft-search-wrap { width: 100% !important; }
   .ft-search-wrap input { width: 100% !important; min-width: 0 !important; }
-  /* Primera fila de filtros */
   .ft-filter-row1 { flex-direction: column !important; }
   .ft-filter-row1 > * { width: 100% !important; flex: none !important; box-sizing: border-box; }
   .ft-filter-row1 select { width: 100% !important; }
   .ft-filter-row1 label { width: 100% !important; }
 }
 
-/* Tarea: ocultar badge de estado en mobile, mostrar solo borde de color */
 @media (max-width: 600px) {
   .ft-task-badge  { display: none !important; }
   .ft-task-meta   { flex-direction: column !important; gap: 3px !important; }
@@ -97,26 +96,22 @@
   .ft-task-comments { padding: 0 10px 12px 36px !important; }
 }
 
-/* Project header en mobile */
 @media (max-width: 600px) {
   .ft-proj-header { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; }
   .ft-proj-actions { width: 100% !important; justify-content: flex-end !important; }
   .ft-proj-badge  { font-size: 10px !important; }
 }
 
-/* Nueva tarea: stack vertical en mobile */
 @media (max-width: 600px) {
   .ft-new-task { flex-direction: column !important; }
   .ft-new-task > * { width: 100% !important; flex: none !important; box-sizing: border-box; }
 }
 
-/* Stats bar en mobile */
 @media (max-width: 600px) {
   .ft-stats { flex-wrap: wrap !important; gap: 6px !important; }
   .ft-stat-item { font-size: 11px !important; padding: 4px 8px !important; }
 }
 
-/* Modales: full width en mobile */
 @media (max-width: 600px) {
   .ft-modal-inner {
     padding: 18px 16px !important;
@@ -125,7 +120,6 @@
   }
 }
 
-/* Main content padding mobile */
 @media (max-width: 600px) {
   .ft-main { padding: 12px 10px !important; }
 }

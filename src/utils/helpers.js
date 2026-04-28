@@ -12,13 +12,13 @@ export const getStatus = (due, done) => {
 }
 
 export const STATUS = {
-  done:    { bg:'#052e16', border:'#16a34a', badge:'#22c55e', label:'Completada' },
-  overdue: { bg:'#2d0a0a', border:'#dc2626', badge:'#ef4444', label:'Vencida'    },
-  warning: { bg:'#2d1f00', border:'#d97706', badge:'#f59e0b', label:'Por vencer' },
-  ok:      { bg:'#0f172a', border:'#334155', badge:'#64748b', label:'Sin vencer' },
+  done:    { bg:'#edf5ee', border:'#b0cdb2', badge:'#7a9e7e', label:'Completada' },
+  overdue: { bg:'#f5edec', border:'#cba8a8', badge:'#b05050', label:'Vencida'    },
+  warning: { bg:'#faf0e6', border:'#c8a888', badge:'#c4784a', label:'Por vencer' },
+  ok:      { bg:'transparent', border:'#ddd5c5', badge:'#9c8e82', label:'Sin vencer' },
 }
 
-export const COLORS = ['#6366f1','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4','#f59e0b','#22c55e']
+export const COLORS = ['#7a9e7e','#c4784a','#4a8ea0','#9a7a5a','#887ab0','#4a8a70','#b07840','#7a8a4a']
 
 // ── Date formatters ───────────────────────────────────────────────
 export const fmtDate = d => {

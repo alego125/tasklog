@@ -84,14 +84,14 @@ export default function App() {
     localStorage.removeItem('ft_token')
     localStorage.removeItem('ft_user')
     localStorage.removeItem('ft_login_time')
-    document.body.classList.remove('light')
+    document.body.classList.remove('dark')
     setCurrentUser(null)
   }
 
   // ── 4. useEffect ──────────────────────────────────────────────
   useEffect(() => {
     const hasUser = !!localStorage.getItem('ft_token')
-    document.body.classList.toggle('light', theme === 'light' && hasUser)
+    document.body.classList.toggle('dark', theme === 'dark' && hasUser)
     localStorage.setItem('ft_theme', theme)
   }, [theme])
 
@@ -217,29 +217,29 @@ export default function App() {
     <AuthScreen onAuth={user => {
       localStorage.setItem('ft_login_time', Date.now().toString())
       setCurrentUser(user)
-      document.body.classList.toggle('light', (localStorage.getItem('ft_theme')||'dark') === 'light')
+      document.body.classList.toggle('dark', (localStorage.getItem('ft_theme')||'dark') === 'dark')
       proj.loadProjects()
     }} />
   )
 
   if (proj.loading) return (
-    <div style={{ minHeight:'100vh', background:'var(--splash-bg)', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:20, fontFamily:'sans-serif' }}>
+    <div style={{ minHeight:'100vh', background:'var(--splash-bg)', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:20, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
       <style>{`@keyframes flowbar{0%{transform:translateX(-100%)}100%{transform:translateX(400%)}}`}</style>
-      <img src="/logo.png" alt="Cursor" style={{ width:80, height:80, borderRadius:20, objectFit:'cover', boxShadow:'0 0 40px #A8D17055' }} />
-      <div style={{ fontSize:20, fontWeight:700, color:'var(--text-primary)', letterSpacing:'-0.5px' }}>Cursor</div>
-      <div style={{ fontSize:13, color:'var(--text-muted)' }}>Conectando con la base de datos...</div>
-      <div style={{ width:160, height:4, background:'var(--bg-elevated)', borderRadius:999, overflow:'hidden', marginTop:4 }}>
-        <div style={{ width:'40%', height:'100%', background:'var(--btn-primary)', borderRadius:999, animation:'flowbar 1.2s ease-in-out infinite' }} />
+      <img src="/logo.png" alt="Cursor" style={{ width:72, height:72, borderRadius:18, objectFit:'cover', boxShadow:'0 4px 24px rgba(44,38,32,0.15)', marginBottom:4 }} />
+      <div className="app-logo-text" style={{ fontSize:26, color:'var(--text-primary)', letterSpacing:'-0.5px' }}>Cursor</div>
+      <div style={{ fontSize:13, color:'var(--text-muted)', fontFamily:"'DM Mono',monospace", letterSpacing:'1px' }}>Conectando con la base de datos...</div>
+      <div style={{ width:140, height:3, background:'var(--bg-elevated)', borderRadius:999, overflow:'hidden', marginTop:4 }}>
+        <div style={{ width:'40%', height:'100%', background:'var(--accent)', borderRadius:999, animation:'flowbar 1.2s ease-in-out infinite' }} />
       </div>
     </div>
   )
 
   if (proj.error) return (
-    <div style={{ minHeight:'100vh', background:'var(--bg-base)', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:16, color:'var(--text-primary)', fontFamily:'sans-serif', padding:24, textAlign:'center' }}>
-      <div style={{ fontSize:40 }}>⚠️</div>
+    <div style={{ minHeight:'100vh', background:'var(--bg-base)', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:16, color:'var(--text-primary)', fontFamily:"'Plus Jakarta Sans',sans-serif", padding:24, textAlign:'center' }}>
+      <div style={{ fontSize:36 }}>⚠</div>
       <div style={{ fontSize:18, fontWeight:700 }}>Error de conexión</div>
       <div style={{ color:'var(--text-secondary)', maxWidth:400, lineHeight:1.6 }}>{proj.error}</div>
-      <button onClick={proj.loadProjects} style={{ background:'var(--btn-primary)', border:'none', color:'var(--btn-primary-text)', padding:'10px 24px', borderRadius:8, cursor:'pointer', fontSize:14 }}>Reintentar</button>
+      <button onClick={proj.loadProjects} style={{ background:'var(--btn-primary)', border:'none', color:'var(--btn-primary-text)', padding:'10px 24px', borderRadius:8, cursor:'pointer', fontSize:14, fontWeight:600 }}>Reintentar</button>
     </div>
   )
 
@@ -253,7 +253,7 @@ export default function App() {
         const project = proj.projects.find(p => p.id === membersModal)
         if (!project) return null
         return (
-          <div onClick={() => setMembersModal(null)} style={{ position:'fixed', inset:0, background:'#000b', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div onClick={() => setMembersModal(null)} style={{ position:'fixed', inset:0, background:'rgba(44,38,32,0.45)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center' }}>
             <div onClick={e=>e.stopPropagation()} className="ft-modal-inner" style={{ background:'var(--bg-surface)', border:'1px solid var(--border-soft)', borderRadius:14, padding:28, width:'100%', maxWidth:460, boxShadow:'0 30px 80px #0009' }}>
               <div style={{ fontSize:16, fontWeight:700, marginBottom:4 }}>👥 Miembros del proyecto</div>
               <div style={{ fontSize:13, color:'var(--text-muted)', marginBottom:20 }}>{project.name}</div>
@@ -299,7 +299,7 @@ export default function App() {
       })()}
 
       {backupModal && (
-        <div onClick={() => setBackupModal(false)} style={{ position:'fixed', inset:0, background:'#000b', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <div onClick={() => setBackupModal(false)} style={{ position:'fixed', inset:0, background:'rgba(44,38,32,0.45)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center' }}>
           <div onClick={e=>e.stopPropagation()} className="ft-modal-inner" style={{ background:'var(--bg-surface)', border:'1px solid var(--border-soft)', borderRadius:14, padding:28, width:'100%', maxWidth:460, boxShadow:'0 30px 80px #0009' }}>
             <div style={{ fontSize:16, fontWeight:700, marginBottom:6 }}>💾 Backup y Restauración</div>
             <div style={{ fontSize:13, color:'var(--text-muted)', marginBottom:24 }}>Descargá un backup completo o restaurá desde un archivo previo.</div>
