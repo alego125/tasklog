@@ -47,12 +47,12 @@ export default function Header({
             ← Volver
           </button>
         )}
-        {!archiveView && <button onClick={onNewProject} style={{ ...S.btnPrimary, background:'#BBF451', color:'#1a2e10' }}>+ Nuevo Proyecto</button>}
+        {!archiveView && <button onClick={onNewProject} style={{ ...S.btnPrimary, background:'#76D128', color:'#1a2e10' }}>+ Nuevo Proyecto</button>}
 
         {/* Avatar desktop */}
         <div style={{ position:'relative', borderLeft:'1px solid var(--border)', paddingLeft:12, marginLeft:4 }}>
           <button onClick={() => setUserMenuOpen(v=>!v)} style={{ display:'flex', alignItems:'center', gap:8, background:'transparent', border:'none', cursor:'pointer', padding:'4px 6px', borderRadius:8 }}>
-            <div style={{ width:30, height:30, borderRadius:'50%', background:'#BBF451', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, color:'#1a2e10', flexShrink:0 }}>
+            <div style={{ width:30, height:30, borderRadius:'50%', background:'#76D128', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, color:'#1a2e10', flexShrink:0 }}>
               {currentUser.name.charAt(0).toUpperCase()}
             </div>
             <span style={{ fontSize:13, color:'var(--text-secondary)', maxWidth:120, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{currentUser.name}</span>
@@ -82,7 +82,7 @@ export default function Header({
 
       {/* ── MOBILE ── */}
       <div className="mobile-only" style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
-        {!archiveView && <button onClick={onNewProject} style={{ ...S.btnPrimary, background:'#BBF451', color:'#1a2e10', padding:'8px 12px', fontSize:12 }}>+ Proyecto</button>}
+        {!archiveView && <button onClick={onNewProject} style={{ ...S.btnPrimary, background:'#76D128', color:'#1a2e10', padding:'8px 12px', fontSize:12 }}>+ Proyecto</button>}
         {archiveView && (
           <button onClick={() => onArchiveView(false)} style={{ background:'#78350f', border:'1px solid #d97706', color:'#fbbf24', padding:'8px 12px', borderRadius:8, cursor:'pointer', fontSize:12 }}>
             ← Volver
@@ -104,7 +104,7 @@ export default function Header({
 
             {/* Fila usuario */}
             <button onClick={() => setMobileSubMenu(v=>!v)} style={{ width:'100%', background:'transparent', border:'none', borderBottom:'1px solid var(--border)', padding:'13px 16px', cursor:'pointer', display:'flex', alignItems:'center', gap:10, textAlign:'left' }}>
-              <div style={{ width:32, height:32, borderRadius:'50%', background:'#BBF451', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, color:'#1a2e10', flexShrink:0 }}>
+              <div style={{ width:32, height:32, borderRadius:'50%', background:'#76D128', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, color:'#1a2e10', flexShrink:0 }}>
                 {currentUser.name.charAt(0).toUpperCase()}
               </div>
               <div style={{ flex:1 }}>
