@@ -13,8 +13,8 @@ export const getStatus = (due, done) => {
 
 export const STATUS = {
   done:    { bg:'#edf5ee', border:'#b0cdb2', badge:'#7a9e7e', label:'Completada' },
-  overdue: { bg:'#f5edec', border:'#cba8a8', badge:'#b05050', label:'Vencida'    },
-  warning: { bg:'#faf0e6', border:'#c8a888', badge:'#c4784a', label:'Por vencer' },
+  overdue: { bg:'#f5edec', border:'#cba8a8', badge:'#dc2626', label:'Vencida'    },
+  warning: { bg:'#faf0e6', border:'#c8a888', badge:'#eab308', label:'Por vencer' },
   ok:      { bg:'transparent', border:'#ddd5c5', badge:'#9c8e82', label:'Sin vencer' },
 }
 
