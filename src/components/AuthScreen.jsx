@@ -65,7 +65,7 @@ export default function AuthScreen({ onAuth }) {
       {/* Panel izquierdo — sumi oscuro */}
       <div style={{ width: '40%', minWidth: 260, background: '#2c2620', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 40px', gap: 20 }} className="hide-mobile">
         <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#7a9e7e', marginBottom: 8 }} />
-        <img src="/logo.png" alt="Cursor" style={{ width: 64, height: 64, borderRadius: 16, objectFit: 'cover', opacity: 0.9 }} />
+        <img src="/logo.png" alt="Cursor" style={{ width: 76, height: 76, borderRadius: 18, objectFit: 'cover', opacity: 0.9 }} />
         <div className="app-logo-text" style={{ fontSize: 32, color: '#f5f0e8', letterSpacing: '-0.5px', textAlign: 'center' }}>Cursor</div>
         <div style={{ fontSize: 13, color: '#9c8e82', lineHeight: 1.6, textAlign: 'center', maxWidth: 220, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 300 }}>
           Sistema de seguimiento de tareas con persistencia en la nube.
@@ -82,7 +82,7 @@ export default function AuthScreen({ onAuth }) {
 
           {/* Logo mobile (solo visible en mobile) */}
           <div className="mobile-only" style={{ flexDirection: 'column', alignItems: 'center', marginBottom: 32, gap: 8 }}>
-            <img src="/logo.png" alt="Cursor" style={{ width: 56, height: 56, borderRadius: 14, objectFit: 'cover' }} />
+            <img src="/logo.png" alt="Cursor" style={{ width: 68, height: 68, borderRadius: 16, objectFit: 'cover' }} />
             <div className="app-logo-text" style={{ fontSize: 24, color: 'var(--text-primary)' }}>Cursor</div>
           </div>
 

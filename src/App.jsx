@@ -225,7 +225,7 @@ export default function App() {
   if (proj.loading) return (
     <div style={{ minHeight:'100vh', background:'var(--splash-bg)', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:20, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
       <style>{`@keyframes flowbar{0%{transform:translateX(-100%)}100%{transform:translateX(400%)}}`}</style>
-      <img src="/logo.png" alt="Cursor" style={{ width:72, height:72, borderRadius:18, objectFit:'cover', boxShadow:'0 4px 24px rgba(44,38,32,0.15)', marginBottom:4 }} />
+      <img src="/logo.png" alt="Cursor" style={{ width:84, height:84, borderRadius:20, objectFit:'cover', boxShadow:'0 4px 24px rgba(44,38,32,0.15)', marginBottom:4 }} />
       <div className="app-logo-text" style={{ fontSize:26, color:'var(--text-primary)', letterSpacing:'-0.5px' }}>Cursor</div>
       <div style={{ fontSize:13, color:'var(--text-muted)', fontFamily:"'DM Mono',monospace", letterSpacing:'1px' }}>Conectando con la base de datos...</div>
       <div style={{ width:140, height:3, background:'var(--bg-elevated)', borderRadius:999, overflow:'hidden', marginTop:4 }}>
