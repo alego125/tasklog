@@ -1,43 +1,28 @@
-# TaskLog — Deploy con Turso + Render + Vercel
+# TaskLog — Deploy con Neon + Render + Vercel
 
 ## Stack
 - **Frontend:** React + Vite → deploy en Vercel
 - **Backend:** Express → deploy en Render
-- **Base de datos:** Turso (SQLite en la nube)
+- **Base de datos:** PostgreSQL (Neon en la nube)
 
 ---
 
-## 1. Preparar la base de datos en Turso
+## 1. Preparar la base de datos en Neon
 
-```bash
-# Instalar CLI de Turso
-curl -sSfL https://get.tur.so/install.sh | bash
+1. Entrá a https://neon.tech y creá una cuenta gratuita.
+2. Creá un nuevo proyecto (ej. `tasklog`).
+3. Copiá la **Connection String** provista para PostgreSQL (tendrá una estructura similar a `postgresql://usuario:password@host/neondb?sslmode=require`).
 
-# Login
-turso auth login
-
-# Crear base de datos
-turso db create tasklog
-
-# Obtener la URL
-turso db show tasklog --url
-# → libsql://tasklog-tuusuario.turso.io
-
-# Obtener el token
-turso db tokens create tasklog
-# → eyJhbGciOi...
-```
-
-Guardá estos dos valores, los vas a necesitar en los pasos siguientes.
+Guardá este valor, lo vas a necesitar en los pasos siguientes como `DATABASE_URL`.
 
 ---
 
 ## 2. Deploy del Backend en Render
 
-1. Subí este proyecto a GitHub
-2. Entrá a https://render.com y creá una cuenta gratuita
-3. Click en **New → Web Service**
-4. Conectá tu repositorio de GitHub
+1. Subí este proyecto a GitHub.
+2. Entrá a https://render.com y creá una cuenta gratuita.
+3. Click en **New → Web Service**.
+4. Conectá tu repositorio de GitHub.
 5. Configurá:
    - **Name:** tasklog-api
    - **Runtime:** Node
@@ -46,12 +31,11 @@ Guardá estos dos valores, los vas a necesitar en los pasos siguientes.
    - **Plan:** Free
 6. En **Environment Variables** agregá:
    ```
-   TURSO_DATABASE_URL = libsql://tasklog-tuusuario.turso.io
-   TURSO_AUTH_TOKEN   = eyJhbGciOi...  (tu token de Turso)
-   NODE_ENV           = production
-   FRONTEND_URL       = https://tu-app.vercel.app  (lo completás después)
+   DATABASE_URL = postgresql://usuario:password@host/neondb?sslmode=require  (tu Connection String de Neon)
+   NODE_ENV     = production
+   FRONTEND_URL = https://tu-app.vercel.app  (lo completás después)
    ```
-7. Click **Create Web Service**
+7. Click **Create Web Service**.
 8. Esperá el deploy (~2 min). Copiá la URL que te da Render:
    → `https://tasklog-api.onrender.com`
 
@@ -59,14 +43,14 @@ Guardá estos dos valores, los vas a necesitar en los pasos siguientes.
 
 ## 3. Deploy del Frontend en Vercel
 
-1. Entrá a https://vercel.com y creá una cuenta gratuita
-2. Click en **Add New → Project**
-3. Importá tu repositorio de GitHub
+1. Entrá a https://vercel.com y creá una cuenta gratuita.
+2. Click en **Add New → Project**.
+3. Importá tu repositorio de GitHub.
 4. En **Environment Variables** agregá:
    ```
    VITE_API_URL = https://tasklog-api.onrender.com
    ```
-5. Click **Deploy**
+5. Click **Deploy**.
 6. Copiá la URL que te da Vercel:
    → `https://tasklog-xxxx.vercel.app`
 
@@ -90,7 +74,7 @@ npm install
 
 # Crear archivo .env (copiar desde .env.example)
 cp .env.example .env
-# (podés dejar las variables de Turso vacías, usará SQLite local)
+# (Completá la variable DATABASE_URL con tu conexión de Neon o una base de datos PostgreSQL local)
 
 # Levantar app completa
 npm run dev
@@ -105,6 +89,5 @@ App en http://localhost:5173
 - **Render free:** el servidor se duerme después de 15 min sin uso.
   El primer request después de eso tarda ~30 segundos en despertar.
   Esto es normal en el plan gratuito.
-- **Turso free:** 500MB de almacenamiento, 1 billón de lecturas/mes.
-  Más que suficiente para uso personal o de equipo pequeño.
-- **Backup:** podés exportar tu BD con `turso db shell tasklog ".dump"` 
+- **Neon free:** Excelente plan gratuito con base de datos PostgreSQL serverless, escalado automático a cero y branching.
+- **Backup:** podés usar la opción de Backup integrada en la barra de navegación de la aplicación para exportar todos tus proyectos y tareas en un archivo JSON firmemente estructurado y restaurarlo cuando lo desees.
