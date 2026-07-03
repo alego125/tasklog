@@ -3,7 +3,7 @@ import { S } from '../utils/helpers.js'
 export default function Header({
   currentUser, theme, archiveView, projects,
   onNewProject, onArchiveView,
-  onExportExcel, onExportPDF, onBackup, onToggleTheme,
+  onExportExcel, onExportPDF, onToggleTheme,
   onProfile, onLogout,
   userMenuOpen, setUserMenuOpen,
   mobileMenuOpen, setMobileMenuOpen,
@@ -70,7 +70,6 @@ export default function Header({
                 {!archiveView && menuBtn(() => { onExportExcel(projects); setUserMenuOpen(false) }, '#34d399', '⬇ Exportar Excel')}
                 {!archiveView && menuBtn(() => { onExportPDF(projects); setUserMenuOpen(false) }, '#f97316', '📄 Generar prompt informe')}
                 {menuBtn(() => { if(!archiveView) loadArchived(); onArchiveView(v=>!v); setUserMenuOpen(false) }, '#fbbf24', `📦 ${archiveView?'Volver a proyectos':'Archivados'}`)}
-                {!archiveView && menuBtn(() => { onBackup(); setUserMenuOpen(false) }, 'var(--text-secondary)', '💾 Backup y restauración')}
                 {menuBtn(() => { onToggleTheme(); setUserMenuOpen(false) }, 'var(--text-secondary)', theme==='dark'?'☀️ Modo claro':'🌙 Modo oscuro', { borderTop:'1px solid var(--border)' })}
                 {menuBtn(() => { setUserMenuOpen(false); onProfile() }, 'var(--text-secondary)', '✏️ Editar perfil')}
                 {menuBtn(() => { setUserMenuOpen(false); onLogout() }, '#ef4444', '⎋ Cerrar sesión', { borderTop:'1px solid var(--border)' })}
@@ -132,14 +131,7 @@ export default function Header({
             {!archiveView && mobileMenuBtn(() => { onExportExcel(projects); setMobileMenuOpen(false) }, '#34d399', '⬇ Exportar Excel')}
             {!archiveView && mobileMenuBtn(() => { onExportPDF(projects); setMobileMenuOpen(false) }, '#f97316', '📄 Generar prompt informe')}
             {mobileMenuBtn(() => { if(!archiveView) loadArchived(); onArchiveView(v=>!v); setMobileMenuOpen(false) }, '#fbbf24', `📦 ${archiveView?'Volver a proyectos':'Archivados'}`)}
-            {!archiveView && (
-              <button onClick={() => { onBackup(); setMobileMenuOpen(false) }}
-                style={{ width:'100%', background:'transparent', border:'none', color:'var(--text-secondary)', padding:'12px 16px', cursor:'pointer', fontSize:13, textAlign:'left', display:'flex', alignItems:'center', gap:10 }}
-                onMouseEnter={e=>e.currentTarget.style.background='var(--bg-elevated)'}
-                onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                💾 Backup y restauración
-              </button>
-            )}
+
           </div>
         </>
       )}
