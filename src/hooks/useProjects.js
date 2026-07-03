@@ -279,37 +279,6 @@ export function useProjects() {
     if (task) mutTask(task.projectId, taskId, t => ({ ...t, comments:[...t.comments, result.comment] }))
   }
 
-  // ── Backup / Restore ────────────────────────────────────────────
-  const doBackup = async () => {
-    const BASE  = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api'
-    const token = localStorage.getItem('ft_token')
-    const res   = await fetch(`${BASE}/backup`, { headers:{ Authorization:`Bearer ${token}` } })
-    const blob  = await res.blob()
-    const a     = document.createElement('a')
-    a.href      = URL.createObjectURL(blob)
-    a.download  = `flowtracker_backup_${new Date().toISOString().slice(0,10)}.json`
-    a.click()
-    URL.revokeObjectURL(a.href)
-  }
-
-  const doRestore = async (file, onResult) => {
-    if (!file) return
-    onResult({ loading:true, msg:null })
-    try {
-      const text   = await file.text()
-      const json   = JSON.parse(text)
-      const BASE   = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api'
-      const token  = localStorage.getItem('ft_token')
-      const res    = await fetch(`${BASE}/restore`, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token}` }, body:JSON.stringify(json) })
-      const result = await res.json()
-      if (!res.ok) throw new Error(result.error)
-      onResult({ loading:false, msg:{ ok:true, text:`✅ Restauración exitosa: ${result.restored.projects} proyectos, ${result.restored.tasks} tareas, ${result.restored.task_comments} comentarios, ${result.restored.project_notes} notas.` } })
-      await loadProjects()
-    } catch(e) {
-      onResult({ loading:false, msg:{ ok:false, text:`❌ Error: ${e.message}` } })
-    }
-  }
-
   return {
     projects, setProjects, loading, error, archivedProjects, loadingArchived,
     allTasks, sortedProjects,
@@ -319,6 +288,5 @@ export function useProjects() {
     doAddTask, doSaveEditTask, doToggle, doDeleteTask,
     doAddComment, doSaveEditComment, doDeleteComment, doMoveCommentToProject,
     doAddProjectNote, doSaveEditNote, doDeleteProjectNote, doMoveNoteToTask,
-    doBackup, doRestore,
   }
 }
