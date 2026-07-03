@@ -50,9 +50,6 @@ export default function App() {
   const [newProjName,        setNewProjName]        = useState('')
   const [newProjColor,       setNewProjColor]       = useState('#22c55e')
   const [archiveView,        setArchiveView]        = useState(false)
-  const [backupModal,        setBackupModal]        = useState(false)
-  const [restoring,          setRestoring]          = useState(false)
-  const [restoreMsg,         setRestoreMsg]         = useState(null)
   const [membersModal,       setMembersModal]       = useState(null)
   const [memberSearch,       setMemberSearch]       = useState('')
   const [memberResults,      setMemberResults]      = useState([])
@@ -111,12 +108,6 @@ export default function App() {
       })
     })
   }, [])
-
-  useEffect(() => {
-    if (!restoreMsg) return
-    if (restoreMsg.ok) toast(restoreMsg.text.replace('✅ ',''), 'success', 5000)
-    else toast(restoreMsg.text.replace('❌ ',''), 'error', 5000)
-  }, [restoreMsg])
 
   useEffect(() => {
     if (!currentUser) return
@@ -298,33 +289,6 @@ export default function App() {
         )
       })()}
 
-      {backupModal && (
-        <div onClick={() => setBackupModal(false)} style={{ position:'fixed', inset:0, background:'rgba(44,38,32,0.45)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center' }}>
-          <div onClick={e=>e.stopPropagation()} className="ft-modal-inner" style={{ background:'var(--bg-surface)', border:'1px solid var(--border-soft)', borderRadius:14, padding:28, width:'100%', maxWidth:460, boxShadow:'0 30px 80px #0009' }}>
-            <div style={{ fontSize:16, fontWeight:700, marginBottom:6 }}>💾 Backup y Restauración</div>
-            <div style={{ fontSize:13, color:'var(--text-muted)', marginBottom:24 }}>Descargá un backup completo o restaurá desde un archivo previo.</div>
-            <div style={{ background:'var(--bg-hover)', border:'1px solid var(--border)', borderRadius:10, padding:16, marginBottom:12 }}>
-              <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)', marginBottom:4 }}>⬇ Descargar backup</div>
-              <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:12 }}>Exporta todos los proyectos, tareas, notas y bitácoras en un archivo JSON.</div>
-              <button onClick={proj.doBackup} style={{ background:'#065f46', border:'1px solid #059669', color:'#34d399', padding:'8px 18px', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:600 }}>⬇ Descargar backup</button>
-            </div>
-            <div style={{ background:'var(--bg-hover)', border:'1px solid var(--border)', borderRadius:10, padding:16, marginBottom:16 }}>
-              <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)', marginBottom:4 }}>⬆ Restaurar desde backup</div>
-              <div style={{ fontSize:12, color:'var(--text-secondary)', marginBottom:4 }}>⚠ Esto <strong>reemplaza todos los datos actuales</strong> con los del archivo.</div>
-              <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:12 }}>Seleccioná un archivo .json generado por Cursor.</div>
-              <label style={{ display:'inline-block', background:'#7c3aed', border:'none', color:'white', padding:'8px 18px', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:600 }}>
-                {restoring ? '⏳ Restaurando...' : '⬆ Seleccionar archivo'}
-                <input type="file" accept=".json" disabled={restoring} onChange={e => proj.doRestore(e.target.files[0], ({ loading:l, msg:m }) => { setRestoring(l); if(m) setRestoreMsg(m) })} style={{ display:'none' }} />
-              </label>
-              {restoreMsg && <div style={{ marginTop:12, fontSize:13, color:restoreMsg.ok?'#34d399':'#ef4444', background:restoreMsg.ok?'#052e16':'#2d0a0a', border:`1px solid ${restoreMsg.ok?'#16a34a':'#dc2626'}`, borderRadius:8, padding:'10px 14px', lineHeight:1.5 }}>{restoreMsg.text}</div>}
-            </div>
-            <div style={{ display:'flex', justifyContent:'flex-end' }}>
-              <button onClick={() => setBackupModal(false)} style={{ background:'var(--bg-elevated)', border:'1px solid var(--border-soft)', color:'var(--text-secondary)', padding:'8px 18px', borderRadius:8, cursor:'pointer', fontSize:13 }}>Cerrar</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {confirm     && <Confirm msg={confirm.msg} onOk={()=>{confirm.action();setConfirm(null)}} onCancel={()=>setConfirm(null)} title={confirm.title} okLabel={confirm.okLabel} okColor={confirm.okColor} />}
       {editProject && <EditProject project={editProject} onSave={(name,color) => { proj.doSaveEditProject(editProject,name,color).then(()=>toast('Proyecto actualizado')).catch(e=>toast(errMsg(e),'error')); setEditProject(null) }} onClose={()=>setEditProject(null)} />}
       {editTask    && <EditTask task={editTask.task} projects={proj.projects} onSave={form => { proj.doSaveEditTask(editTask.pId,editTask.task.id,form).then(()=>toast('Tarea actualizada')).catch(e=>toast(errMsg(e),'error')); setEditTask(null) }} onClose={()=>setEditTask(null)} />}
@@ -344,7 +308,6 @@ export default function App() {
         onArchiveView={v => setArchiveView(typeof v === 'function' ? v(archiveView) : v)}
         onExportExcel={exportExcel}
         onExportPDF={exportPDF}
-        onBackup={() => { setBackupModal(true); setRestoreMsg(null) }}
         onToggleTheme={toggleTheme}
         onProfile={() => setProfileOpen(true)}
         onLogout={doLogout}
