@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../hooks/useApi.js'
+import PasswordInput from './PasswordInput.jsx'
 
 export default function AuthScreen({ onAuth }) {
   useEffect(() => {
@@ -122,7 +123,7 @@ export default function AuthScreen({ onAuth }) {
             )}
             <label style={labelStyle}>
               Contraseña
-              <input type="password" value={password} onChange={e => setPass(e.target.value)} onKeyDown={handleKey} placeholder="••••••••" style={inputStyle} />
+              <PasswordInput value={password} onChange={e => setPass(e.target.value)} onKeyDown={handleKey} placeholder="••••••••" style={inputStyle} />
             </label>
 
             {error && (
