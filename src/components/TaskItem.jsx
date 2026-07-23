@@ -4,6 +4,8 @@ export default function TaskItem({ task, expanded, onToggle, onExpand, onEdit, o
   const status = getStatus(task.due_date, task.done)
   const cfg    = STATUS[status]
   const isExp  = expanded === task.id
+  // Más nuevas arriba
+  const sortedComments = [...task.comments].sort((a,b) => (b.created_at||'') < (a.created_at||'') ? -1 : 1)
 
   return (
     <div id={`task-${task.id}`} style={{ borderTop:'1px solid var(--border)', background:isExp?cfg.bg:'transparent', transition:'background .2s' }}>
@@ -46,7 +48,7 @@ export default function TaskItem({ task, expanded, onToggle, onExpand, onEdit, o
         <div className="ft-task-comments" style={{ padding:'0 16px 14px 50px', borderLeft:`3px solid ${cfg.border}` }}>
           <div style={{ fontSize:11, color:'var(--text-secondary)', fontWeight:700, marginBottom:8, textTransform:'uppercase', letterSpacing:1 }}>💬 Bitácora de la tarea</div>
           {task.comments.length === 0 && <div style={{ fontSize:13, color:'var(--text-faint)', marginBottom:10 }}>Sin notas aún.</div>}
-          {task.comments.map(c => (
+          {sortedComments.map(c => (
             <div key={c.id} style={{ background:'var(--bg-elevated)', border:'1px solid var(--border-soft)', borderRadius:8, padding:'9px 12px', marginBottom:7, display:'flex', gap:10, alignItems:'flex-start' }}>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:3 }}>{c.author||'—'} · <span onClick={()=>onEditCreatedAt&&onEditCreatedAt('comment', task.id, c)} style={{ cursor:'pointer', textDecoration:'underline dotted', color:'var(--text-secondary)' }} title="Editar fecha de registro">{fmtDate(c.created_at)}</span></div>

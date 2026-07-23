@@ -123,3 +123,7 @@
 @media (max-width: 600px) {
   .ft-main { padding: 12px 10px !important; }
 }
+
+@media (max-width: 700px) {
+  .ft-dash-grid { grid-template-columns: 1fr !important; }
+}

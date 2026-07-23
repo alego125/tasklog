@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { api } from '../hooks/useApi.js'
+import PasswordInput from './PasswordInput.jsx'
 
 const S = {
   input: { background:'var(--input-bg)', border:'1px solid var(--border-soft)', color:'var(--text-primary)', padding:'10px 14px', borderRadius:8, fontSize:14, outline:'none', width:'100%', boxSizing:'border-box' },
@@ -84,11 +85,11 @@ export default function ProfileScreen({ user, onSave, onClose }) {
             <div style={{ display:'flex',flexDirection:'column',gap:10 }}>
               <label style={S.label}>
                 Nueva contraseña
-                <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" style={S.input} />
+                <PasswordInput value={password} onChange={e=>setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" style={S.input} />
               </label>
               <label style={S.label}>
                 Confirmar contraseña
-                <input type="password" value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="Repetí la contraseña" style={S.input} />
+                <PasswordInput value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="Repetí la contraseña" style={S.input} />
               </label>
             </div>
           </div>

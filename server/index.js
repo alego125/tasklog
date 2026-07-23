@@ -576,13 +576,25 @@ app.post('/api/comments/:id/move-to-project', authMiddleware, async (req, res) =
 // ── BACKUP / RESTORE ─────────────────────────────────────────────
 app.get('/api/backup', authMiddleware, async (req, res) => {
   try {
-    const projects      = (await db.query('SELECT * FROM projects ORDER BY id')).rows
-    const tasks         = (await db.query('SELECT * FROM tasks ORDER BY id')).rows
-    const task_comments = (await db.query('SELECT * FROM task_comments ORDER BY id')).rows
-    const project_notes = (await db.query('SELECT * FROM project_notes ORDER BY id')).rows
+    // Solo proyectos donde el usuario autenticado es miembro
+    const memberRes = await db.query('SELECT project_id FROM project_members WHERE user_id=$1', [req.user.id])
+    const projectIds = memberRes.rows.map(r => r.project_id)
+
+    let projects = [], tasks = [], task_comments = [], project_notes = []
+    if (projectIds.length) {
+      const ids = projectIds.map((_, i) => `$${i + 1}`).join(',')
+      const [pRes, tRes, cRes, nRes] = await Promise.all([
+        db.query(`SELECT * FROM projects WHERE id IN (${ids}) ORDER BY id`, projectIds),
+        db.query(`SELECT * FROM tasks WHERE project_id IN (${ids}) ORDER BY id`, projectIds),
+        db.query(`SELECT * FROM task_comments WHERE task_id IN (SELECT id FROM tasks WHERE project_id IN (${ids})) ORDER BY id`, projectIds),
+        db.query(`SELECT * FROM project_notes WHERE project_id IN (${ids}) ORDER BY id`, projectIds),
+      ])
+      projects = pRes.rows; tasks = tRes.rows; task_comments = cRes.rows; project_notes = nRes.rows
+    }
+
     const backup = { version: 1, exported_at: new Date().toISOString(), data: { projects, tasks, task_comments, project_notes } }
     res.setHeader('Content-Type', 'application/json')
-    res.setHeader('Content-Disposition', `attachment; filename="flowtracker_backup_${new Date().toISOString().slice(0,10)}.json"`)
+    res.setHeader('Content-Disposition', `attachment; filename="cursor_backup_${new Date().toISOString().slice(0,10)}.json"`)
     res.json(backup)
   } catch(e) { res.status(500).json({ error: e.message }) }
 })

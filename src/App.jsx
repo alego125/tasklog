@@ -3,11 +3,13 @@ import { api, isNetworkError } from './hooks/useApi.js'
 import { useProjects } from './hooks/useProjects.js'
 import { useToast } from './hooks/useToast.js'
 import Toast from './components/Toast.jsx'
-import { getStatus, STATUS, COLORS, S, fmtDate, exportExcel, exportPDF } from './utils/helpers.js'
+import { getStatus, COLORS, S, fmtDate, exportExcel, exportPDF } from './utils/helpers.js'
 import AuthScreen    from './components/AuthScreen.jsx'
 import ProfileScreen from './components/ProfileScreen.jsx'
 import Header        from './components/Header.jsx'
 import ProjectCard   from './components/ProjectCard.jsx'
+import TaskItem      from './components/TaskItem.jsx'
+import Dashboard     from './components/Dashboard.jsx'
 import { Confirm, EditProject, EditTask, EditComment, EditDueDateModal, EditCreatedAtModal, MoveNoteModal, MoveCommentModal } from './components/Modals.jsx'
 
 function ScrollToTop() {
@@ -33,12 +35,12 @@ export default function App() {
   const [currentUser,        setCurrentUser]        = useState(() => { try { return JSON.parse(localStorage.getItem('ft_user')) } catch { return null } })
   const [theme,              setTheme]              = useState(() => localStorage.getItem('ft_theme') || 'dark')
   const [search,             setSearch]             = useState('')
-  const [filterStatus,       setFilterStatus]       = useState('all')
+  const [filterStatuses,     setFilterStatuses]     = useState([]) // [] = Todas; combinable: 'overdue' | 'warning' | 'ok' | 'done'
   const [filterProject,      setFilterProject]      = useState('all')
   const [filterDateFrom,     setFilterDateFrom]     = useState('')
   const [filterDateTo,       setFilterDateTo]       = useState('')
   const [showDone,           setShowDone]           = useState(true)
-  const [viewMode,           setViewMode]           = useState('projects') // 'projects' | 'tasks' | 'bitacoras'
+  const [viewMode,           setViewMode]           = useState('projects') // 'projects' | 'tasks' | 'bitacoras' | 'dashboard'
   const [expanded,           setExpanded]           = useState(null)
   const [expandedNotes,      setExpandedNotes]      = useState({})
   const [collapsedProjects,  setCollapsedProjects]  = useState({})
@@ -148,12 +150,12 @@ export default function App() {
       (t.responsible||'').toLowerCase().includes(q) ||
       t.comments.some(c => c.text.toLowerCase().includes(q) || (c.author||'').toLowerCase().includes(q))
     return matchSearch &&
-      (filterStatus==='all' || st===filterStatus) &&
+      (filterStatuses.length===0 || filterStatuses.includes(st)) &&
       (filterProject==='all' || t.projectId===parseInt(filterProject)) &&
       (showDone || !t.done) &&
       (!filterDateFrom || (t.due_date && String(t.due_date).slice(0,10) >= filterDateFrom)) &&
       (!filterDateTo   || (t.due_date && String(t.due_date).slice(0,10) <= filterDateTo))
-  }), [proj.allTasks, search, filterStatus, filterProject, showDone, filterDateFrom, filterDateTo])
+  }), [proj.allTasks, search, filterStatuses, filterProject, showDone, filterDateFrom, filterDateTo])
 
   const filteredProjectNotes = useMemo(() => {
     if (!search.trim()) return []
@@ -191,6 +193,35 @@ export default function App() {
   const doneTasks = proj.allTasks.filter(t => t.done)
 
   const showConfirm = (msg, action, opts={}) => setConfirm({ msg, action, ...opts })
+
+  // ── Filtros de estado combinables ───────────────────────────────
+  const toggleStatusFilter = (key) => {
+    if (key === null) { setFilterStatuses([]); return }
+    setFilterStatuses(prev => {
+      const has = prev.includes(key)
+      if (key === 'done' && !has) setShowDone(true) // asegurar visibilidad al activar el filtro
+      return has ? prev.filter(k => k!==key) : [...prev, key]
+    })
+  }
+
+  // ── Drill-down desde el Dashboard ───────────────────────────────
+  const goToTasksFiltered = (status) => {
+    if (status === 'done') setShowDone(true)
+    setFilterStatuses(status === 'all' ? [] : [status])
+    setViewMode('tasks')
+  }
+
+  const goToProject = (pId, taskId) => {
+    setFilterProject(String(pId))
+    setViewMode('projects')
+    setCollapsedProjects(c => ({ ...c, [pId]: false }))
+    if (taskId) {
+      setExpanded(taskId)
+      setTimeout(() => { const el = document.getElementById('task-'+taskId); if (el) el.scrollIntoView({ behavior:'smooth', block:'center' }) }, 100)
+    } else {
+      setTimeout(() => { const el = document.getElementById('project-'+pId); if (el) el.scrollIntoView({ behavior:'smooth', block:'start' }) }, 100)
+    }
+  }
 
   const doSearchMembers = async q => {
     setMemberSearch(q)
@@ -308,6 +339,7 @@ export default function App() {
         onArchiveView={v => setArchiveView(typeof v === 'function' ? v(archiveView) : v)}
         onExportExcel={exportExcel}
         onExportPDF={exportPDF}
+        onBackup={() => proj.doBackup().catch(e => toast(errMsg(e),'error'))}
         onToggleTheme={toggleTheme}
         onProfile={() => setProfileOpen(true)}
         onLogout={doLogout}
@@ -368,7 +400,7 @@ export default function App() {
                 <input type="checkbox" checked={showDone} onChange={e=>setShowDone(e.target.checked)} style={{ accentColor:'#A8D170' }} /> Mostrar completadas
               </label>
               <div style={{ display:'flex', gap:6, marginLeft:'auto' }}>
-                {[{id:'projects',label:'🗂 Proyectos'},{id:'tasks',label:'📋 Tareas'},{id:'bitacoras',label:'💬 Bitácoras'}].map(v => (
+                {[{id:'projects',label:'🗂 Proyectos'},{id:'tasks',label:'📋 Tareas'},{id:'bitacoras',label:'💬 Bitácoras'},{id:'dashboard',label:'📊 Dashboard'}].map(v => (
                   <button key={v.id} onClick={()=>setViewMode(v.id)} style={{ ...S.btnSecondary, padding:'5px 12px', fontSize:12, fontWeight: viewMode===v.id?700:400, border: viewMode===v.id?'1.5px solid var(--accent)':'1px solid var(--border-soft)', color: viewMode===v.id?'var(--accent)':'var(--text-secondary)' }}>{v.label}</button>
                 ))}
               </div>
@@ -390,19 +422,15 @@ export default function App() {
               { label:'Completadas', val:doneTasks.length,                                                         color:'#22c55e', filter:'done' },
               { label:'Proyectos',   val:proj.projects.length,                                                     color:'#7BC6D9', filter:'__projects__' },
             ].map(s => {
-              const active = s.filter === null ? filterStatus === 'all' : filterStatus === s.filter
+              const active = s.filter === null ? filterStatuses.length===0 : (s.filter !== '__projects__' && filterStatuses.includes(s.filter))
               return (
                 <button
                   key={s.label}
                   onClick={() => {
                     if (s.filter === '__projects__') return
-                    if (s.filter === 'done') {
-                      if (active) { setShowDone(false); setFilterStatus('all') }
-                      else { setShowDone(true); setFilterStatus('done') }
-                    } else {
-                      setFilterStatus(active && s.filter !== null ? 'all' : (s.filter || 'all'))
-                    }
+                    toggleStatusFilter(s.filter)
                   }}
+                  title={s.filter === '__projects__' || s.filter === null ? undefined : 'Combinable con otros filtros de estado'}
                   style={{ background:'var(--bg-surface)', border:`1.5px solid ${active ? s.color : s.color+'44'}`, borderRadius:10, padding:'12px 14px', textAlign:'center', cursor: s.filter === '__projects__' ? 'default' : 'pointer', outline:'none', transition:'all .15s', boxShadow: active && s.filter !== null ? `0 0 0 2px ${s.color}44` : 'none' }}
                 >
                   <div style={{ fontSize:24, fontWeight:800, color:s.color }}>{s.val}</div>
@@ -413,19 +441,21 @@ export default function App() {
           </div>
 
           {/* Colapsar / Expandir todos */}
-          <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:10 }}>
-            <button
-              onClick={() => {
-                const allCollapsed = proj.sortedProjects.every(p => collapsedProjects[p.id])
-                const next = {}
-                if (!allCollapsed) proj.sortedProjects.forEach(p => { next[p.id] = true })
-                setCollapsedProjects(next)
-              }}
-              style={{ ...S.btnSecondary, padding:'5px 12px', fontSize:12, display:'flex', alignItems:'center', gap:5 }}
-            >
-              {proj.sortedProjects.every(p => collapsedProjects[p.id]) ? '▼ Expandir todos' : '▲ Colapsar todos'}
-            </button>
-          </div>
+          {viewMode !== 'dashboard' && (
+            <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:10 }}>
+              <button
+                onClick={() => {
+                  const allCollapsed = proj.sortedProjects.every(p => collapsedProjects[p.id])
+                  const next = {}
+                  if (!allCollapsed) proj.sortedProjects.forEach(p => { next[p.id] = true })
+                  setCollapsedProjects(next)
+                }}
+                style={{ ...S.btnSecondary, padding:'5px 12px', fontSize:12, display:'flex', alignItems:'center', gap:5 }}
+              >
+                {proj.sortedProjects.every(p => collapsedProjects[p.id]) ? '▼ Expandir todos' : '▲ Colapsar todos'}
+              </button>
+            </div>
+          )}
 
           {/* Nuevo proyecto */}
           {newProjOpen && (
@@ -491,42 +521,41 @@ export default function App() {
           )}
 
           {/* Proyectos */}
-          {/* Vista Tareas */}
+          {/* Vista Tareas — interactiva: agregar notas, editar y completar sin perder el filtro */}
           {viewMode === 'tasks' && (() => {
-            const allTasks = [...proj.allTasks]
-              .filter(t => !t.done || showDone)
-              .filter(t => filterProject==='all' || t.projectId===parseInt(filterProject))
-              .filter(t => !search.trim() || t.title.toLowerCase().includes(search.toLowerCase()) || t.projectName.toLowerCase().includes(search.toLowerCase()) || (t.responsible||'').toLowerCase().includes(search.toLowerCase()))
-              .sort((a,b) => {
-                const stA = getStatus(a.due_date, a.done), stB = getStatus(b.due_date, b.done)
-                const order = {overdue:0, warning:1, ok:2, done:3}
-                if (order[stA] !== order[stB]) return order[stA] - order[stB]
-                if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date)
-                if (a.due_date) return -1
-                if (b.due_date) return 1
-                return 0
-              })
+            const tasksList = [...filtered].sort((a,b) => {
+              const stA = getStatus(a.due_date, a.done), stB = getStatus(b.due_date, b.done)
+              const order = {overdue:0, warning:1, ok:2, done:3}
+              if (order[stA] !== order[stB]) return order[stA] - order[stB]
+              if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date)
+              if (a.due_date) return -1
+              if (b.due_date) return 1
+              return 0
+            })
             return (
               <div style={{ background:'var(--bg-surface)', border:'1px solid var(--border)', borderRadius:14, overflow:'hidden' }}>
-                <div style={{ padding:'12px 16px', borderBottom:'1px solid var(--border)', background:'var(--bg-elevated)', fontWeight:700, fontSize:13 }}>📋 Listado de tareas — {allTasks.length} resultado{allTasks.length!==1?'s':''}</div>
-                {allTasks.length === 0 && <div style={{ padding:24, textAlign:'center', color:'var(--text-faint)', fontSize:13 }}>Sin tareas.</div>}
-                {allTasks.map(t => {
-                  const cfg = STATUS[getStatus(t.due_date, t.done)]
-                  return (
-                    <div key={t.id} style={{ padding:'10px 16px', borderBottom:'1px solid var(--border)', borderLeft:`3px solid ${cfg.border}`, display:'flex', alignItems:'center', gap:10 }}>
-                      <div style={{ width:18, height:18, borderRadius:4, border:`2px solid ${cfg.badge}`, background:t.done?cfg.badge:'transparent', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, color:'#0f172a', fontWeight:900, flexShrink:0 }}>{t.done&&'✓'}</div>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontWeight:600, fontSize:13, color:t.done?'var(--text-faint)':(getStatus(t.due_date,t.done)==='overdue'?'#ef4444':getStatus(t.due_date,t.done)==='warning'?'#f59e0b':'var(--task-title)'), wordBreak:'break-word', overflowWrap:'break-word' }}>{t.title}</div>
-                        <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2, display:'flex', gap:8, flexWrap:'wrap' }}>
-                          <span style={{ color:t.projectColor, fontWeight:600 }}>📁 {t.projectName}</span>
-                          {t.responsible && <span>👤 {t.responsible}</span>}
-                          {t.due_date && <span>📅 {t.due_date.slice(0,10)}</span>}
-                        </div>
-                      </div>
-                      <div style={{ background:`${cfg.badge}22`, border:`1px solid ${cfg.badge}55`, color:cfg.badge, padding:'2px 8px', borderRadius:20, fontSize:11, fontWeight:600, whiteSpace:'nowrap', flexShrink:0 }}>● {cfg.label}</div>
-                    </div>
-                  )
-                })}
+                <div style={{ padding:'12px 16px', borderBottom:'1px solid var(--border)', background:'var(--bg-elevated)', fontWeight:700, fontSize:13 }}>📋 Listado de tareas — {tasksList.length} resultado{tasksList.length!==1?'s':''}</div>
+                {tasksList.length === 0 && <div style={{ padding:24, textAlign:'center', color:'var(--text-faint)', fontSize:13 }}>Sin tareas.</div>}
+                {tasksList.map(t => (
+                  <TaskItem
+                    key={t.id}
+                    task={t}
+                    expanded={expanded}
+                    onToggle={proj.doToggle}
+                    onExpand={setExpanded}
+                    onEdit={task => setEditTask({ pId:t.projectId, task })}
+                    onDelete={proj.doDeleteTask}
+                    onEditComment={(pId, tId, comment) => setEditComment({ pId, tId, comment })}
+                    onDeleteComment={proj.doDeleteComment}
+                    onMoveComment={(comment, pId, tId) => setMoveComment({ comment, pId, tId })}
+                    onAddComment={(pId, tId, text) => { setNewComment(p=>({...p,[tId]:''})); proj.doAddComment(pId, tId, text).then(() => toast('Nota agregada')).catch(e => { setNewComment(p=>({...p,[tId]:text})); toast(errMsg(e),'error') }) }}
+                    newComment={newComment[t.id]}
+                    onNewCommentChange={(tId, val) => setNewComment(p=>({...p,[tId]:val}))}
+                    onConfirm={(msg, action, opts) => showConfirm(msg, action, opts)}
+                    onEditDueDate={task => setEditDueDate({ pId:t.projectId, task })}
+                    onEditCreatedAt={(type, tId, item2) => setEditCreatedAt({ type, pId:t.projectId, tId, item:item2 })}
+                  />
+                ))}
               </div>
             )
           })()}
@@ -564,11 +593,22 @@ export default function App() {
             )
           })()}
 
+          {/* Dashboard */}
+          {viewMode === 'dashboard' && (
+            <Dashboard
+              projects={proj.projects}
+              filterProject={filterProject}
+              onSetFilterProject={setFilterProject}
+              onDrillTasks={goToTasksFiltered}
+              onDrillProject={goToProject}
+            />
+          )}
+
           {/* Proyectos */}
           {viewMode === 'projects' && proj.sortedProjects.map(project => {
             if (filterProject!=='all' && project.id!==parseInt(filterProject)) return null
             const ptasks = filtered.filter(t => t.projectId===project.id)
-            if (filterStatus!=='all' && ptasks.length===0) return null
+            if (filterStatuses.length>0 && ptasks.length===0) return null
             // Filtrar notas del proyecto por fecha de registro
             const filteredNotes = (project.notes||[]).filter(n => {
               const d = String(n.created_at||'').slice(0,10)
@@ -601,7 +641,7 @@ export default function App() {
                 expanded={expanded}
                 onExpand={setExpanded}
                 onToggleTask={proj.doToggle}
-                showNotes={filterStatus === 'all'}
+                showNotes={filterStatuses.length === 0}
                 newTaskFor={newTaskFor}
                 onOpenNewTask={id => { setNewTaskFor(id); if(id) setNewTask({ title:'', responsible:'', due_date:'' }) }}
                 newTask={newTask}

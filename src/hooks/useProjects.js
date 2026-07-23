@@ -33,7 +33,6 @@ export function useProjects() {
     [projects])
 
   const sortedProjects = useMemo(() => {
-    const now = new Date()
     const getCategory = (p) => {
       const pending = p.tasks.filter(t => !t.done)
       if (pending.some(t => getStatus(t.due_date, t.done) === 'overdue')) return 0   // vencidas
@@ -42,17 +41,12 @@ export function useProjects() {
       if (pending.length > 0)                                              return 3   // a tiempo sin fecha
       return 4                                                                        // todas completadas
     }
-    const getNearestDue = (p) => {
-      const dates = p.tasks.filter(t=>!t.done&&t.due_date).map(t=>new Date(t.due_date))
-      if (!dates.length) return Infinity
-      return Math.min(...dates.map(d => Math.abs(d - now)))
-    }
     return [...projects].sort((a, b) => {
       const ca = getCategory(a), cb = getCategory(b)
       if (ca !== cb) return ca - cb
-      // dentro de categoría 0,1,2: ordenar por fecha más cercana primero
-      if (ca <= 2) return getNearestDue(a) - getNearestDue(b)
-      return a.name.localeCompare(b.name, 'es', { sensitivity:'base' })
+      // Dentro de cada categoría: proyecto más nuevo primero (un proyecto recién creado
+      // queda arriba de todos los demás dentro de su categoría de vencimiento)
+      return (a.created_at||'') > (b.created_at||'') ? -1 : 1
     })
   }, [projects])
 
@@ -279,6 +273,20 @@ export function useProjects() {
     if (task) mutTask(task.projectId, taskId, t => ({ ...t, comments:[...t.comments, result.comment] }))
   }
 
+  // ── Backup ──────────────────────────────────────────────────────
+  const doBackup = async () => {
+    const BASE  = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api'
+    const token = localStorage.getItem('ft_token')
+    const res   = await fetch(`${BASE}/backup`, { headers:{ Authorization:`Bearer ${token}` } })
+    if (!res.ok) throw new Error('SIN_CONEXION')
+    const blob  = await res.blob()
+    const a     = document.createElement('a')
+    a.href      = URL.createObjectURL(blob)
+    a.download  = `cursor_backup_${new Date().toISOString().slice(0,10)}.json`
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
+
   return {
     projects, setProjects, loading, error, archivedProjects, loadingArchived,
     allTasks, sortedProjects,
@@ -288,5 +296,6 @@ export function useProjects() {
     doAddTask, doSaveEditTask, doToggle, doDeleteTask,
     doAddComment, doSaveEditComment, doDeleteComment, doMoveCommentToProject,
     doAddProjectNote, doSaveEditNote, doDeleteProjectNote, doMoveNoteToTask,
+    doBackup,
   }
 }
