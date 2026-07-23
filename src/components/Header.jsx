@@ -3,7 +3,7 @@ import { S } from '../utils/helpers.js'
 export default function Header({
   currentUser, theme, archiveView, projects,
   onNewProject, onArchiveView,
-  onExportExcel, onExportPDF, onToggleTheme,
+  onExportExcel, onExportPDF, onBackup, onToggleTheme,
   onProfile, onLogout,
   userMenuOpen, setUserMenuOpen,
   mobileMenuOpen, setMobileMenuOpen,
@@ -69,6 +69,7 @@ export default function Header({
                 </div>
                 {!archiveView && menuBtn(() => { onExportExcel(projects); setUserMenuOpen(false) }, '#34d399', '⬇ Exportar Excel')}
                 {!archiveView && menuBtn(() => { onExportPDF(projects); setUserMenuOpen(false) }, '#f97316', '📄 Generar prompt informe')}
+                {!archiveView && menuBtn(() => { onBackup(); setUserMenuOpen(false) }, '#7BC6D9', '💾 Descargar backup')}
                 {menuBtn(() => { if(!archiveView) loadArchived(); onArchiveView(v=>!v); setUserMenuOpen(false) }, '#fbbf24', `📦 ${archiveView?'Volver a proyectos':'Archivados'}`)}
                 {menuBtn(() => { onToggleTheme(); setUserMenuOpen(false) }, 'var(--text-secondary)', theme==='dark'?'☀️ Modo claro':'🌙 Modo oscuro', { borderTop:'1px solid var(--border)' })}
                 {menuBtn(() => { setUserMenuOpen(false); onProfile() }, 'var(--text-secondary)', '✏️ Editar perfil')}
@@ -130,6 +131,7 @@ export default function Header({
             {/* Opciones generales */}
             {!archiveView && mobileMenuBtn(() => { onExportExcel(projects); setMobileMenuOpen(false) }, '#34d399', '⬇ Exportar Excel')}
             {!archiveView && mobileMenuBtn(() => { onExportPDF(projects); setMobileMenuOpen(false) }, '#f97316', '📄 Generar prompt informe')}
+            {!archiveView && mobileMenuBtn(() => { onBackup(); setMobileMenuOpen(false) }, '#7BC6D9', '💾 Descargar backup')}
             {mobileMenuBtn(() => { if(!archiveView) loadArchived(); onArchiveView(v=>!v); setMobileMenuOpen(false) }, '#fbbf24', `📦 ${archiveView?'Volver a proyectos':'Archivados'}`)}
 
           </div>
