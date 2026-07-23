@@ -29,11 +29,10 @@ export default function Dashboard({ projects, filterProject, onSetFilterProject,
   const upcoming = useMemo(() =>
     [...stats.byStatus.warning, ...stats.byStatus.ok.filter(t => t.due_date)]
       .sort((a,b) => (a.due_date||'') < (b.due_date||'') ? -1 : 1)
-      .slice(0, 6)
   , [stats])
 
   const overdueList = useMemo(() =>
-    [...stats.byStatus.overdue].sort((a,b) => (a.due_date||'') < (b.due_date||'') ? -1 : 1).slice(0, 6)
+    [...stats.byStatus.overdue].sort((a,b) => (a.due_date||'') < (b.due_date||'') ? -1 : 1)
   , [stats])
 
   const perProject = useMemo(() => scoped.map(p => {
@@ -178,31 +177,35 @@ export default function Dashboard({ projects, filterProject, onSetFilterProject,
       {/* Listas rápidas */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:18 }}>
         <div style={{ background:'var(--bg-surface)', border:'1px solid var(--border)', borderRadius:14, overflow:'hidden' }}>
-          <div style={{ padding:'10px 16px', borderBottom:'1px solid var(--border)', background:'var(--bg-elevated)', fontWeight:700, fontSize:13, color:'#ef4444' }}>⚠️ Vencidas</div>
-          {overdueList.length === 0 && <div style={{ padding:16, fontSize:13, color:'var(--text-faint)' }}>No hay tareas vencidas 🎉</div>}
-          {overdueList.map(t => (
-            <div key={t.id} onClick={() => onDrillProject(t.projectId, t.id)} style={{ padding:'9px 16px', borderBottom:'1px solid var(--border)', cursor:'pointer', display:'flex', justifyContent:'space-between', gap:8 }}>
-              <div style={{ minWidth:0 }}>
-                <div style={{ fontSize:13, color:'var(--text-primary)', fontWeight:600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{t.title}</div>
-                <div style={{ fontSize:11, color:t.projectColor }}>📁 {t.projectName}</div>
+          <div style={{ padding:'10px 16px', borderBottom:'1px solid var(--border)', background:'var(--bg-elevated)', fontWeight:700, fontSize:13, color:'#ef4444' }}>⚠️ Vencidas ({overdueList.length})</div>
+          <div style={{ maxHeight:420, overflowY:'auto' }}>
+            {overdueList.length === 0 && <div style={{ padding:16, fontSize:13, color:'var(--text-faint)' }}>No hay tareas vencidas 🎉</div>}
+            {overdueList.map(t => (
+              <div key={t.id} onClick={() => onDrillProject(t.projectId, t.id)} style={{ padding:'9px 16px', borderBottom:'1px solid var(--border)', cursor:'pointer', display:'flex', justifyContent:'space-between', gap:8 }}>
+                <div style={{ minWidth:0 }}>
+                  <div style={{ fontSize:13, color:'var(--text-primary)', fontWeight:600, wordBreak:'break-word', overflowWrap:'break-word' }}>{t.title}</div>
+                  <div style={{ fontSize:11, color:t.projectColor, wordBreak:'break-word', overflowWrap:'break-word' }}>📁 {t.projectName}</div>
+                </div>
+                <div style={{ fontSize:11, color:'#ef4444', flexShrink:0, alignSelf:'center', whiteSpace:'nowrap' }}>{fmtSimpleDate(t.due_date)}</div>
               </div>
-              <div style={{ fontSize:11, color:'#ef4444', flexShrink:0, alignSelf:'center' }}>{fmtSimpleDate(t.due_date)}</div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
         <div style={{ background:'var(--bg-surface)', border:'1px solid var(--border)', borderRadius:14, overflow:'hidden' }}>
-          <div style={{ padding:'10px 16px', borderBottom:'1px solid var(--border)', background:'var(--bg-elevated)', fontWeight:700, fontSize:13, color:'#f59e0b' }}>🕒 Próximas a vencer</div>
-          {upcoming.length === 0 && <div style={{ padding:16, fontSize:13, color:'var(--text-faint)' }}>No hay vencimientos próximos.</div>}
-          {upcoming.map(t => (
-            <div key={t.id} onClick={() => onDrillProject(t.projectId, t.id)} style={{ padding:'9px 16px', borderBottom:'1px solid var(--border)', cursor:'pointer', display:'flex', justifyContent:'space-between', gap:8 }}>
-              <div style={{ minWidth:0 }}>
-                <div style={{ fontSize:13, color:'var(--text-primary)', fontWeight:600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{t.title}</div>
-                <div style={{ fontSize:11, color:t.projectColor }}>📁 {t.projectName}</div>
+          <div style={{ padding:'10px 16px', borderBottom:'1px solid var(--border)', background:'var(--bg-elevated)', fontWeight:700, fontSize:13, color:'#f59e0b' }}>🕒 Próximas a vencer ({upcoming.length})</div>
+          <div style={{ maxHeight:420, overflowY:'auto' }}>
+            {upcoming.length === 0 && <div style={{ padding:16, fontSize:13, color:'var(--text-faint)' }}>No hay vencimientos próximos.</div>}
+            {upcoming.map(t => (
+              <div key={t.id} onClick={() => onDrillProject(t.projectId, t.id)} style={{ padding:'9px 16px', borderBottom:'1px solid var(--border)', cursor:'pointer', display:'flex', justifyContent:'space-between', gap:8 }}>
+                <div style={{ minWidth:0 }}>
+                  <div style={{ fontSize:13, color:'var(--text-primary)', fontWeight:600, wordBreak:'break-word', overflowWrap:'break-word' }}>{t.title}</div>
+                  <div style={{ fontSize:11, color:t.projectColor, wordBreak:'break-word', overflowWrap:'break-word' }}>📁 {t.projectName}</div>
+                </div>
+                <div style={{ fontSize:11, color:'#f59e0b', flexShrink:0, alignSelf:'center', whiteSpace:'nowrap' }}>{t.due_date ? fmtSimpleDate(t.due_date) : '—'}</div>
               </div>
-              <div style={{ fontSize:11, color:'#f59e0b', flexShrink:0, alignSelf:'center' }}>{t.due_date ? fmtSimpleDate(t.due_date) : '—'}</div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </div>
