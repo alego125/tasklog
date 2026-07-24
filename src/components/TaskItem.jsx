@@ -1,6 +1,6 @@
 import { S, STATUS, getStatus, fmtDate, fmtSimpleDate } from '../utils/helpers.js'
 
-export default function TaskItem({ task, expanded, onToggle, onExpand, onEdit, onDelete, onEditComment, onDeleteComment, onMoveComment, onAddComment, newComment, onNewCommentChange, onConfirm, onEditDueDate, onEditCreatedAt }) {
+export default function TaskItem({ task, expanded, onToggle, onExpand, onEdit, onDelete, onEditComment, onDeleteComment, onMoveComment, onAddComment, newComment, onNewCommentChange, onConfirm, onEditDueDate, onEditCreatedAt, showProject }) {
   const status = getStatus(task.due_date, task.done)
   const cfg    = STATUS[status]
   const isExp  = expanded === task.id
@@ -23,6 +23,7 @@ export default function TaskItem({ task, expanded, onToggle, onExpand, onEdit, o
             {task.title}
           </div>
           <div className="ft-task-meta" style={{ fontSize:11, color:'var(--text-muted)', marginTop:2, display:'flex', gap:10, flexWrap:'wrap' }}>
+            {showProject && <span style={{ color:task.projectColor, fontWeight:600 }}>📁 {task.projectName}</span>}
             {task.responsible && <span>👤 {task.responsible}</span>}
             {task.due_date    && <span onClick={()=>onEditDueDate&&onEditDueDate(task)} style={{ cursor:'pointer', textDecoration:'underline dotted' }} title="Editar vencimiento">📅 Vence: {fmtSimpleDate(task.due_date)}</span>}
 <span onClick={()=>onEditCreatedAt&&onEditCreatedAt('task', null, task)} style={{ cursor:'pointer', textDecoration:'underline dotted' }} title="Editar fecha de registro">🗓 Registro: {fmtDate(task.created_at)}</span>

@@ -554,6 +554,7 @@ export default function App() {
                     onConfirm={(msg, action, opts) => showConfirm(msg, action, opts)}
                     onEditDueDate={task => setEditDueDate({ pId:t.projectId, task })}
                     onEditCreatedAt={(type, tId, item2) => setEditCreatedAt({ type, pId:t.projectId, tId, item:item2 })}
+                    showProject
                   />
                 ))}
               </div>
