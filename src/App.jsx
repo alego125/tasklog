@@ -382,7 +382,7 @@ export default function App() {
         </div>
 
       ) : (
-        <div style={{ maxWidth:1200, margin:'0 auto', padding:'28px 20px' }}>
+        <div className="ft-main" style={{ maxWidth:1200, margin:'0 auto', padding:'28px 20px' }}>
 
           {/* Filtros */}
           <div style={{ background:'var(--bg-surface)', border:'1px solid var(--border)', borderRadius:12, padding:'14px 16px', marginBottom:18 }}>
