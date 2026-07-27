@@ -1,3 +1,9 @@
+/* ── Evitar scroll horizontal accidental (mobile) ────────────── */
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
 /* ── Japandi Light (default) ────────────────────────────────── */
 :root {
   --bg-base:        #f5f0e8;
@@ -98,7 +104,7 @@
 
 @media (max-width: 600px) {
   .ft-proj-header { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; }
-  .ft-proj-actions { width: 100% !important; justify-content: flex-end !important; }
+  .ft-proj-actions { width: 100% !important; justify-content: flex-end !important; flex-wrap: wrap !important; row-gap: 6px !important; }
   .ft-proj-badge  { font-size: 10px !important; }
 }
 
