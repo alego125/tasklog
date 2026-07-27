@@ -399,7 +399,7 @@ export default function App() {
               <label style={{ display:'flex', alignItems:'center', gap:7, fontSize:13, cursor:'pointer', whiteSpace:'nowrap' }}>
                 <input type="checkbox" checked={showDone} onChange={e=>setShowDone(e.target.checked)} style={{ accentColor:'#A8D170' }} /> Mostrar completadas
               </label>
-              <div style={{ display:'flex', gap:6, marginLeft:'auto' }}>
+              <div style={{ display:'flex', gap:6, marginLeft:'auto', flexWrap:'wrap' }}>
                 {[{id:'projects',label:'🗂 Proyectos'},{id:'tasks',label:'📋 Tareas'},{id:'bitacoras',label:'💬 Bitácoras'},{id:'dashboard',label:'📊 Dashboard'}].map(v => (
                   <button key={v.id} onClick={()=>setViewMode(v.id)} style={{ ...S.btnSecondary, padding:'5px 12px', fontSize:12, fontWeight: viewMode===v.id?700:400, border: viewMode===v.id?'1.5px solid var(--accent)':'1px solid var(--border-soft)', color: viewMode===v.id?'var(--accent)':'var(--text-secondary)' }}>{v.label}</button>
                 ))}
