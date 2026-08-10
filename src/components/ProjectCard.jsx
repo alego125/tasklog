@@ -17,28 +17,24 @@ export default function ProjectCard({
   const hasWarning  = project.tasks.some(t => getStatus(t.due_date, t.done) === 'warning')
   const isCollapsed = collapsed || false
   const noteOpen    = newProjNote[project.id + '_open']
+  // Vencido tiene prioridad sobre por vencer para pintar el encabezado
+  const alertColor  = hasOverdue ? '#dc2626' : (hasWarning ? '#eab308' : null)
 
-  const STATUS_ORDER = { overdue:0, warning:1, ok:2, done:3 }
-  const taskItems = filteredTasks
-    .map(t => ({ ...t, _type:'task' }))
-    .sort((a,b) => {
-      const sa = STATUS_ORDER[getStatus(a.due_date, a.done)] ?? 2
-      const sb = STATUS_ORDER[getStatus(b.due_date, b.done)] ?? 2
-      if (sa !== sb) return sa - sb
-      // Dentro del mismo grupo: más antigua primero (por fecha de registro)
-      return (a.created_at||'') < (b.created_at||'') ? -1 : 1
-    })
+  // Tareas y notas mezcladas, ordenadas únicamente por fecha de registro
+  // (más nueva primero) sin agrupar por estado — el color de cada tarjeta
+  // ya indica si está vencida/por vencer.
+  const taskItems = filteredTasks.map(t => ({ ...t, _type:'task' }))
   const noteItems = showNotes
     ? [...(project.notes||[])].map(n => ({ ...n, _type:'note', projectId:project.id }))
-        .sort((a,b) => (b.created_at||'') < (a.created_at||'') ? -1 : 1) // reciente → antigua
     : []
   const mixedItems = [...taskItems, ...noteItems]
+    .sort((a,b) => (b.created_at||'') < (a.created_at||'') ? -1 : 1)
 
   return (
-    <div id={`project-${project.id}`} className="neu-card" style={{ background:'var(--bg-surface)', border:`1px solid ${hasOverdue?'#cba8a844':'var(--border-soft)'}`, borderRadius:14, marginBottom:16, overflow:'hidden' }}>
+    <div id={`project-${project.id}`} className="neu-card" style={{ background:'var(--bg-surface)', border:`1px solid ${alertColor ? alertColor+'55' : 'var(--border-soft)'}`, borderRadius:14, marginBottom:16, overflow:'hidden' }}>
 
       {/* Header */}
-      <div className="ft-proj-header" style={{ borderLeft:`4px solid ${project.color}`, padding:'12px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', background:`linear-gradient(90deg,${project.color}11,transparent)` }}>
+      <div className="ft-proj-header" style={{ borderLeft:`4px solid ${alertColor || project.color}`, padding:'12px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', background: alertColor ? `linear-gradient(90deg,${alertColor}3d,${alertColor}14)` : `linear-gradient(90deg,${project.color}11,transparent)` }}>
         <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
           <div style={{ width:9, height:9, borderRadius:'50%', background:project.color, flexShrink:0 }} />
           <span className="proj-title" onClick={() => onToggleCollapse(project.id)} style={{ fontSize:16, cursor:'pointer' }} title={isCollapsed?'Expandir':'Colapsar'}>{project.name}</span>
