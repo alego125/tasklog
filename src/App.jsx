@@ -145,19 +145,29 @@ export default function App() {
   }, [proj.projects])
 
   // ── Filters ───────────────────────────────────────────────────
-  const filtered = useMemo(() => proj.allTasks.filter(t => {
+  const baseTaskFilter = t => {
     const st = getStatus(t.due_date, t.done)
-    const q  = search.toLowerCase()
-    const matchSearch = !q || t.title.toLowerCase().includes(q) || t.projectName.toLowerCase().includes(q) ||
-      (t.responsible||'').toLowerCase().includes(q) ||
-      t.comments.some(c => c.text.toLowerCase().includes(q) || (c.author||'').toLowerCase().includes(q))
-    return matchSearch &&
-      (filterStatuses.length===0 || filterStatuses.includes(st)) &&
+    return (filterStatuses.length===0 || filterStatuses.includes(st)) &&
       (filterProject==='all' || t.projectId===parseInt(filterProject)) &&
       (showDone || !t.done) &&
       (!filterDateFrom || (t.due_date && String(t.due_date).slice(0,10) >= filterDateFrom)) &&
       (!filterDateTo   || (t.due_date && String(t.due_date).slice(0,10) <= filterDateTo))
-  }), [proj.allTasks, search, filterStatuses, filterProject, showDone, filterDateFrom, filterDateTo])
+  }
+  const matchesTaskSearch = t => {
+    const q = search.toLowerCase()
+    return !q || t.title.toLowerCase().includes(q) || t.projectName.toLowerCase().includes(q) ||
+      (t.responsible||'').toLowerCase().includes(q) ||
+      t.comments.some(c => c.text.toLowerCase().includes(q) || (c.author||'').toLowerCase().includes(q))
+  }
+
+  const filtered = useMemo(() => proj.allTasks.filter(t => baseTaskFilter(t) && matchesTaskSearch(t)),
+    [proj.allTasks, search, filterStatuses, filterProject, showDone, filterDateFrom, filterDateTo])
+
+  // Mismos filtros que `filtered` pero sin el texto de búsqueda — se usa en la
+  // vista Proyectos cuando el nombre del proyecto ya matchea la búsqueda, para
+  // mostrar todas sus tareas (no solo las que además contienen el término).
+  const filteredIgnoringSearch = useMemo(() => proj.allTasks.filter(baseTaskFilter),
+    [proj.allTasks, filterStatuses, filterProject, showDone, filterDateFrom, filterDateTo])
 
   const filteredProjectNotes = useMemo(() => {
     if (!search.trim()) return []
@@ -239,6 +249,21 @@ export default function App() {
     proj.doAddTask(projectId, taskData)
       .then(() => toast('Tarea agregada'))
       .catch(e => toast(errMsg(e),'error'))
+  }
+
+  // ── Llevar a un proyecto recién creado hasta la vista ────────────
+  const scrollToNewProject = pId => {
+    // Asegura que la tarjeta exista en el DOM: vista Proyectos y sin filtro
+    // de proyecto que la oculte.
+    setViewMode('projects')
+    setFilterProject('all')
+    // Se ejecuta después del auto-colapsado de proyectos nuevos para que
+    // quede expandido y a mano, sin tener que buscarlo en la pantalla.
+    setTimeout(() => {
+      setCollapsedProjects(c => ({ ...c, [pId]: false }))
+      const el = document.getElementById('project-'+pId)
+      if (el) el.scrollIntoView({ behavior:'smooth', block:'start' })
+    }, 150)
   }
 
   const doSearchMembers = async q => {
@@ -491,14 +516,14 @@ export default function App() {
               <input placeholder="Nombre del proyecto..." value={newProjName} onChange={e=>setNewProjName(e.target.value)}
                 onKeyDown={e => {
                 if (e.key==='Enter' && newProjName.trim()) {
-                  proj.doAddProject(newProjName, newProjColor).then(() => { setNewProjName(''); setNewProjOpen(false); toast('Proyecto creado') }).catch(e => toast(errMsg(e),'error'))
+                  proj.doAddProject(newProjName, newProjColor).then(project => { setNewProjName(''); setNewProjOpen(false); toast('Proyecto creado'); scrollToNewProject(project.id) }).catch(e => toast(errMsg(e),'error'))
                 }
               }}
                 style={{ ...S.input, flex:1 }} autoFocus />
               <div style={{ display:'flex', gap:6 }}>
                 {COLORS.map(c => <div key={c} onClick={() => setNewProjColor(c)} style={{ width:22, height:22, borderRadius:'50%', background:c, cursor:'pointer', border:newProjColor===c?'3px solid white':'3px solid transparent', boxSizing:'border-box' }} />)}
               </div>
-              <button onClick={() => { proj.doAddProject(newProjName,newProjColor).then(()=>{ setNewProjName(''); setNewProjOpen(false); toast('Proyecto creado') }).catch(e=>toast(errMsg(e),'error')) }} style={S.btnPrimary}>Crear</button>
+              <button onClick={() => { proj.doAddProject(newProjName,newProjColor).then(project=>{ setNewProjName(''); setNewProjOpen(false); toast('Proyecto creado'); scrollToNewProject(project.id) }).catch(e=>toast(errMsg(e),'error')) }} style={S.btnPrimary}>Crear</button>
               <button onClick={() => setNewProjOpen(false)} style={S.btnSecondary}>Cancelar</button>
             </div>
           )}
@@ -651,13 +676,19 @@ export default function App() {
           {/* Proyectos */}
           {viewMode === 'projects' && proj.sortedProjects.map(project => {
             if (filterProject!=='all' && project.id!==parseInt(filterProject)) return null
-            const ptasks = filtered.filter(t => t.projectId===project.id)
+            // Si el propio nombre del proyecto matchea la búsqueda, se muestra
+            // completo (todas sus tareas/notas); si no, se acota a lo que matchea.
+            const q = search.trim().toLowerCase()
+            const projectNameMatches = !!q && project.name.toLowerCase().includes(q)
+            const ptasks = (projectNameMatches ? filteredIgnoringSearch : filtered).filter(t => t.projectId===project.id)
             if (filterStatuses.length>0 && ptasks.length===0) return null
-            // Filtrar notas del proyecto por fecha de registro
+            // Filtrar notas del proyecto por fecha de registro y, si el nombre
+            // del proyecto no matcheó, también por texto de búsqueda
             const filteredNotes = (project.notes||[]).filter(n => {
               const d = String(n.created_at||'').slice(0,10)
               if (filterDateFrom && d < filterDateFrom) return false
               if (filterDateTo   && d > filterDateTo)   return false
+              if (q && !projectNameMatches && !n.text.toLowerCase().includes(q) && !(n.author||'').toLowerCase().includes(q)) return false
               return true
             })
             // Filtrar bitácoras de tareas por fecha de registro
@@ -674,7 +705,7 @@ export default function App() {
                 })
               }))
             }
-            if (search.trim() && ptasks.length===0 && !filteredNotes.some(n=>n.text.toLowerCase().includes(search.toLowerCase()))) return null
+            if (!projectNameMatches && q && ptasks.length===0 && filteredNotes.length===0) return null
             return (
               <ProjectCard
                 key={project.id}

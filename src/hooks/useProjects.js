@@ -65,6 +65,7 @@ export function useProjects() {
     if (!name.trim()) return
     const project = await api.createProject(name, color)
     setProjects(prev => [...prev, project])
+    return project
   }
 
   const doSaveEditProject = async (project, name, color) => {
