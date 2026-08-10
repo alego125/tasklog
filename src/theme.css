@@ -137,3 +137,12 @@ html, body {
 @media (max-width: 600px) {
   .ft-kanban-col { min-width: 180px !important; width: 180px !important; }
 }
+
+/* ── Resalte de proyecto recién creado (rgb del --accent, #7a9e7e) ── */
+@keyframes ft-project-flash {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(122,158,126,0); }
+  50%      { box-shadow: 0 0 0 6px rgba(122,158,126,0.55); }
+}
+.ft-project-highlight {
+  animation: ft-project-flash 0.7s ease-in-out 3;
+}
