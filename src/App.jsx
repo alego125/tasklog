@@ -11,7 +11,7 @@ import ProjectCard   from './components/ProjectCard.jsx'
 import TaskItem      from './components/TaskItem.jsx'
 import Dashboard     from './components/Dashboard.jsx'
 import KanbanBoard   from './components/KanbanBoard.jsx'
-import { Confirm, EditProject, EditTask, EditComment, EditDueDateModal, EditCreatedAtModal, MoveNoteModal, MoveCommentModal } from './components/Modals.jsx'
+import { Confirm, EditProject, EditTask, EditComment, EditDueDateModal, EditCreatedAtModal, MoveNoteModal, MoveCommentModal, TaskNotesModal } from './components/Modals.jsx'
 
 function ScrollToTop() {
   const [visible, setVisible] = React.useState(false)
@@ -69,6 +69,7 @@ export default function App() {
   const [confirm,            setConfirm]            = useState(null)
   const [moveNote,           setMoveNote]           = useState(null)
   const [moveComment,        setMoveComment]        = useState(null)
+  const [notesTaskId,        setNotesTaskId]        = useState(null)
 
   // ── 2. Custom hooks ───────────────────────────────────────────
   const proj                         = useProjects()
@@ -192,6 +193,9 @@ export default function App() {
   }, [proj.allTasks, search, filterProject, filterDateFrom, filterDateTo])
 
   const doneTasks = proj.allTasks.filter(t => t.done)
+  // Derivado en vivo de proj.allTasks (no una copia) para que el modal de notas
+  // refleje altas/ediciones/bajas de notas sin tener que cerrarlo y reabrirlo
+  const notesTask = notesTaskId ? proj.allTasks.find(t => t.id === notesTaskId) : null
 
   const showConfirm = (msg, action, opts={}) => setConfirm({ msg, action, ...opts })
 
@@ -228,6 +232,12 @@ export default function App() {
   const onMoveTask = (task, due_date) => {
     proj.doSaveEditTask(task.projectId, task.id, { title: task.title, responsible: task.responsible||'', due_date })
       .then(() => toast('Tarea movida'))
+      .catch(e => toast(errMsg(e),'error'))
+  }
+
+  const kanbanAddTask = (projectId, taskData) => {
+    proj.doAddTask(projectId, taskData)
+      .then(() => toast('Tarea agregada'))
       .catch(e => toast(errMsg(e),'error'))
   }
 
@@ -331,6 +341,16 @@ export default function App() {
       {confirm     && <Confirm msg={confirm.msg} onOk={()=>{confirm.action();setConfirm(null)}} onCancel={()=>setConfirm(null)} title={confirm.title} okLabel={confirm.okLabel} okColor={confirm.okColor} />}
       {editProject && <EditProject project={editProject} onSave={(name,color) => { proj.doSaveEditProject(editProject,name,color).then(()=>toast('Proyecto actualizado')).catch(e=>toast(errMsg(e),'error')); setEditProject(null) }} onClose={()=>setEditProject(null)} />}
       {editTask    && <EditTask task={editTask.task} projects={proj.projects} onSave={form => { proj.doSaveEditTask(editTask.pId,editTask.task.id,form).then(()=>toast('Tarea actualizada')).catch(e=>toast(errMsg(e),'error')); setEditTask(null) }} onClose={()=>setEditTask(null)} />}
+      {notesTask   && <TaskNotesModal task={notesTask} onClose={()=>setNotesTaskId(null)}
+        onAddComment={(pId, tId, text) => { setNewComment(p=>({...p,[tId]:''})); proj.doAddComment(pId, tId, text).then(() => toast('Nota agregada')).catch(e => { setNewComment(p=>({...p,[tId]:text})); toast(errMsg(e),'error') }) }}
+        newComment={newComment[notesTask.id]}
+        onNewCommentChange={(tId, val) => setNewComment(p=>({...p,[tId]:val}))}
+        onEditComment={(pId, tId, comment) => setEditComment({ pId, tId, comment })}
+        onDeleteComment={proj.doDeleteComment}
+        onMoveComment={(comment, pId, tId) => setMoveComment({ comment, pId, tId })}
+        onConfirm={(msg, action, opts) => showConfirm(msg, action, opts)}
+        onEditCreatedAt={(type, tId, item2) => setEditCreatedAt({ type, pId:notesTask.projectId, tId, item:item2 })}
+      />}
       {editComment && <EditComment comment={editComment.comment} onSave={data => { proj.doSaveEditComment(editComment.pId,editComment.tId,editComment.comment.id,data).then(()=>toast('Nota actualizada')).catch(e=>toast(errMsg(e),'error')); setEditComment(null) }} onClose={()=>setEditComment(null)} />}
       {editNote    && <EditComment comment={editNote.note}       onSave={data => { proj.doSaveEditNote(editNote.pId,editNote.note.id,data).then(()=>toast('Nota actualizada')).catch(e=>toast(errMsg(e),'error')); setEditNote(null) }}           onClose={()=>setEditNote(null)} />}
       {editDueDate && <EditDueDateModal task={editDueDate.task} onSave={due_date => { proj.doSaveEditTask(editDueDate.pId,editDueDate.task.id,{title:editDueDate.task.title,responsible:editDueDate.task.responsible||'',due_date}).then(()=>toast('Fecha actualizada')).catch(e=>toast(errMsg(e),'error')); setEditDueDate(null) }} onClose={()=>setEditDueDate(null)} />}
@@ -606,11 +626,14 @@ export default function App() {
           {viewMode === 'kanban' && (
             <KanbanBoard
               tasks={filtered}
+              projects={proj.projects}
               onToggleTask={proj.doToggle}
               onEditTask={task => setEditTask({ pId:task.projectId, task })}
               onDeleteTask={proj.doDeleteTask}
               onMoveTask={onMoveTask}
               onConfirm={(msg, action, opts) => showConfirm(msg, action, opts)}
+              onOpenNotes={task => setNotesTaskId(task.id)}
+              onAddTask={kanbanAddTask}
             />
           )}
 

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { fmtDate } from '../utils/helpers.js'
 
 const S = {
   input: { background:'var(--input-bg)', border:'1px solid var(--border-soft)', color:'var(--text-primary)', padding:'8px 12px', borderRadius:8, fontSize:13, outline:'none', boxSizing:'border-box', width:'100%' },
@@ -228,5 +229,49 @@ export function MoveCommentModal({ comment, projects, currentProjectId, onMove, 
         <button onClick={()=>selectedProject&&onMove(Number(selectedProject))} style={S.btnPrimary} disabled={!selectedProject}>Mover</button>
       </div>
     </Backdrop>
+  )
+}
+
+export function TaskNotesModal({ task, onClose, onAddComment, newComment, onNewCommentChange, onEditComment, onDeleteComment, onMoveComment, onConfirm, onEditCreatedAt }) {
+  const sortedComments = [...task.comments].sort((a,b) => (b.created_at||'') < (a.created_at||'') ? -1 : 1)
+  return (
+    <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(44,38,32,0.45)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:'var(--bg-surface)', border:'1px solid var(--border-soft)', borderRadius:14, padding:24, width:'100%', maxWidth:520, maxHeight:'85vh', display:'flex', flexDirection:'column', boxShadow:'0 30px 80px #0009' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:4 }}>
+          <div style={{ minWidth:0 }}>
+            <div className="proj-title" style={{ fontSize:16, wordBreak:'break-word' }}>💬 {task.title}</div>
+            {task.projectName && <div style={{ fontSize:12, color:task.projectColor||'var(--text-muted)', marginTop:2 }}>📁 {task.projectName}</div>}
+          </div>
+          <button onClick={onClose} style={{ background:'transparent', border:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:18, lineHeight:1, flexShrink:0 }}>✕</button>
+        </div>
+        <div style={{ flex:1, overflowY:'auto', marginTop:14, marginBottom:14 }}>
+          {sortedComments.length === 0 && <div style={{ fontSize:13, color:'var(--text-faint)', padding:'16px 0' }}>Sin notas aún.</div>}
+          {sortedComments.map(c => (
+            <div key={c.id} style={{ background:'var(--bg-elevated)', border:'1px solid var(--border-soft)', borderRadius:8, padding:'9px 12px', marginBottom:7, display:'flex', gap:10, alignItems:'flex-start' }}>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:3 }}>{c.author||'—'} · <span onClick={()=>onEditCreatedAt&&onEditCreatedAt('comment', task.id, c)} style={{ cursor:'pointer', textDecoration:'underline dotted', color:'var(--text-secondary)' }} title="Editar fecha de registro">{fmtDate(c.created_at)}</span></div>
+                <div style={{ fontSize:13, color:'var(--text-content)', wordBreak:'break-word' }}>{c.text}</div>
+              </div>
+              <div style={{ display:'flex', gap:4, flexShrink:0 }}>
+                <button onClick={() => onMoveComment(c, task.projectId, task.id)} title="Mover a proyecto" style={{ ...S.btnSecondary, padding:'3px 7px', fontSize:12 }}>🔀</button>
+                <button onClick={() => onEditComment(task.projectId, task.id, c)} title="Editar" style={{ ...S.btnSecondary, padding:'3px 7px', fontSize:12 }}>✏️</button>
+                <button onClick={() => onConfirm('¿Eliminar esta nota?', () => onDeleteComment(task.projectId, task.id, c.id))} title="Eliminar" style={{ ...S.btnSecondary, padding:'3px 7px', fontSize:12, borderColor:'#dc262633' }}>🗑️</button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display:'flex', gap:8 }}>
+          <input
+            placeholder="Agregar nota..."
+            value={newComment || ''}
+            onChange={e => onNewCommentChange(task.id, e.target.value)}
+            onKeyDown={e => e.key==='Enter' && onAddComment(task.projectId, task.id, newComment || '')}
+            style={S.input}
+            autoFocus
+          />
+          <button onClick={() => onAddComment(task.projectId, task.id, newComment || '')} style={S.btnPrimary}>Agregar</button>
+        </div>
+      </div>
+    </div>
   )
 }
