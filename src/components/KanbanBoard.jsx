@@ -6,7 +6,6 @@ const FIELD_OPTIONS = [
   { key:'project',     label:'Proyecto' },
   { key:'responsible', label:'Responsable' },
   { key:'status',      label:'Estado' },
-  { key:'comments',    label:'Notas' },
   { key:'created_at',  label:'Fecha de registro' },
 ]
 const DEFAULT_FIELDS = ['project','responsible','status']
@@ -22,7 +21,7 @@ function getWeekDays(offset) {
   return Array.from({ length:7 }, (_, i) => new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i))
 }
 
-export default function KanbanBoard({ tasks, onToggleTask, onEditTask, onDeleteTask, onMoveTask, onConfirm }) {
+export default function KanbanBoard({ tasks, projects, onToggleTask, onEditTask, onDeleteTask, onMoveTask, onConfirm, onOpenNotes, onAddTask }) {
   const [weekOffset, setWeekOffset] = useState(0)
   const [dragTaskId, setDragTaskId] = useState(null)
   const [hoverCol, setHoverCol] = useState(null)
@@ -30,6 +29,10 @@ export default function KanbanBoard({ tasks, onToggleTask, onEditTask, onDeleteT
   const [selectedFields, setSelectedFields] = useState(() => {
     try { return JSON.parse(localStorage.getItem(FIELDS_KEY)) || DEFAULT_FIELDS } catch { return DEFAULT_FIELDS }
   })
+  const [addingTaskFor, setAddingTaskFor] = useState(null) // dayISO | 'nodate' | null
+  const [newTaskTitle, setNewTaskTitle] = useState('')
+  const [newTaskResponsible, setNewTaskResponsible] = useState('')
+  const [newTaskProjectId, setNewTaskProjectId] = useState('')
 
   useEffect(() => { localStorage.setItem(FIELDS_KEY, JSON.stringify(selectedFields)) }, [selectedFields])
 
@@ -62,6 +65,19 @@ export default function KanbanBoard({ tasks, onToggleTask, onEditTask, onDeleteT
     if (task) onMoveTask(task, dayISO || '')
   }
 
+  const resetNewTaskForm = () => {
+    setAddingTaskFor(null)
+    setNewTaskTitle('')
+    setNewTaskResponsible('')
+    setNewTaskProjectId('')
+  }
+
+  const submitNewTask = dayISO => {
+    if (!newTaskTitle.trim() || !newTaskProjectId) return
+    onAddTask(Number(newTaskProjectId), { title:newTaskTitle.trim(), responsible:newTaskResponsible.trim(), due_date:dayISO || '' })
+    resetNewTaskForm()
+  }
+
   const weekLabel = `${weekDays[0].getDate()}/${weekDays[0].getMonth()+1} – ${weekDays[6].getDate()}/${weekDays[6].getMonth()+1}/${weekDays[6].getFullYear()}`
 
   const renderCard = t => {
@@ -81,8 +97,19 @@ export default function KanbanBoard({ tasks, onToggleTask, onEditTask, onDeleteT
             style={{ width:16, height:16, marginTop:2, borderRadius:4, border:`2px solid ${cfg.badge}`, background:t.done?cfg.badge:'transparent', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0, fontSize:10, color:'#0f172a', fontWeight:900 }}>
             {t.done && '✓'}
           </div>
-          <div style={{ flex:1, minWidth:0, fontSize:13, fontWeight:600, textDecoration:t.done?'line-through':'none', color:t.done?'var(--text-faint)':'var(--task-title)', wordBreak:'break-word' }}>
+          <div
+            onClick={() => onOpenNotes(t)}
+            title="Ver / agregar notas"
+            style={{ flex:1, minWidth:0, fontSize:13, fontWeight:600, textDecoration:t.done?'line-through':'none', color:t.done?'var(--text-faint)':'var(--task-title)', wordBreak:'break-word', cursor:'pointer' }}
+          >
             {t.title}
+          </div>
+          <div
+            onClick={() => onOpenNotes(t)}
+            title="Ver / agregar notas"
+            style={{ flexShrink:0, fontSize:10.5, color: t.comments.length ? 'var(--accent)' : 'var(--text-faint)', cursor:'pointer', whiteSpace:'nowrap', padding:'1px 5px', borderRadius:8, background: t.comments.length ? 'var(--bg-hover)' : 'transparent' }}
+          >
+            💬 {t.comments.length}
           </div>
         </div>
         {selectedFields.length > 0 && (
@@ -90,7 +117,6 @@ export default function KanbanBoard({ tasks, onToggleTask, onEditTask, onDeleteT
             {selectedFields.includes('project')     && <span style={{ color:t.projectColor, fontWeight:600 }}>📁 {t.projectName}</span>}
             {selectedFields.includes('responsible') && t.responsible && <span>👤 {t.responsible}</span>}
             {selectedFields.includes('status')      && <span style={{ color:cfg.badge, fontWeight:600 }}>● {cfg.label}</span>}
-            {selectedFields.includes('comments')    && <span>💬 {t.comments.length}</span>}
             {selectedFields.includes('created_at')  && <span>🗓 {fmtDate(t.created_at)}</span>}
           </div>
         )}
@@ -115,25 +141,46 @@ export default function KanbanBoard({ tasks, onToggleTask, onEditTask, onDeleteT
     )
   }
 
-  const renderColumn = (label, dateSubtitle, isToday, isWeekend, list, dayISO) => (
-    <div
-      key={label}
-      className="ft-kanban-col"
-      onDragOver={e => { e.preventDefault(); setHoverCol(dayISO ?? 'nodate') }}
-      onDragLeave={() => setHoverCol(prev => prev === (dayISO ?? 'nodate') ? null : prev)}
-      onDrop={e => handleDrop(e, dayISO)}
-      style={{ minWidth:210, width:210, flexShrink:0, background: hoverCol===(dayISO ?? 'nodate') ? 'var(--bg-hover)' : (isWeekend ? 'var(--bg-base)' : 'var(--bg-surface)'), border:`1.5px solid ${isToday?'var(--accent)':'var(--border)'}`, borderRadius:12, padding:10, display:'flex', flexDirection:'column', transition:'background .1s' }}
-    >
-      <div style={{ marginBottom:8 }}>
-        <div style={{ fontSize:12, fontWeight:700, color:isToday?'var(--accent)':'var(--text-secondary)' }}>{label}</div>
-        {dateSubtitle && <div style={{ fontSize:10, color:'var(--text-faint)' }}>{dateSubtitle}</div>}
+  const renderColumn = (label, dateSubtitle, isToday, isWeekend, list, dayISO) => {
+    const columnKey = dayISO ?? 'nodate'
+    const isAdding = addingTaskFor === columnKey
+    return (
+      <div
+        key={label}
+        className="ft-kanban-col"
+        onDragOver={e => { e.preventDefault(); setHoverCol(columnKey) }}
+        onDragLeave={() => setHoverCol(prev => prev === columnKey ? null : prev)}
+        onDrop={e => handleDrop(e, dayISO)}
+        style={{ minWidth:210, width:210, flexShrink:0, background: hoverCol===columnKey ? 'var(--bg-hover)' : (isWeekend ? 'var(--bg-base)' : 'var(--bg-surface)'), border:`1.5px solid ${isToday?'var(--accent)':'var(--border)'}`, borderRadius:12, padding:10, display:'flex', flexDirection:'column', transition:'background .1s' }}
+      >
+        <div style={{ marginBottom:8 }}>
+          <div style={{ fontSize:12, fontWeight:700, color:isToday?'var(--accent)':'var(--text-secondary)' }}>{label}</div>
+          {dateSubtitle && <div style={{ fontSize:10, color:'var(--text-faint)' }}>{dateSubtitle}</div>}
+        </div>
+        <div style={{ flex:1, overflowY:'auto', minHeight:40 }}>
+          {list.length === 0 && !isAdding && <div style={{ fontSize:11, color:'var(--text-faint)', textAlign:'center', padding:'10px 0' }}>Sin tareas</div>}
+          {list.map(renderCard)}
+        </div>
+
+        {isAdding ? (
+          <div style={{ marginTop:8, background:'var(--bg-elevated)', border:'1px solid var(--border-soft)', borderRadius:8, padding:8, display:'flex', flexDirection:'column', gap:6 }}>
+            <select value={newTaskProjectId} onChange={e => setNewTaskProjectId(e.target.value)} style={{ background:'var(--bg-surface)', border:'1px solid var(--border-soft)', color:'var(--text-primary)', borderRadius:6, fontSize:11, padding:'4px 6px', cursor:'pointer' }} autoFocus>
+              <option value="">-- Proyecto --</option>
+              {[...projects].sort((a,b) => a.name.localeCompare(b.name, 'es', {sensitivity:'base'})).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            <input placeholder="Descripción *" value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} onKeyDown={e => e.key==='Enter' && submitNewTask(dayISO)} style={{ background:'var(--bg-surface)', border:'1px solid var(--border-soft)', color:'var(--text-primary)', borderRadius:6, fontSize:11, padding:'4px 6px' }} />
+            <input placeholder="Responsable (opcional)" value={newTaskResponsible} onChange={e => setNewTaskResponsible(e.target.value)} onKeyDown={e => e.key==='Enter' && submitNewTask(dayISO)} style={{ background:'var(--bg-surface)', border:'1px solid var(--border-soft)', color:'var(--text-primary)', borderRadius:6, fontSize:11, padding:'4px 6px' }} />
+            <div style={{ display:'flex', gap:6 }}>
+              <button onClick={() => submitNewTask(dayISO)} disabled={!newTaskTitle.trim() || !newTaskProjectId} style={{ flex:1, background:'var(--btn-primary)', border:'none', color:'var(--btn-primary-text)', borderRadius:6, fontSize:11, padding:'5px 0', cursor:'pointer', opacity:(!newTaskTitle.trim()||!newTaskProjectId)?0.5:1 }}>Agregar</button>
+              <button onClick={resetNewTaskForm} style={{ background:'transparent', border:'1px solid var(--border-soft)', color:'var(--text-secondary)', borderRadius:6, fontSize:11, padding:'5px 10px', cursor:'pointer' }}>✕</button>
+            </div>
+          </div>
+        ) : (
+          <button onClick={() => { resetNewTaskForm(); setAddingTaskFor(columnKey) }} style={{ marginTop:8, background:'transparent', border:'1px dashed var(--border-soft)', color:'var(--text-muted)', borderRadius:8, padding:'6px 0', fontSize:11, cursor:'pointer' }}>+ Tarea</button>
+        )}
       </div>
-      <div style={{ flex:1, overflowY:'auto', minHeight:40 }}>
-        {list.length === 0 && <div style={{ fontSize:11, color:'var(--text-faint)', textAlign:'center', padding:'10px 0' }}>Sin tareas</div>}
-        {list.map(renderCard)}
-      </div>
-    </div>
-  )
+    )
+  }
 
   return (
     <div>
