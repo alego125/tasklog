@@ -220,13 +220,13 @@ export default function KanbanBoard({ tasks, projects, onToggleTask, onEditTask,
 
       {/* Board */}
       <div style={{ display:'flex', gap:10, overflowX:'auto', paddingBottom:8 }}>
-        {renderColumn('📋 Sin fecha', null, false, false, columns.noDate, null)}
         {weekDays.map(d => {
           const iso = toISO(d)
           const isToday = iso === todayISO
           const isWeekend = d.getDay() === 0 || d.getDay() === 6
           return renderColumn(DAY_NAMES[(d.getDay()+6)%7], `${d.getDate()}/${d.getMonth()+1}`, isToday, isWeekend, columns.byDay[iso], iso)
         })}
+        {renderColumn('📋 Sin fecha', null, false, false, columns.noDate, null)}
       </div>
     </div>
   )
