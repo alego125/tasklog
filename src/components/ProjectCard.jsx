@@ -11,7 +11,7 @@ export default function ProjectCard({
   onEditComment, onDeleteComment, onMoveComment, onMoveNote,
   onAddComment, newComment, onNewCommentChange,
   onEditNote, onDeleteNote, onConfirm, showNotes,
-  onEditDueDate, onEditCreatedAt,
+  onEditDueDate, onEditCreatedAt, highlighted,
 }) {
   const hasOverdue  = project.tasks.some(t => getStatus(t.due_date, t.done) === 'overdue')
   const hasWarning  = project.tasks.some(t => getStatus(t.due_date, t.done) === 'warning')
@@ -31,7 +31,7 @@ export default function ProjectCard({
     .sort((a,b) => (b.created_at||'') < (a.created_at||'') ? -1 : 1)
 
   return (
-    <div id={`project-${project.id}`} className="neu-card" style={{ background:'var(--bg-surface)', border:`1px solid ${alertColor ? alertColor+'55' : 'var(--border-soft)'}`, borderRadius:14, marginBottom:16, overflow:'hidden' }}>
+    <div id={`project-${project.id}`} className={`neu-card${highlighted?' ft-project-highlight':''}`} style={{ background:'var(--bg-surface)', border:`1px solid ${alertColor ? alertColor+'55' : 'var(--border-soft)'}`, borderRadius:14, marginBottom:16, overflow:'hidden' }}>
 
       {/* Header */}
       <div className="ft-proj-header" style={{ borderLeft:`4px solid ${alertColor || project.color}`, padding:'12px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', background: alertColor ? `linear-gradient(90deg,${alertColor}3d,${alertColor}14)` : `linear-gradient(90deg,${project.color}11,transparent)` }}>

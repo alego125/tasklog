@@ -70,6 +70,7 @@ export default function App() {
   const [moveNote,           setMoveNote]           = useState(null)
   const [moveComment,        setMoveComment]        = useState(null)
   const [notesTaskId,        setNotesTaskId]        = useState(null)
+  const [highlightProjectId, setHighlightProjectId] = useState(null)
 
   // ── 2. Custom hooks ───────────────────────────────────────────
   const proj                         = useProjects()
@@ -263,6 +264,8 @@ export default function App() {
       setCollapsedProjects(c => ({ ...c, [pId]: false }))
       const el = document.getElementById('project-'+pId)
       if (el) el.scrollIntoView({ behavior:'smooth', block:'start' })
+      setHighlightProjectId(pId)
+      setTimeout(() => setHighlightProjectId(h => h===pId ? null : h), 2200) // dura los 3 pulsos del CSS
     }, 150)
   }
 
@@ -711,6 +714,7 @@ export default function App() {
                 key={project.id}
                 project={projectWithFilteredNotes}
                 filteredTasks={ptasks}
+                highlighted={project.id === highlightProjectId}
                 collapsed={collapsedProjects[project.id]}
                 onToggleCollapse={id => setCollapsedProjects(c=>({...c,[id]:!c[id]}))}
                 expanded={expanded}
