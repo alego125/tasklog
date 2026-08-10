@@ -10,6 +10,7 @@ import Header        from './components/Header.jsx'
 import ProjectCard   from './components/ProjectCard.jsx'
 import TaskItem      from './components/TaskItem.jsx'
 import Dashboard     from './components/Dashboard.jsx'
+import KanbanBoard   from './components/KanbanBoard.jsx'
 import { Confirm, EditProject, EditTask, EditComment, EditDueDateModal, EditCreatedAtModal, MoveNoteModal, MoveCommentModal } from './components/Modals.jsx'
 
 function ScrollToTop() {
@@ -223,6 +224,13 @@ export default function App() {
     }
   }
 
+  // ── Mover tarea entre días (Kanban semanal) ─────────────────────
+  const onMoveTask = (task, due_date) => {
+    proj.doSaveEditTask(task.projectId, task.id, { title: task.title, responsible: task.responsible||'', due_date })
+      .then(() => toast('Tarea movida'))
+      .catch(e => toast(errMsg(e),'error'))
+  }
+
   const doSearchMembers = async q => {
     setMemberSearch(q)
     if (q.length < 2) { setMemberResults([]); return }
@@ -400,7 +408,7 @@ export default function App() {
                 <input type="checkbox" checked={showDone} onChange={e=>setShowDone(e.target.checked)} style={{ accentColor:'#A8D170' }} /> Mostrar completadas
               </label>
               <div style={{ display:'flex', gap:6, marginLeft:'auto', flexWrap:'wrap' }}>
-                {[{id:'projects',label:'🗂 Proyectos'},{id:'tasks',label:'📋 Tareas'},{id:'bitacoras',label:'💬 Bitácoras'},{id:'dashboard',label:'📊 Dashboard'}].map(v => (
+                {[{id:'projects',label:'🗂 Proyectos'},{id:'tasks',label:'📋 Tareas'},{id:'bitacoras',label:'💬 Bitácoras'},{id:'kanban',label:'🗓️ Semana'},{id:'dashboard',label:'📊 Dashboard'}].map(v => (
                   <button key={v.id} onClick={()=>setViewMode(v.id)} style={{ ...S.btnSecondary, padding:'5px 12px', fontSize:12, fontWeight: viewMode===v.id?700:400, border: viewMode===v.id?'1.5px solid var(--accent)':'1px solid var(--border-soft)', color: viewMode===v.id?'var(--accent)':'var(--text-secondary)' }}>{v.label}</button>
                 ))}
               </div>
@@ -441,7 +449,7 @@ export default function App() {
           </div>
 
           {/* Colapsar / Expandir todos */}
-          {viewMode !== 'dashboard' && (
+          {viewMode !== 'dashboard' && viewMode !== 'kanban' && (
             <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:10 }}>
               <button
                 onClick={() => {
@@ -593,6 +601,18 @@ export default function App() {
               </div>
             )
           })()}
+
+          {/* Kanban semanal */}
+          {viewMode === 'kanban' && (
+            <KanbanBoard
+              tasks={filtered}
+              onToggleTask={proj.doToggle}
+              onEditTask={task => setEditTask({ pId:task.projectId, task })}
+              onDeleteTask={proj.doDeleteTask}
+              onMoveTask={onMoveTask}
+              onConfirm={(msg, action, opts) => showConfirm(msg, action, opts)}
+            />
+          )}
 
           {/* Dashboard */}
           {viewMode === 'dashboard' && (
