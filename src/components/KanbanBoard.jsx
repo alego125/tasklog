@@ -153,17 +153,18 @@ export default function KanbanBoard({ tasks, projects, onToggleTask, onEditTask,
         onDrop={e => handleDrop(e, dayISO)}
         style={{ minWidth:210, width:210, flexShrink:0, background: hoverCol===columnKey ? 'var(--bg-hover)' : (isWeekend ? 'var(--bg-base)' : 'var(--bg-surface)'), border:`1.5px solid ${isToday?'var(--accent)':'var(--border)'}`, borderRadius:12, padding:10, display:'flex', flexDirection:'column', transition:'background .1s' }}
       >
-        <div style={{ marginBottom:8 }}>
-          <div style={{ fontSize:12, fontWeight:700, color:isToday?'var(--accent)':'var(--text-secondary)' }}>{label}</div>
-          {dateSubtitle && <div style={{ fontSize:10, color:'var(--text-faint)' }}>{dateSubtitle}</div>}
-        </div>
-        <div style={{ flex:1, overflowY:'auto', minHeight:40 }}>
-          {list.length === 0 && !isAdding && <div style={{ fontSize:11, color:'var(--text-faint)', textAlign:'center', padding:'10px 0' }}>Sin tareas</div>}
-          {list.map(renderCard)}
+        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:6, marginBottom:8 }}>
+          <div>
+            <div style={{ fontSize:12, fontWeight:700, color:isToday?'var(--accent)':'var(--text-secondary)' }}>{label}</div>
+            {dateSubtitle && <div style={{ fontSize:10, color:'var(--text-faint)' }}>{dateSubtitle}</div>}
+          </div>
+          {!isAdding && (
+            <button onClick={() => { resetNewTaskForm(); setAddingTaskFor(columnKey) }} title="Nueva tarea" style={{ flexShrink:0, background:'var(--bg-elevated)', border:'1px solid var(--border-soft)', color:'var(--text-secondary)', borderRadius:6, width:20, height:20, fontSize:13, lineHeight:1, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', padding:0 }}>+</button>
+          )}
         </div>
 
-        {isAdding ? (
-          <div style={{ marginTop:8, background:'var(--bg-elevated)', border:'1px solid var(--border-soft)', borderRadius:8, padding:8, display:'flex', flexDirection:'column', gap:6 }}>
+        {isAdding && (
+          <div style={{ marginBottom:8, background:'var(--bg-elevated)', border:'1px solid var(--border-soft)', borderRadius:8, padding:8, display:'flex', flexDirection:'column', gap:6 }}>
             <select value={newTaskProjectId} onChange={e => setNewTaskProjectId(e.target.value)} style={{ background:'var(--bg-surface)', border:'1px solid var(--border-soft)', color:'var(--text-primary)', borderRadius:6, fontSize:11, padding:'4px 6px', cursor:'pointer' }} autoFocus>
               <option value="">-- Proyecto --</option>
               {[...projects].sort((a,b) => a.name.localeCompare(b.name, 'es', {sensitivity:'base'})).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -175,9 +176,12 @@ export default function KanbanBoard({ tasks, projects, onToggleTask, onEditTask,
               <button onClick={resetNewTaskForm} style={{ background:'transparent', border:'1px solid var(--border-soft)', color:'var(--text-secondary)', borderRadius:6, fontSize:11, padding:'5px 10px', cursor:'pointer' }}>✕</button>
             </div>
           </div>
-        ) : (
-          <button onClick={() => { resetNewTaskForm(); setAddingTaskFor(columnKey) }} style={{ marginTop:8, background:'transparent', border:'1px dashed var(--border-soft)', color:'var(--text-muted)', borderRadius:8, padding:'6px 0', fontSize:11, cursor:'pointer' }}>+ Tarea</button>
         )}
+
+        <div style={{ flex:1, overflowY:'auto', minHeight:40 }}>
+          {list.length === 0 && !isAdding && <div style={{ fontSize:11, color:'var(--text-faint)', textAlign:'center', padding:'10px 0' }}>Sin tareas</div>}
+          {list.map(renderCard)}
+        </div>
       </div>
     )
   }
