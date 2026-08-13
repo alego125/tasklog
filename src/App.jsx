@@ -254,10 +254,13 @@ export default function App() {
 
   // ── Llevar a un proyecto recién creado hasta la vista ────────────
   const scrollToNewProject = pId => {
-    // Asegura que la tarjeta exista en el DOM: vista Proyectos y sin filtro
-    // de proyecto que la oculte.
+    // Asegura que la tarjeta exista en el DOM: vista Proyectos, sin filtro de
+    // proyecto/estado/búsqueda activo que la oculte (un proyecto recién creado
+    // no tiene tareas, así que cualquiera de esos filtros lo dejaría afuera).
     setViewMode('projects')
     setFilterProject('all')
+    setFilterStatuses([])
+    setSearch('')
     // Se ejecuta después del auto-colapsado de proyectos nuevos para que
     // quede expandido y a mano, sin tener que buscarlo en la pantalla.
     setTimeout(() => {
