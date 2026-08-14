@@ -93,11 +93,13 @@ export default function KanbanBoard({ tasks, projects, onToggleTask, onEditTask,
       >
         <div style={{ display:'flex', alignItems:'flex-start', gap:8 }}>
           <div
+            draggable={false}
             onClick={() => onToggleTask(t.id)}
             style={{ width:16, height:16, marginTop:2, borderRadius:4, border:`2px solid ${cfg.badge}`, background:t.done?cfg.badge:'transparent', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0, fontSize:10, color:'#0f172a', fontWeight:900 }}>
             {t.done && '✓'}
           </div>
           <div
+            draggable={false}
             onClick={() => onOpenNotes(t)}
             title="Ver / agregar notas"
             style={{ flex:1, minWidth:0, fontSize:13, fontWeight:600, textDecoration:t.done?'line-through':'none', color:t.done?'var(--text-faint)':'var(--task-title)', wordBreak:'break-word', cursor:'pointer' }}
@@ -105,6 +107,7 @@ export default function KanbanBoard({ tasks, projects, onToggleTask, onEditTask,
             {t.title}
           </div>
           <div
+            draggable={false}
             onClick={() => onOpenNotes(t)}
             title="Ver / agregar notas"
             style={{ flexShrink:0, fontSize:10.5, color: t.comments.length ? 'var(--accent)' : 'var(--text-faint)', cursor:'pointer', whiteSpace:'nowrap', padding:'1px 5px', borderRadius:8, background: t.comments.length ? 'var(--bg-hover)' : 'transparent' }}
@@ -120,8 +123,9 @@ export default function KanbanBoard({ tasks, projects, onToggleTask, onEditTask,
             {selectedFields.includes('created_at')  && <span>🗓 {fmtDate(t.created_at)}</span>}
           </div>
         )}
-        <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:7, marginLeft:24 }}>
+        <div draggable={false} style={{ display:'flex', alignItems:'center', gap:6, marginTop:7, marginLeft:24 }}>
           <select
+            draggable={false}
             value=""
             onChange={e => {
               const v = e.target.value
@@ -134,8 +138,8 @@ export default function KanbanBoard({ tasks, projects, onToggleTask, onEditTask,
             <option value="__nodate__">— Sin fecha —</option>
             {weekDays.map(d => <option key={toISO(d)} value={toISO(d)}>{DAY_NAMES[(d.getDay()+6)%7]} {d.getDate()}/{d.getMonth()+1}</option>)}
           </select>
-          <button onClick={() => onEditTask(t)} title="Editar" style={{ background:'transparent', border:'none', cursor:'pointer', fontSize:12, padding:2 }}>✏️</button>
-          <button onClick={() => onConfirm(`¿Eliminar "${t.title}"?`, () => onDeleteTask(t.projectId, t.id))} title="Eliminar" style={{ background:'transparent', border:'none', cursor:'pointer', fontSize:12, padding:2 }}>🗑️</button>
+          <button draggable={false} onClick={() => onEditTask(t)} title="Editar tarea" style={{ background:'var(--bg-surface)', border:'1px solid var(--border-soft)', borderRadius:6, cursor:'pointer', fontSize:13, padding:'3px 6px', lineHeight:1 }}>✏️</button>
+          <button draggable={false} onClick={() => onConfirm(`¿Eliminar "${t.title}"?`, () => onDeleteTask(t.projectId, t.id))} title="Eliminar" style={{ background:'var(--bg-surface)', border:'1px solid var(--border-soft)', borderRadius:6, cursor:'pointer', fontSize:13, padding:'3px 6px', lineHeight:1 }}>🗑️</button>
         </div>
       </div>
     )
