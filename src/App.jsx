@@ -297,6 +297,7 @@ export default function App() {
       setCurrentUser(user)
       document.body.classList.toggle('dark', (localStorage.getItem('ft_theme')||'dark') === 'dark')
       proj.loadProjects()
+      meetings.loadMeetings()
     }} />
   )
 
@@ -685,6 +686,9 @@ export default function App() {
                 archivedView={meetingsArchiveView}
                 archivedMeetings={meetings.archivedMeetings}
                 loadingArchived={meetings.loadingArchived}
+                loading={meetings.loading}
+                error={meetings.error}
+                onRetry={meetings.loadMeetings}
                 onOpenMeeting={m => setSelectedMeeting(m)}
                 onToggleArchivedView={() => { if (!meetingsArchiveView) meetings.loadArchivedMeetings(); setMeetingsArchiveView(v => !v) }}
                 onAddMeeting={(name, color) => meetings.doAddMeeting(name, color).then(() => toast('Reunión creada')).catch(e => toast(errMsg(e),'error'))}

@@ -3,6 +3,7 @@ import { S, COLORS, fmtDate } from '../utils/helpers.js'
 
 export default function MeetingsView({
   meetings, archivedView, archivedMeetings, loadingArchived,
+  loading, error, onRetry,
   onOpenMeeting, onToggleArchivedView,
   onAddMeeting, onEditMeeting, onArchiveMeeting, onUnarchiveMeeting, onDeleteMeeting,
   onConfirm,
@@ -62,8 +63,16 @@ export default function MeetingsView({
       )}
 
       {archivedView && loadingArchived && <div style={{ textAlign:'center', color:'var(--text-muted)', padding:30 }}>Cargando...</div>}
+      {!archivedView && loading && <div style={{ textAlign:'center', color:'var(--text-muted)', padding:30 }}>Cargando reuniones...</div>}
 
-      {!loadingArchived && list.length === 0 && (
+      {!archivedView && !loading && error && (
+        <div style={{ textAlign:'center', color:'#ef4444', fontSize:14, padding:'30px 20px', border:'1px solid #dc262644', borderRadius:12, background:'#2d0a0a33' }}>
+          ⚠ {error}
+          {onRetry && <div style={{ marginTop:12 }}><button onClick={onRetry} style={S.btnSecondary}>Reintentar</button></div>}
+        </div>
+      )}
+
+      {!loadingArchived && !loading && !error && list.length === 0 && (
         <div style={{ textAlign:'center', color:'var(--text-faint)', fontSize:14, padding:40 }}>
           {archivedView ? 'No hay reuniones cerradas.' : 'Todavía no creaste ninguna reunión.'}
         </div>
