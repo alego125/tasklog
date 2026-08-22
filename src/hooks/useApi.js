@@ -47,14 +47,23 @@ export const api = {
   me:       ()                       => request('GET',  '/auth/me'),
   // Users
   searchUsers: (q) => request('GET', `/users/search?q=${encodeURIComponent(q)}`),
-  // Projects
-  getProjects:      ()               => request('GET',    '/projects'),
-  createProject:    (name, color)    => request('POST',   '/projects', { name, color }),
-  updateProject:    (id, name, color)=> request('PUT',    `/projects/${id}`, { name, color }),
-  archiveProject:   (id)             => request('PATCH',  `/projects/${id}/archive`),
-  unarchiveProject: (id)             => request('PATCH',  `/projects/${id}/unarchive`),
-  deleteProject:    (id)             => request('DELETE', `/projects/${id}`),
-  getArchivedProjects: ()            => request('GET',    '/projects/archived'),
+  // Projects (meetingId opcional: temas de una reunión en vez de proyectos "de verdad")
+  getProjects:      (meetingId)        => request('GET',    meetingId ? `/projects?meeting_id=${meetingId}` : '/projects'),
+  createProject:    (name, color, meetingId) => request('POST', '/projects', { name, color, meeting_id: meetingId || undefined }),
+  updateProject:    (id, name, color)  => request('PUT',    `/projects/${id}`, { name, color }),
+  archiveProject:   (id)               => request('PATCH',  `/projects/${id}/archive`),
+  unarchiveProject: (id)               => request('PATCH',  `/projects/${id}/unarchive`),
+  deleteProject:    (id)               => request('DELETE', `/projects/${id}`),
+  getArchivedProjects: ()              => request('GET',    '/projects/archived'),
+  // Meetings (un solo dueño, sin miembros compartidos)
+  getMeetings:         ()              => request('GET',    '/meetings'),
+  getArchivedMeetings: ()              => request('GET',    '/meetings/archived'),
+  createMeeting:       (name, color)   => request('POST',   '/meetings', { name, color }),
+  updateMeeting:       (id, name, color) => request('PUT',  `/meetings/${id}`, { name, color }),
+  archiveMeeting:      (id)            => request('PATCH',  `/meetings/${id}/archive`),
+  unarchiveMeeting:    (id)            => request('PATCH',  `/meetings/${id}/unarchive`),
+  deleteMeeting:       (id)            => request('DELETE', `/meetings/${id}`),
+  getMeetingExport:    (id)            => request('GET',    `/meetings/${id}/export`),
   // Members
   addMember:    (projectId, userId)  => request('POST',   `/projects/${projectId}/members`, { user_id: userId }),
   removeMember: (projectId, userId)  => request('DELETE', `/projects/${projectId}/members/${userId}`),

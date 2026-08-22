@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react'
-import { getStatus, STATUS, fmtDate } from '../utils/helpers.js'
+import { getStatus, STATUS, fmtDate, PRIORITY } from '../utils/helpers.js'
 
 const DAY_NAMES = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom']
 const FIELD_OPTIONS = [
   { key:'project',     label:'Proyecto' },
   { key:'responsible', label:'Responsable' },
   { key:'status',      label:'Estado' },
+  { key:'priority',    label:'Prioridad' },
   { key:'created_at',  label:'Fecha de registro' },
 ]
 const DEFAULT_FIELDS = ['project','responsible','status']
@@ -120,6 +121,7 @@ export default function KanbanBoard({ tasks, projects, onToggleTask, onEditTask,
             {selectedFields.includes('project')     && <span style={{ color:t.projectColor, fontWeight:600 }}>📁 {t.projectName}</span>}
             {selectedFields.includes('responsible') && t.responsible && <span>👤 {t.responsible}</span>}
             {selectedFields.includes('status')      && <span style={{ color:cfg.badge, fontWeight:600 }}>● {cfg.label}</span>}
+            {selectedFields.includes('priority')    && t.priority && PRIORITY[t.priority] && <span style={{ color:PRIORITY[t.priority].color, fontWeight:600 }}>{PRIORITY[t.priority].emoji} {PRIORITY[t.priority].label}</span>}
             {selectedFields.includes('created_at')  && <span>🗓 {fmtDate(t.created_at)}</span>}
           </div>
         )}

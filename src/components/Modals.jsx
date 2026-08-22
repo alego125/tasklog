@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { fmtDate } from '../utils/helpers.js'
+import { fmtDate, PRIORITY } from '../utils/helpers.js'
 
 const S = {
   input: { background:'var(--input-bg)', border:'1px solid var(--border-soft)', color:'var(--text-primary)', padding:'8px 12px', borderRadius:8, fontSize:13, outline:'none', boxSizing:'border-box', width:'100%' },
@@ -85,6 +85,7 @@ export function EditTask({ task, projects, onSave, onClose }) {
     title:       task.title,
     responsible: task.responsible||'',
     project_id:  task.projectId || task.project_id,
+    priority:    task.priority||'',
   })
   const [due, setDue] = useState(parseDue(task.due_date))
   const inputNum = (max, val, setter) => setter(val.replace(/\D/g,'').slice(0, max <= 31 ? 2 : 4))
@@ -99,6 +100,12 @@ export function EditTask({ task, projects, onSave, onClose }) {
       <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
         <label style={S.label}>Descripción tarea *<input value={f.title} onChange={e=>setF(p=>({...p,title:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&save()} style={S.input} autoFocus /></label>
         <label style={S.label}>Responsable <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span><input value={f.responsible} onChange={e=>setF(p=>({...p,responsible:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&save()} style={S.input} /></label>
+        <label style={S.label}>Prioridad <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span>
+          <select value={f.priority} onChange={e=>setF(p=>({...p,priority:e.target.value}))} style={{ ...S.input, cursor:'pointer' }}>
+            <option value="">Sin prioridad</option>
+            {Object.entries(PRIORITY).map(([key,pr]) => <option key={key} value={key}>{pr.emoji} {pr.label}</option>)}
+          </select>
+        </label>
         {projects && projects.length > 1 && (
           <label style={S.label}>Proyecto
             <select value={f.project_id} onChange={e=>setF(p=>({...p,project_id:Number(e.target.value)}))} style={{ ...S.input, cursor:'pointer' }}>
@@ -273,5 +280,24 @@ export function TaskNotesModal({ task, onClose, onAddComment, newComment, onNewC
         </div>
       </div>
     </div>
+  )
+}
+
+export function ParticipantsModal({ onClose, onGenerate }) {
+  const [text, setText] = useState('')
+  const generate = () => {
+    const participants = text.split('\n').map(s => s.trim()).filter(Boolean)
+    onGenerate(participants)
+  }
+  return (
+    <Backdrop onClose={onClose}>
+      <div className="proj-title" style={{ fontSize:16, marginBottom:8 }}>👥 Participantes de la reunión</div>
+      <div style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:12 }}>Uno por línea (opcional). Se incluyen en el prompt de la minuta.</div>
+      <textarea value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==='Enter'&&e.ctrlKey&&generate()} rows={6} placeholder={'Juan Pérez\nMaría López'} style={{ ...S.input, resize:'vertical', lineHeight:1.6 }} autoFocus />
+      <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:16 }}>
+        <button onClick={onClose} style={S.btnSecondary}>Cancelar</button>
+        <button onClick={generate} style={S.btnPrimary}>📄 Generar y descargar</button>
+      </div>
+    </Backdrop>
   )
 }

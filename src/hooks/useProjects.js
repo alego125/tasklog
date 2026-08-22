@@ -5,7 +5,9 @@ import { getStatus } from '../utils/helpers.js'
 let _tempId = -1
 const tempId = () => _tempId--
 
-export function useProjects() {
+// meetingId opcional: si se pasa, este hook maneja los "temas" de esa
+// reunión en vez de los proyectos "de verdad" — mismo código, distinto scope.
+export function useProjects(meetingId) {
   const [projects,         setProjects]         = useState([])
   const [loading,          setLoading]          = useState(true)
   const [error,            setError]            = useState(null)
@@ -16,11 +18,11 @@ export function useProjects() {
     if (!localStorage.getItem('ft_token')) { setLoading(false); return }
     try {
       setLoading(true); setError(null)
-      setProjects(await api.getProjects())
+      setProjects(await api.getProjects(meetingId))
     } catch {
       setError('No se pudo conectar con el servidor.')
     } finally { setLoading(false) }
-  }, [])
+  }, [meetingId])
 
   const loadArchived = async () => {
     setLoadingArchived(true)
@@ -63,7 +65,7 @@ export function useProjects() {
   // ── Projects ────────────────────────────────────────────────────
   const doAddProject = async (name, color) => {
     if (!name.trim()) return
-    const project = await api.createProject(name, color)
+    const project = await api.createProject(name, color, meetingId)
     setProjects(prev => [...prev, project])
     return project
   }

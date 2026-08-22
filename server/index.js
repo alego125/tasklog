@@ -30,12 +30,23 @@ async function initDB() {
     )
   `)
   await db.query(`
+    CREATE TABLE IF NOT EXISTS meetings (
+      id         SERIAL PRIMARY KEY,
+      name       TEXT    NOT NULL,
+      color      TEXT    NOT NULL DEFAULT '#7a9e7e',
+      archived   BOOLEAN NOT NULL DEFAULT false,
+      owner_id   INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+  await db.query(`
     CREATE TABLE IF NOT EXISTS projects (
       id         SERIAL PRIMARY KEY,
       name       TEXT    NOT NULL,
       color      TEXT    NOT NULL DEFAULT '#6366f1',
       archived   BOOLEAN NOT NULL DEFAULT false,
       owner_id   INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      meeting_id INTEGER REFERENCES meetings(id) ON DELETE CASCADE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `)
@@ -57,7 +68,8 @@ async function initDB() {
       created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       due_date     DATE,
       done         BOOLEAN NOT NULL DEFAULT false,
-      done_at      DATE
+      done_at      DATE,
+      priority     TEXT
     )
   `)
   await db.query(`
@@ -85,11 +97,15 @@ async function initDB() {
   await db.query(`CREATE INDEX IF NOT EXISTS idx_notes_project   ON project_notes(project_id)`)
   await db.query(`CREATE INDEX IF NOT EXISTS idx_members_project ON project_members(project_id)`)
   await db.query(`CREATE INDEX IF NOT EXISTS idx_members_user    ON project_members(user_id)`)
+  await db.query(`CREATE INDEX IF NOT EXISTS idx_projects_meeting ON projects(meeting_id)`)
+  await db.query(`CREATE INDEX IF NOT EXISTS idx_meetings_owner   ON meetings(owner_id)`)
 
   // Migraciones
   try { await db.query(`ALTER TABLE projects ADD COLUMN owner_id INTEGER REFERENCES users(id) ON DELETE SET NULL`) } catch(e) {}
   try { await db.query(`ALTER TABLE users ADD COLUMN username TEXT`) } catch(e) {}
   try { await db.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username)`) } catch(e) {}
+  try { await db.query(`ALTER TABLE projects ADD COLUMN meeting_id INTEGER REFERENCES meetings(id) ON DELETE CASCADE`) } catch(e) {}
+  try { await db.query(`ALTER TABLE tasks ADD COLUMN priority TEXT`) } catch(e) {}
 
   console.log('✅ Schema verificado — BD lista')
 }
@@ -132,6 +148,12 @@ async function getCommentProject(commentId) {
 async function getNoteProject(noteId) {
   const r = await db.query('SELECT project_id FROM project_notes WHERE id=$1', [noteId])
   return r.rows.length ? r.rows[0].project_id : null
+}
+
+// Las reuniones son de un solo dueño (sin miembros compartidos)
+async function isMeetingOwner(meetingId, userId) {
+  const r = await db.query('SELECT 1 FROM meetings WHERE id=$1 AND owner_id=$2', [meetingId, userId])
+  return r.rows.length > 0
 }
 
 function forbidden(res) {
@@ -206,6 +228,33 @@ async function getFullProjects(projectIds) {
     members: membersMap[p.id]  || [],
     tasks:   (tasksMap[p.id]   || []).map(t => ({ ...t, comments: commentsMap[t.id] || [] })),
     notes:   notesMap[p.id]    || [],
+  }))
+}
+
+// ── Helper: resumen de reuniones (una sola query agregada, sin N+1) ─
+async function getMeetingsSummary(meetingIds) {
+  if (!meetingIds.length) return []
+  const ids = meetingIds.map((_, i) => `$${i + 1}`).join(',')
+  const r = await db.query(`
+    SELECT m.*,
+      COUNT(DISTINCT p.id)                             AS temas_count,
+      COUNT(DISTINCT t.id) FILTER (WHERE t.done=false)  AS tasks_pending,
+      COUNT(DISTINCT t.id) FILTER (WHERE t.done=true)   AS tasks_done,
+      COUNT(DISTINCT n.id)                              AS notes_count
+    FROM meetings m
+    LEFT JOIN projects p     ON p.meeting_id = m.id
+    LEFT JOIN tasks t        ON t.project_id = p.id
+    LEFT JOIN project_notes n ON n.project_id = p.id
+    WHERE m.id IN (${ids})
+    GROUP BY m.id
+    ORDER BY m.id
+  `, meetingIds)
+  return r.rows.map(m => ({
+    ...m,
+    temas_count:   Number(m.temas_count),
+    tasks_pending: Number(m.tasks_pending),
+    tasks_done:    Number(m.tasks_done),
+    notes_count:   Number(m.notes_count),
   }))
 }
 
@@ -285,12 +334,24 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
 })
 
 // ── PROJECTS ─────────────────────────────────────────────────────
+// Sin ?meeting_id: solo proyectos "de verdad" (meeting_id IS NULL).
+// Con ?meeting_id=X: los temas de esa reunión (requiere ser el dueño).
 app.get('/api/projects', authMiddleware, async (req, res) => {
   try {
+    const { meeting_id } = req.query
+    if (meeting_id) {
+      if (!await isMeetingOwner(meeting_id, req.user.id)) return forbidden(res)
+      const result = await db.query(`
+        SELECT DISTINCT p.id FROM projects p
+        JOIN project_members pm ON pm.project_id = p.id
+        WHERE pm.user_id = $1 AND p.archived = false AND p.meeting_id = $2 ORDER BY p.id
+      `, [req.user.id, meeting_id])
+      return res.json(await getFullProjects(result.rows.map(r => r.id)))
+    }
     const result = await db.query(`
       SELECT DISTINCT p.id FROM projects p
       JOIN project_members pm ON pm.project_id = p.id
-      WHERE pm.user_id = $1 AND p.archived = false ORDER BY p.id
+      WHERE pm.user_id = $1 AND p.archived = false AND p.meeting_id IS NULL ORDER BY p.id
     `, [req.user.id])
     const ids = result.rows.map(r => r.id)
     res.json(await getFullProjects(ids))
@@ -302,7 +363,7 @@ app.get('/api/projects/archived', authMiddleware, async (req, res) => {
     const result = await db.query(`
       SELECT DISTINCT p.id FROM projects p
       JOIN project_members pm ON pm.project_id = p.id
-      WHERE pm.user_id = $1 AND p.archived = true ORDER BY p.id
+      WHERE pm.user_id = $1 AND p.archived = true AND p.meeting_id IS NULL ORDER BY p.id
     `, [req.user.id])
     const ids = result.rows.map(r => r.id)
     res.json(await getFullProjects(ids))
@@ -311,11 +372,12 @@ app.get('/api/projects/archived', authMiddleware, async (req, res) => {
 
 app.post('/api/projects', authMiddleware, async (req, res) => {
   try {
-    const { name, color = '#6366f1' } = req.body
+    const { name, color = '#6366f1', meeting_id } = req.body
     if (!name) return res.status(400).json({ error: 'name requerido' })
+    if (meeting_id && !await isMeetingOwner(meeting_id, req.user.id)) return forbidden(res)
     const r = await db.query(
-      'INSERT INTO projects (name, color, owner_id) VALUES ($1, $2, $3) RETURNING id',
-      [name, color, req.user.id]
+      'INSERT INTO projects (name, color, owner_id, meeting_id) VALUES ($1, $2, $3, $4) RETURNING id',
+      [name, color, req.user.id, meeting_id || null]
     )
     const projectId = r.rows[0].id
     // El creador queda como miembro con rol owner
@@ -360,6 +422,84 @@ app.delete('/api/projects/:id', authMiddleware, async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }) }
 })
 
+// ── MEETINGS (de un solo dueño, sin miembros compartidos) ─────────
+app.get('/api/meetings', authMiddleware, async (req, res) => {
+  try {
+    const result = await db.query('SELECT id FROM meetings WHERE owner_id=$1 AND archived=false ORDER BY id', [req.user.id])
+    res.json(await getMeetingsSummary(result.rows.map(r => r.id)))
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
+app.get('/api/meetings/archived', authMiddleware, async (req, res) => {
+  try {
+    const result = await db.query('SELECT id FROM meetings WHERE owner_id=$1 AND archived=true ORDER BY id', [req.user.id])
+    res.json(await getMeetingsSummary(result.rows.map(r => r.id)))
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
+app.post('/api/meetings', authMiddleware, async (req, res) => {
+  try {
+    const { name, color = '#7a9e7e' } = req.body
+    if (!name) return res.status(400).json({ error: 'name requerido' })
+    const r = await db.query(
+      'INSERT INTO meetings (name, color, owner_id) VALUES ($1, $2, $3) RETURNING id',
+      [name, color, req.user.id]
+    )
+    const rows = await getMeetingsSummary([r.rows[0].id])
+    res.json(rows[0])
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
+app.put('/api/meetings/:id', authMiddleware, async (req, res) => {
+  try {
+    if (!await isMeetingOwner(req.params.id, req.user.id)) return forbidden(res)
+    const { name, color } = req.body
+    if (!name) return res.status(400).json({ error: 'name requerido' })
+    await db.query('UPDATE meetings SET name=$1, color=$2 WHERE id=$3', [name, color, req.params.id])
+    const rows = await getMeetingsSummary([Number(req.params.id)])
+    res.json(rows[0])
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
+app.patch('/api/meetings/:id/archive', authMiddleware, async (req, res) => {
+  try {
+    if (!await isMeetingOwner(req.params.id, req.user.id)) return forbidden(res)
+    await db.query('UPDATE meetings SET archived = true WHERE id = $1', [req.params.id])
+    res.json({ ok: true })
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
+app.patch('/api/meetings/:id/unarchive', authMiddleware, async (req, res) => {
+  try {
+    if (!await isMeetingOwner(req.params.id, req.user.id)) return forbidden(res)
+    await db.query('UPDATE meetings SET archived = false WHERE id = $1', [req.params.id])
+    const rows = await getMeetingsSummary([Number(req.params.id)])
+    res.json(rows[0])
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
+app.delete('/api/meetings/:id', authMiddleware, async (req, res) => {
+  try {
+    if (!await isMeetingOwner(req.params.id, req.user.id)) return forbidden(res)
+    await db.query('DELETE FROM meetings WHERE id = $1', [req.params.id])
+    res.json({ ok: true })
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
+// ── Datos completos de una reunión para exportar la minuta ────────
+// (todos sus temas con tareas — completas y pendientes, con prioridad —
+// y notas, en un solo viaje al servidor)
+app.get('/api/meetings/:id/export', authMiddleware, async (req, res) => {
+  try {
+    if (!await isMeetingOwner(req.params.id, req.user.id)) return forbidden(res)
+    const meetingRows = await getMeetingsSummary([Number(req.params.id)])
+    if (!meetingRows.length) return res.status(404).json({ error: 'Reunión no encontrada' })
+    const projectIds = (await db.query('SELECT id FROM projects WHERE meeting_id=$1 ORDER BY id', [req.params.id])).rows.map(r => r.id)
+    const temas = await getFullProjects(projectIds)
+    res.json({ meeting: meetingRows[0], temas })
+  } catch(e) { res.status(500).json({ error: e.message }) }
+})
+
 // ── MEMBERS ──────────────────────────────────────────────────────
 app.get('/api/users/search', authMiddleware, async (req, res) => {
   try {
@@ -399,14 +539,17 @@ app.delete('/api/projects/:id/members/:userId', authMiddleware, async (req, res)
 })
 
 // ── TASKS ────────────────────────────────────────────────────────
+const VALID_PRIORITIES = ['alta', 'media', 'baja']
+const cleanPriority = p => VALID_PRIORITIES.includes(p) ? p : null
+
 app.post('/api/tasks', authMiddleware, async (req, res) => {
   try {
-    const { project_id, title, responsible, due_date } = req.body
+    const { project_id, title, responsible, due_date, priority } = req.body
     if (!project_id || !title) return res.status(400).json({ error: 'Faltan campos' })
     if (!await isMember(project_id, req.user.id)) return forbidden(res)
     const r = await db.query(
-      'INSERT INTO tasks (project_id, title, responsible, due_date) VALUES ($1, $2, $3, $4) RETURNING *',
-      [project_id, title, responsible || null, (due_date && due_date.trim()) ? due_date : null]
+      'INSERT INTO tasks (project_id, title, responsible, due_date, priority) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [project_id, title, responsible || null, (due_date && due_date.trim()) ? due_date : null, cleanPriority(priority)]
     )
     res.json({ ...r.rows[0], comments: [] })
   } catch(e) { res.status(500).json({ error: e.message }) }
@@ -416,7 +559,7 @@ app.put('/api/tasks/:id', authMiddleware, async (req, res) => {
   try {
     const projectId = await getTaskProject(req.params.id)
     if (!projectId || !await isMember(projectId, req.user.id)) return forbidden(res)
-    const { title, responsible, due_date, created_at, project_id } = req.body
+    const { title, responsible, due_date, created_at, project_id, priority } = req.body
     // Si viene project_id distinto, verificar que el usuario sea miembro del proyecto destino
     if (project_id && project_id !== projectId) {
       if (!await isMember(project_id, req.user.id)) return forbidden(res)
@@ -424,11 +567,11 @@ app.put('/api/tasks/:id', authMiddleware, async (req, res) => {
     const targetProject = project_id || projectId
     let query, params
     if (created_at) {
-      query = 'UPDATE tasks SET title=$1, responsible=$2, due_date=$3, created_at=$5, project_id=$6 WHERE id=$4'
-      params = [title, responsible || null, (due_date && due_date.trim()) ? due_date : null, req.params.id, created_at, targetProject]
+      query = 'UPDATE tasks SET title=$1, responsible=$2, due_date=$3, created_at=$5, project_id=$6, priority=$7 WHERE id=$4'
+      params = [title, responsible || null, (due_date && due_date.trim()) ? due_date : null, req.params.id, created_at, targetProject, cleanPriority(priority)]
     } else {
-      query = 'UPDATE tasks SET title=$1, responsible=$2, due_date=$3, project_id=$5 WHERE id=$4'
-      params = [title, responsible || null, (due_date && due_date.trim()) ? due_date : null, req.params.id, targetProject]
+      query = 'UPDATE tasks SET title=$1, responsible=$2, due_date=$3, project_id=$5, priority=$6 WHERE id=$4'
+      params = [title, responsible || null, (due_date && due_date.trim()) ? due_date : null, req.params.id, targetProject, cleanPriority(priority)]
     }
     await db.query(query, params)
     const tRes = await db.query('SELECT * FROM tasks WHERE id = $1', [req.params.id])
