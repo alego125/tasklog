@@ -54,7 +54,7 @@ export const api = {
   archiveProject:   (id)               => request('PATCH',  `/projects/${id}/archive`),
   unarchiveProject: (id)               => request('PATCH',  `/projects/${id}/unarchive`),
   deleteProject:    (id)               => request('DELETE', `/projects/${id}`),
-  getArchivedProjects: ()              => request('GET',    '/projects/archived'),
+  getArchivedProjects: (meetingId)     => request('GET',    meetingId ? `/projects/archived?meeting_id=${meetingId}` : '/projects/archived'),
   // Meetings (un solo dueño, sin miembros compartidos)
   getMeetings:         ()              => request('GET',    '/meetings'),
   getArchivedMeetings: ()              => request('GET',    '/meetings/archived'),

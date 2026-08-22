@@ -360,8 +360,21 @@ app.get('/api/projects', authMiddleware, async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }) }
 })
 
+// Sin ?meeting_id: proyectos "de verdad" archivados. Con ?meeting_id=X:
+// solo los temas archivados de esa reunión (requiere ser el dueño) —
+// no se mezclan entre reuniones ni con los proyectos archivados.
 app.get('/api/projects/archived', authMiddleware, async (req, res) => {
   try {
+    const { meeting_id } = req.query
+    if (meeting_id) {
+      if (!await isMeetingOwner(meeting_id, req.user.id)) return forbidden(res)
+      const result = await db.query(`
+        SELECT DISTINCT p.id FROM projects p
+        JOIN project_members pm ON pm.project_id = p.id
+        WHERE pm.user_id = $1 AND p.archived = true AND p.meeting_id = $2 ORDER BY p.id
+      `, [req.user.id, meeting_id])
+      return res.json(await getFullProjects(result.rows.map(r => r.id)))
+    }
     const result = await db.query(`
       SELECT DISTINCT p.id FROM projects p
       JOIN project_members pm ON pm.project_id = p.id

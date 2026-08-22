@@ -26,7 +26,7 @@ export function useProjects(meetingId) {
 
   const loadArchived = async () => {
     setLoadingArchived(true)
-    try { setArchivedProjects(await api.getArchivedProjects()) }
+    try { setArchivedProjects(await api.getArchivedProjects(meetingId)) }
     finally { setLoadingArchived(false) }
   }
 
