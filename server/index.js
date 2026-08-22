@@ -97,7 +97,6 @@ async function initDB() {
   await db.query(`CREATE INDEX IF NOT EXISTS idx_notes_project   ON project_notes(project_id)`)
   await db.query(`CREATE INDEX IF NOT EXISTS idx_members_project ON project_members(project_id)`)
   await db.query(`CREATE INDEX IF NOT EXISTS idx_members_user    ON project_members(user_id)`)
-  await db.query(`CREATE INDEX IF NOT EXISTS idx_projects_meeting ON projects(meeting_id)`)
   await db.query(`CREATE INDEX IF NOT EXISTS idx_meetings_owner   ON meetings(owner_id)`)
 
   // Migraciones
@@ -106,6 +105,9 @@ async function initDB() {
   try { await db.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username)`) } catch(e) {}
   try { await db.query(`ALTER TABLE projects ADD COLUMN meeting_id INTEGER REFERENCES meetings(id) ON DELETE CASCADE`) } catch(e) {}
   try { await db.query(`ALTER TABLE tasks ADD COLUMN priority TEXT`) } catch(e) {}
+  // El índice de meeting_id tiene que crearse después de que la columna exista
+  // (en una tabla `projects` preexistente, el ALTER de arriba es quien la agrega)
+  try { await db.query(`CREATE INDEX IF NOT EXISTS idx_projects_meeting ON projects(meeting_id)`) } catch(e) {}
 
   console.log('✅ Schema verificado — BD lista')
 }
