@@ -20,6 +20,12 @@ export const STATUS = {
 
 export const COLORS = ['#7a9e7e','#c4784a','#4a8ea0','#9a7a5a','#887ab0','#4a8a70','#b07840','#7a8a4a']
 
+export const PRIORITY = {
+  alta:  { label:'Alta',  color:'#dc2626', emoji:'🔴' },
+  media: { label:'Media', color:'#eab308', emoji:'🟡' },
+  baja:  { label:'Baja',  color:'#22c55e', emoji:'🟢' },
+}
+
 // ── Date formatters ───────────────────────────────────────────────
 export const fmtDate = d => {
   if (!d) return ''
@@ -188,6 +194,103 @@ export function exportPDF(projects) {
   const a    = document.createElement('a')
   a.href     = URL.createObjectURL(blob)
   a.download = `cursor_prompt_informe_${fecha.replace(/\//g,'-')}.txt`
+  a.click()
+  URL.revokeObjectURL(a.href)
+}
+
+// ── Prompt de minuta de reunión ────────────────────────────────────
+export function exportMeetingPrompt(meeting, temas, participants) {
+  const fmtD = d => {
+    if (!d) return '—'
+    const parts = String(d).slice(0,10).split('-')
+    return parts.length === 3 ? parts[2]+'/'+parts[1]+'/'+parts[0] : String(d).slice(0,10)
+  }
+
+  const now = new Date()
+  const fecha = String(now.getDate()).padStart(2,'0')+'/'+String(now.getMonth()+1).padStart(2,'0')+'/'+now.getFullYear()
+  const allTasks = temas.flatMap(t => t.tasks)
+  const pending  = allTasks.filter(t => !t.done)
+  const done     = allTasks.filter(t => t.done)
+
+  let lines = []
+  lines.push(`PROMPT PARA GENERAR MINUTA DE REUNIÓN — ${meeting.name}`)
+  lines.push(`Fecha de generación: ${fecha}`)
+  lines.push(``)
+  lines.push(`---`)
+  lines.push(``)
+  lines.push(`Sos un asistente que redacta minutas de reunión. A continuación te paso el historial completo de temas tratados en "${meeting.name}" (una reunión periódica — puede incluir temas de encuentros anteriores además de los nuevos). Tu tarea es generar una minuta clara y prolija que incluya:`)
+  lines.push(``)
+  lines.push(`1. Encabezado con nombre de la reunión, fecha y lista de participantes`)
+  lines.push(`2. Resumen de cada tema tratado, con sus tareas/acuerdos y estado (completado o pendiente), destacando la prioridad de cada uno`)
+  lines.push(`3. Comentarios y notas relevantes de cada tema`)
+  lines.push(`4. Listado final de pendientes para el próximo encuentro, ordenados por prioridad`)
+  lines.push(``)
+  lines.push(`Usá formato Markdown con encabezados, tablas, listas y emojis para que sea visualmente agradable y fácil de pegar en un email.`)
+  lines.push(``)
+  lines.push(`---`)
+  lines.push(``)
+  lines.push(`## PARTICIPANTES`)
+  if (participants && participants.length) {
+    participants.forEach(p => lines.push(`- ${p}`))
+  } else {
+    lines.push(`(sin especificar)`)
+  }
+  lines.push(``)
+  lines.push(`## RESUMEN`)
+  lines.push(`- Temas: ${temas.length}`)
+  lines.push(`- Tareas/acuerdos totales: ${allTasks.length}`)
+  lines.push(`- Pendientes: ${pending.length}`)
+  lines.push(`- Completados: ${done.length}`)
+  lines.push(``)
+  lines.push(`---`)
+  lines.push(``)
+  lines.push(`## TEMAS TRATADOS`)
+  lines.push(``)
+
+  for (const tema of temas) {
+    lines.push(`### TEMA: ${tema.name}`)
+    lines.push(``)
+
+    if (tema.tasks.length > 0) {
+      for (const t of tema.tasks) {
+        lines.push(`  ACUERDO/TAREA: ${t.title}`)
+        lines.push(`  - Estado: ${t.done ? 'Completado' : 'Pendiente'}`)
+        lines.push(`  - Prioridad: ${t.priority && PRIORITY[t.priority] ? PRIORITY[t.priority].emoji+' '+PRIORITY[t.priority].label : 'Sin definir'}`)
+        lines.push(`  - Responsable: ${t.responsible || '—'}`)
+        lines.push(`  - Fecha de registro: ${fmtD(t.created_at)}`)
+        lines.push(`  - Fecha de vencimiento: ${t.due_date ? fmtD(t.due_date) : '—'}`)
+        if (t.comments && t.comments.length > 0) {
+          lines.push(`  - Comentarios (${t.comments.length}):`)
+          for (const c of t.comments) {
+            lines.push(`    [${fmtD(c.created_at)} — ${c.author||'—'}]: ${c.text}`)
+          }
+        }
+        lines.push(``)
+      }
+    } else {
+      lines.push(`  (sin acuerdos/tareas cargados)`)
+      lines.push(``)
+    }
+
+    if (tema.notes && tema.notes.length > 0) {
+      lines.push(`  Notas generales del tema:`)
+      for (const n of tema.notes) {
+        lines.push(`    [${fmtD(n.created_at)} — ${n.author||'—'}]: ${n.text}`)
+      }
+      lines.push(``)
+    }
+
+    lines.push(`---`)
+    lines.push(``)
+  }
+
+  lines.push(`FIN DE LOS DATOS. Generá la minuta ahora.`)
+
+  const text = lines.join('\n')
+  const blob = new Blob([text], { type:'text/plain;charset=utf-8' })
+  const a    = document.createElement('a')
+  a.href     = URL.createObjectURL(blob)
+  a.download = `minuta_${meeting.name.toLowerCase().replace(/[^a-z0-9]+/g,'_')}_${fecha.replace(/\//g,'-')}.txt`
   a.click()
   URL.revokeObjectURL(a.href)
 }

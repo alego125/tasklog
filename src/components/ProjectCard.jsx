@@ -1,4 +1,4 @@
-import { S, getStatus, fmtDate } from '../utils/helpers.js'
+import { S, getStatus, fmtDate, PRIORITY } from '../utils/helpers.js'
 import TaskItem from './TaskItem.jsx'
 
 export default function ProjectCard({
@@ -11,7 +11,7 @@ export default function ProjectCard({
   onEditComment, onDeleteComment, onMoveComment, onMoveNote,
   onAddComment, newComment, onNewCommentChange,
   onEditNote, onDeleteNote, onConfirm, showNotes,
-  onEditDueDate, onEditCreatedAt, highlighted,
+  onEditDueDate, onEditCreatedAt, highlighted, hideMembers,
 }) {
   const hasOverdue  = project.tasks.some(t => getStatus(t.due_date, t.done) === 'overdue')
   const hasWarning  = project.tasks.some(t => getStatus(t.due_date, t.done) === 'warning')
@@ -59,7 +59,7 @@ export default function ProjectCard({
           <button onClick={() => onOpenNewTask(project.id)} style={{ background:'transparent', border:`1px solid ${project.color}`, color:project.color, padding:'5px 12px', borderRadius:7, cursor:'pointer', fontSize:12, fontWeight:600 }}>+ Tarea</button>
           <button onClick={() => onNewProjNoteChange(project.id+'_open', !noteOpen)} style={{ background:'transparent', border:'1px solid var(--border)', color:'var(--text-secondary)', padding:'5px 12px', borderRadius:7, cursor:'pointer', fontSize:12, fontWeight:600 }}>+ Nota</button>
           <button onClick={() => onToggleCollapse(project.id)} title={isCollapsed?'Expandir':'Colapsar'} style={{ ...S.iconBtn, borderColor:`${project.color}44`, color:'var(--text-secondary)' }}>{isCollapsed?'▼':'▲'}</button>
-          <button onClick={() => onMembersModal(project.id)} title="Gestionar miembros" style={{ ...S.iconBtn }}>👥</button>
+          {!hideMembers && <button onClick={() => onMembersModal(project.id)} title="Gestionar miembros" style={{ ...S.iconBtn }}>👥</button>}
           <button onClick={() => onEditProject(project)} title="Editar proyecto" style={{ ...S.iconBtn, borderColor:`${project.color}66`, color:project.color }}>✏️</button>
           <button onClick={() => onConfirm(`¿Archivar "${project.name}"? Podrás recuperarlo desde "Archivados".`, () => onArchiveProject(project.id), { title:'📦 Confirmar archivado', okLabel:'Archivar', okColor:'#d97706' })} title="Archivar proyecto" style={{ ...S.iconBtn, borderColor:'#d9770633', color:'#f59e0b' }}>📦</button>
           <button onClick={() => onConfirm(`¿Eliminar "${project.name}" y TODAS sus tareas y notas?`, () => onDeleteProject(project.id))} style={{ ...S.iconBtn, borderColor:'#dc262633', color:'#ef4444', fontSize:15 }} title="Eliminar proyecto">🗑</button>
@@ -94,6 +94,10 @@ export default function ProjectCard({
             <span style={{color:'var(--text-muted)',fontSize:13}}>/</span>
             <input value={newTask.due_year||String(new Date().getFullYear())} onChange={e=>onNewTaskChange({...newTask,due_year:e.target.value.replace(/\D/g,'').slice(0,4)})} onKeyDown={e=>e.key==='Enter'&&newTask.title&&onAddTask(project.id)} placeholder="AAAA" maxLength={4} style={{ ...S.input, width:58, textAlign:'center', padding:'8px 4px' }} />
           </div>
+          <select value={newTask.priority||''} onChange={e=>onNewTaskChange({...newTask,priority:e.target.value})} style={{ ...S.select, flex:'0 1 130px' }} title="Prioridad (opcional)">
+            <option value="">Sin prioridad</option>
+            {Object.entries(PRIORITY).map(([key,p]) => <option key={key} value={key}>{p.emoji} {p.label}</option>)}
+          </select>
           <button onClick={() => onAddTask(project.id)} style={S.btnPrimary} disabled={!newTask.title}>Agregar</button>
           <button onClick={() => onOpenNewTask(null)} style={S.btnSecondary}>✕</button>
         </div>

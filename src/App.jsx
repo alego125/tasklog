@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { api, isNetworkError } from './hooks/useApi.js'
 import { useProjects } from './hooks/useProjects.js'
+import { useMeetings } from './hooks/useMeetings.js'
 import { useToast } from './hooks/useToast.js'
 import Toast from './components/Toast.jsx'
 import { getStatus, COLORS, S, fmtDate, exportExcel, exportPDF } from './utils/helpers.js'
@@ -11,6 +12,8 @@ import ProjectCard   from './components/ProjectCard.jsx'
 import TaskItem      from './components/TaskItem.jsx'
 import Dashboard     from './components/Dashboard.jsx'
 import KanbanBoard   from './components/KanbanBoard.jsx'
+import MeetingsView  from './components/MeetingsView.jsx'
+import MeetingBoard  from './components/MeetingBoard.jsx'
 import { Confirm, EditProject, EditTask, EditComment, EditDueDateModal, EditCreatedAtModal, MoveNoteModal, MoveCommentModal, TaskNotesModal } from './components/Modals.jsx'
 
 function ScrollToTop() {
@@ -71,9 +74,12 @@ export default function App() {
   const [moveComment,        setMoveComment]        = useState(null)
   const [notesTaskId,        setNotesTaskId]        = useState(null)
   const [highlightProjectId, setHighlightProjectId] = useState(null)
+  const [meetingsArchiveView, setMeetingsArchiveView] = useState(false)
+  const [selectedMeeting,    setSelectedMeeting]    = useState(null)
 
   // ── 2. Custom hooks ───────────────────────────────────────────
   const proj                         = useProjects()
+  const meetings                     = useMeetings()
   const { toasts, toast, dismiss }   = useToast()
   const errMsg = (e) => isNetworkError(e) || e?.message==='SIN_CONEXION'
     ? '⚠️ Sin conexión con la base de datos. La información no fue guardada.'
@@ -112,6 +118,7 @@ export default function App() {
         return next
       })
     })
+    meetings.loadMeetings()
   }, [])
 
   useEffect(() => {
@@ -459,8 +466,8 @@ export default function App() {
                 <input type="checkbox" checked={showDone} onChange={e=>setShowDone(e.target.checked)} style={{ accentColor:'#A8D170' }} /> Mostrar completadas
               </label>
               <div style={{ display:'flex', gap:6, marginLeft:'auto', flexWrap:'wrap' }}>
-                {[{id:'projects',label:'🗂 Proyectos'},{id:'tasks',label:'📋 Tareas'},{id:'bitacoras',label:'💬 Bitácoras'},{id:'kanban',label:'🗓️ Semana'},{id:'dashboard',label:'📊 Dashboard'}].map(v => (
-                  <button key={v.id} onClick={()=>setViewMode(v.id)} style={{ ...S.btnSecondary, padding:'5px 12px', fontSize:12, fontWeight: viewMode===v.id?700:400, border: viewMode===v.id?'1.5px solid var(--accent)':'1px solid var(--border-soft)', color: viewMode===v.id?'var(--accent)':'var(--text-secondary)' }}>{v.label}</button>
+                {[{id:'projects',label:'🗂 Proyectos'},{id:'tasks',label:'📋 Tareas'},{id:'bitacoras',label:'💬 Bitácoras'},{id:'kanban',label:'🗓️ Semana'},{id:'meetings',label:'📅 Reuniones'},{id:'dashboard',label:'📊 Dashboard'}].map(v => (
+                  <button key={v.id} onClick={()=>{ setViewMode(v.id); if (v.id!=='meetings') setSelectedMeeting(null) }} style={{ ...S.btnSecondary, padding:'5px 12px', fontSize:12, fontWeight: viewMode===v.id?700:400, border: viewMode===v.id?'1.5px solid var(--accent)':'1px solid var(--border-soft)', color: viewMode===v.id?'var(--accent)':'var(--text-secondary)' }}>{v.label}</button>
                 ))}
               </div>
             </div>
@@ -500,7 +507,7 @@ export default function App() {
           </div>
 
           {/* Colapsar / Expandir todos */}
-          {viewMode !== 'dashboard' && viewMode !== 'kanban' && (
+          {viewMode !== 'dashboard' && viewMode !== 'kanban' && viewMode !== 'meetings' && (
             <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:10 }}>
               <button
                 onClick={() => {
@@ -666,6 +673,31 @@ export default function App() {
               onOpenNotes={task => setNotesTaskId(task.id)}
               onAddTask={kanbanAddTask}
             />
+          )}
+
+          {/* Reuniones */}
+          {viewMode === 'meetings' && (
+            selectedMeeting ? (
+              <MeetingBoard meeting={selectedMeeting} onBack={() => { setSelectedMeeting(null); meetings.loadMeetings() }} />
+            ) : (
+              <MeetingsView
+                meetings={meetings.meetings}
+                archivedView={meetingsArchiveView}
+                archivedMeetings={meetings.archivedMeetings}
+                loadingArchived={meetings.loadingArchived}
+                onOpenMeeting={m => setSelectedMeeting(m)}
+                onToggleArchivedView={() => { if (!meetingsArchiveView) meetings.loadArchivedMeetings(); setMeetingsArchiveView(v => !v) }}
+                onAddMeeting={(name, color) => meetings.doAddMeeting(name, color).then(() => toast('Reunión creada')).catch(e => toast(errMsg(e),'error'))}
+                onEditMeeting={m => {
+                  const current = meetings.meetings.find(x => x.id===m.id) || meetings.archivedMeetings.find(x => x.id===m.id)
+                  meetings.doSaveEditMeeting(current, m.name, m.color).then(() => toast('Reunión actualizada')).catch(e => toast(errMsg(e),'error'))
+                }}
+                onArchiveMeeting={mId => meetings.doArchiveMeeting(mId).then(() => toast('Reunión cerrada','warning')).catch(e => toast(errMsg(e),'error'))}
+                onUnarchiveMeeting={mId => meetings.doUnarchiveMeeting(mId).then(() => toast('Reunión reabierta')).catch(e => toast(errMsg(e),'error'))}
+                onDeleteMeeting={mId => meetings.doDeleteMeeting(mId).then(() => toast('Reunión eliminada')).catch(e => toast(errMsg(e),'error'))}
+                onConfirm={(msg, action, opts) => showConfirm(msg, action, opts)}
+              />
+            )
           )}
 
           {/* Dashboard */}
