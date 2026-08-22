@@ -213,19 +213,24 @@ export function exportMeetingPrompt(meeting, temas, participants) {
   const done     = allTasks.filter(t => t.done)
 
   let lines = []
-  lines.push(`PROMPT PARA GENERAR MINUTA DE REUNIÓN — ${meeting.name}`)
-  lines.push(`Fecha de generación: ${fecha}`)
+  lines.push(`ACTA DE REUNIÓN — ${meeting.name}`)
+  lines.push(`Documento generado el: ${fecha}`)
   lines.push(``)
   lines.push(`---`)
   lines.push(``)
-  lines.push(`Sos un asistente que redacta minutas de reunión. A continuación te paso el historial completo de temas tratados en "${meeting.name}" (una reunión periódica — puede incluir temas de encuentros anteriores además de los nuevos). Tu tarea es generar una minuta clara y prolija que incluya:`)
+  lines.push(`Actuá como un asistente ejecutivo especializado en la redacción de actas de reunión corporativas. A continuación se detalla el registro completo de temas tratados en la reunión "${meeting.name}" (de carácter periódico; puede incluir tanto temas de encuentros anteriores como los incorporados en el más reciente). Redactá un acta formal y profesional, en tercera persona y con lenguaje técnico-administrativo, que respete la siguiente estructura:`)
   lines.push(``)
-  lines.push(`1. Encabezado con nombre de la reunión, fecha y lista de participantes`)
-  lines.push(`2. Resumen de cada tema tratado, con sus tareas/acuerdos y estado (completado o pendiente), destacando la prioridad de cada uno`)
-  lines.push(`3. Comentarios y notas relevantes de cada tema`)
-  lines.push(`4. Listado final de pendientes para el próximo encuentro, ordenados por prioridad`)
+  lines.push(`1. ENCABEZADO — Nombre de la reunión, fecha del acta y nómina de participantes.`)
+  lines.push(`2. OBJETIVO DE LA REUNIÓN — Inferido a partir de los temas tratados, si no está indicado explícitamente.`)
+  lines.push(`3. DESARROLLO — Para cada tema: descripción del asunto, decisiones o acuerdos alcanzados, y su estado actual (en curso / finalizado).`)
+  lines.push(`4. CUADRO DE COMPROMISOS — Tabla con columnas: Compromiso, Responsable, Prioridad, Fecha límite, Estado. Ordenada de mayor a menor prioridad.`)
+  lines.push(`5. CONCLUSIONES — Síntesis de los resultados principales de la reunión.`)
+  lines.push(`6. SEGUIMIENTO — Puntos pendientes a tratar en el próximo encuentro.`)
   lines.push(``)
-  lines.push(`Usá formato Markdown con encabezados, tablas, listas y emojis para que sea visualmente agradable y fácil de pegar en un email.`)
+  lines.push(`Requisitos de redacción y formato:`)
+  lines.push(`- Registro formal, en tercera persona, sin coloquialismos ni lenguaje informal.`)
+  lines.push(`- Formato Markdown con encabezados y tablas; evitar el uso de emojis salvo que aporten claridad genuina.`)
+  lines.push(`- El documento debe quedar listo para adjuntarse o pegarse directamente en una comunicación corporativa por correo electrónico.`)
   lines.push(``)
   lines.push(`---`)
   lines.push(``)
@@ -236,15 +241,15 @@ export function exportMeetingPrompt(meeting, temas, participants) {
     lines.push(`(sin especificar)`)
   }
   lines.push(``)
-  lines.push(`## RESUMEN`)
-  lines.push(`- Temas: ${temas.length}`)
-  lines.push(`- Tareas/acuerdos totales: ${allTasks.length}`)
+  lines.push(`## RESUMEN EJECUTIVO`)
+  lines.push(`- Temas tratados: ${temas.length}`)
+  lines.push(`- Compromisos y tareas totales: ${allTasks.length}`)
   lines.push(`- Pendientes: ${pending.length}`)
-  lines.push(`- Completados: ${done.length}`)
+  lines.push(`- Finalizados: ${done.length}`)
   lines.push(``)
   lines.push(`---`)
   lines.push(``)
-  lines.push(`## TEMAS TRATADOS`)
+  lines.push(`## DETALLE DE TEMAS TRATADOS`)
   lines.push(``)
 
   for (const tema of temas) {
@@ -253,29 +258,29 @@ export function exportMeetingPrompt(meeting, temas, participants) {
 
     if (tema.tasks.length > 0) {
       for (const t of tema.tasks) {
-        lines.push(`  ACUERDO/TAREA: ${t.title}`)
-        lines.push(`  - Estado: ${t.done ? 'Completado' : 'Pendiente'}`)
-        lines.push(`  - Prioridad: ${t.priority && PRIORITY[t.priority] ? PRIORITY[t.priority].emoji+' '+PRIORITY[t.priority].label : 'Sin definir'}`)
-        lines.push(`  - Responsable: ${t.responsible || '—'}`)
+        lines.push(`  COMPROMISO/TAREA: ${t.title}`)
+        lines.push(`  - Estado: ${t.done ? 'Finalizado' : 'Pendiente'}`)
+        lines.push(`  - Prioridad: ${t.priority && PRIORITY[t.priority] ? PRIORITY[t.priority].label : 'Sin definir'}`)
+        lines.push(`  - Responsable: ${t.responsible || 'Sin asignar'}`)
         lines.push(`  - Fecha de registro: ${fmtD(t.created_at)}`)
-        lines.push(`  - Fecha de vencimiento: ${t.due_date ? fmtD(t.due_date) : '—'}`)
+        lines.push(`  - Fecha límite: ${t.due_date ? fmtD(t.due_date) : 'No definida'}`)
         if (t.comments && t.comments.length > 0) {
-          lines.push(`  - Comentarios (${t.comments.length}):`)
+          lines.push(`  - Observaciones (${t.comments.length}):`)
           for (const c of t.comments) {
-            lines.push(`    [${fmtD(c.created_at)} — ${c.author||'—'}]: ${c.text}`)
+            lines.push(`    [${fmtD(c.created_at)} — ${c.author||'Sin identificar'}]: ${c.text}`)
           }
         }
         lines.push(``)
       }
     } else {
-      lines.push(`  (sin acuerdos/tareas cargados)`)
+      lines.push(`  (sin compromisos ni tareas registrados)`)
       lines.push(``)
     }
 
     if (tema.notes && tema.notes.length > 0) {
-      lines.push(`  Notas generales del tema:`)
+      lines.push(`  Observaciones generales del tema:`)
       for (const n of tema.notes) {
-        lines.push(`    [${fmtD(n.created_at)} — ${n.author||'—'}]: ${n.text}`)
+        lines.push(`    [${fmtD(n.created_at)} — ${n.author||'Sin identificar'}]: ${n.text}`)
       }
       lines.push(``)
     }
@@ -284,13 +289,13 @@ export function exportMeetingPrompt(meeting, temas, participants) {
     lines.push(``)
   }
 
-  lines.push(`FIN DE LOS DATOS. Generá la minuta ahora.`)
+  lines.push(`FIN DEL REGISTRO DE DATOS. Redactá el acta de reunión a continuación, siguiendo la estructura y los requisitos indicados.`)
 
   const text = lines.join('\n')
   const blob = new Blob([text], { type:'text/plain;charset=utf-8' })
   const a    = document.createElement('a')
   a.href     = URL.createObjectURL(blob)
-  a.download = `minuta_${meeting.name.toLowerCase().replace(/[^a-z0-9]+/g,'_')}_${fecha.replace(/\//g,'-')}.txt`
+  a.download = `acta_reunion_${meeting.name.toLowerCase().replace(/[^a-z0-9]+/g,'_')}_${fecha.replace(/\//g,'-')}.txt`
   a.click()
   URL.revokeObjectURL(a.href)
 }
