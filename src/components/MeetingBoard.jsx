@@ -35,6 +35,7 @@ export default function MeetingBoard({ meeting, onBack }) {
   const [moveComment,   setMoveComment]   = useState(null)
   const [participantsOpen, setParticipantsOpen] = useState(false)
   const [exporting,     setExporting]     = useState(false)
+  const [archivedView,  setArchivedView]  = useState(false)
 
   useEffect(() => {
     proj.loadProjects().then(() => {
@@ -88,13 +89,19 @@ export default function MeetingBoard({ meeting, onBack }) {
           </div>
         </div>
         <div style={{ display:'flex', gap:8 }}>
-          <button onClick={() => setNewProjOpen(v=>!v)} style={S.btnPrimary}>+ Nuevo Tema</button>
-          <button onClick={() => setParticipantsOpen(true)} disabled={exporting} style={{ ...S.btnSecondary, opacity:exporting?0.6:1 }}>
-            {exporting ? '⏳ Generando...' : '📄 Descargar prompt de minuta'}
+          <button onClick={() => { if (!archivedView) proj.loadArchived(); setArchivedView(v => !v) }} style={S.btnSecondary}>
+            {archivedView ? '← Volver a temas' : '📦 Ver temas archivados'}
           </button>
+          {!archivedView && <button onClick={() => setNewProjOpen(v=>!v)} style={S.btnPrimary}>+ Nuevo Tema</button>}
+          {!archivedView && (
+            <button onClick={() => setParticipantsOpen(true)} disabled={exporting} style={{ ...S.btnSecondary, opacity:exporting?0.6:1 }}>
+              {exporting ? '⏳ Generando...' : '📄 Descargar prompt de minuta'}
+            </button>
+          )}
         </div>
       </div>
 
+      {!archivedView && <>
       {/* Nuevo tema */}
       {newProjOpen && (
         <div style={{ background:'var(--bg-elevated)', border:'1px solid var(--border-soft)', borderRadius:12, padding:14, marginBottom:16, display:'flex', gap:10, flexWrap:'wrap', alignItems:'center' }}>
@@ -173,6 +180,38 @@ export default function MeetingBoard({ meeting, onBack }) {
           onConfirm={(msg, action, opts) => showConfirm(msg, action, opts)}
         />
       ))}
+      </>}
+
+      {/* Temas archivados de esta reunión — no se mezclan con otras */}
+      {archivedView && (
+        <div>
+          {proj.loadingArchived && <div style={{ textAlign:'center', color:'var(--text-muted)', padding:30 }}>Cargando...</div>}
+          {!proj.loadingArchived && proj.archivedProjects.length === 0 && (
+            <div style={{ textAlign:'center', color:'var(--text-faint)', fontSize:14, padding:40 }}>No hay temas archivados en esta reunión.</div>
+          )}
+          {proj.archivedProjects.map(project => (
+            <div key={project.id} style={{ background:'var(--bg-surface)', border:'1px solid var(--border-soft)', borderRadius:14, marginBottom:12, overflow:'hidden', opacity:0.85 }}>
+              <div style={{ borderLeft:`4px solid ${project.color}`, padding:'12px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', background:`linear-gradient(90deg,${project.color}11,transparent)` }}>
+                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                  <div style={{ width:9, height:9, borderRadius:'50%', background:project.color }} />
+                  <span style={{ fontWeight:700, fontSize:15, color:'var(--text-secondary)' }}>{project.name}</span>
+                  <span style={{ background:'var(--bg-elevated)', border:'1px solid var(--border-soft)', borderRadius:20, padding:'1px 9px', fontSize:11, color:'var(--text-faint)' }}>{project.tasks.length} tarea{project.tasks.length!==1?'s':''} · {project.notes?.length||0} nota{(project.notes?.length||0)!==1?'s':''}</span>
+                  <span style={{ background:'#451a03', border:'1px solid #92400e', borderRadius:20, padding:'1px 9px', fontSize:11, color:'#fbbf24' }}>📦 Archivado</span>
+                </div>
+                <div style={{ display:'flex', gap:7 }}>
+                  <button onClick={() => showConfirm(`¿Restaurar "${project.name}" a esta reunión?`, () => proj.doUnarchiveProject(project.id), { title:'↩ Confirmar restauración', okLabel:'Restaurar', okColor:'#059669' })} style={{ background:'#065f46', border:'1px solid #059669', color:'#34d399', padding:'6px 14px', borderRadius:7, cursor:'pointer', fontSize:12, fontWeight:600 }}>↩ Restaurar</button>
+                  <button onClick={() => showConfirm(`¿Eliminar "${project.name}" y TODAS sus tareas y notas? Esta acción no se puede deshacer.`, () => proj.doDeleteProject(project.id).then(()=>toast('Tema eliminado')).catch(e=>toast(errMsg(e),'error')))} style={{ ...S.iconBtn, borderColor:'#dc262633', color:'#ef4444' }} title="Eliminar permanentemente">🗑</button>
+                </div>
+              </div>
+              <div style={{ padding:'8px 16px', fontSize:12, color:'var(--text-faint)', display:'flex', gap:16, borderTop:'1px solid var(--border)' }}>
+                <span>📌 {project.tasks.filter(t=>!t.done).length} pendiente{project.tasks.filter(t=>!t.done).length!==1?'s':''}</span>
+                <span>✅ {project.tasks.filter(t=>t.done).length} completada{project.tasks.filter(t=>t.done).length!==1?'s':''}</span>
+                <span>📝 {project.notes?.length||0} nota{(project.notes?.length||0)!==1?'s':''}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <Toast toasts={toasts} onDismiss={dismiss} />
     </div>
