@@ -127,6 +127,23 @@ export default function MeetingBoard({ meeting, onBack }) {
         )}
       </div>
 
+      {/* Colapsar / Expandir todos los temas */}
+      {proj.sortedProjects.length > 0 && (
+        <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:10 }}>
+          <button
+            onClick={() => {
+              const allCollapsed = proj.sortedProjects.every(p => collapsedProjects[p.id])
+              const next = {}
+              if (!allCollapsed) proj.sortedProjects.forEach(p => { next[p.id] = true })
+              setCollapsedProjects(next)
+            }}
+            style={{ ...S.btnSecondary, padding:'5px 12px', fontSize:12, display:'flex', alignItems:'center', gap:5 }}
+          >
+            {proj.sortedProjects.every(p => collapsedProjects[p.id]) ? '▼ Expandir todos' : '▲ Colapsar todos'}
+          </button>
+        </div>
+      )}
+
       {/* Nuevo tema */}
       {newProjOpen && (
         <div style={{ background:'var(--bg-elevated)', border:'1px solid var(--border-soft)', borderRadius:12, padding:14, marginBottom:16, display:'flex', gap:10, flexWrap:'wrap', alignItems:'center' }}>
