@@ -37,6 +37,7 @@ export default function MeetingBoard({ meeting, onBack }) {
   const [exporting,     setExporting]     = useState(false)
   const [archivedView,  setArchivedView]  = useState(false)
   const [filterPriorities, setFilterPriorities] = useState([])
+  const [highlightProjectId, setHighlightProjectId] = useState(null)
 
   useEffect(() => {
     proj.loadProjects().then(() => {
@@ -51,6 +52,21 @@ export default function MeetingBoard({ meeting, onBack }) {
   const showConfirm = (msg, action, opts={}) => setConfirm({ msg, action, ...opts })
 
   const togglePriority = p => setFilterPriorities(prev => prev.includes(p) ? prev.filter(x=>x!==p) : [...prev, p])
+
+  // ── Llevar a un tema recién creado hasta la vista ────────────
+  const scrollToNewTema = pId => {
+    // Un filtro por prioridad activo puede ocultar el tema recién creado
+    // (todavía sin tareas), igual que pasa con los filtros en Proyectos.
+    setArchivedView(false)
+    setFilterPriorities([])
+    setTimeout(() => {
+      setCollapsedProjects(c => ({ ...c, [pId]: false }))
+      const el = document.getElementById('project-'+pId)
+      if (el) el.scrollIntoView({ behavior:'smooth', block:'start' })
+      setHighlightProjectId(pId)
+      setTimeout(() => setHighlightProjectId(h => h===pId ? null : h), 2200)
+    }, 150)
+  }
 
   const doExportMinuta = async participants => {
     setParticipantsOpen(false)
@@ -150,14 +166,14 @@ export default function MeetingBoard({ meeting, onBack }) {
           <input placeholder="Nombre del tema..." value={newProjName} onChange={e=>setNewProjName(e.target.value)}
             onKeyDown={e => {
               if (e.key==='Enter' && newProjName.trim()) {
-                proj.doAddProject(newProjName, newProjColor).then(() => { setNewProjName(''); setNewProjOpen(false); toast('Tema creado') }).catch(e => toast(errMsg(e),'error'))
+                proj.doAddProject(newProjName, newProjColor).then(project => { setNewProjName(''); setNewProjOpen(false); toast('Tema creado'); scrollToNewTema(project.id) }).catch(e => toast(errMsg(e),'error'))
               }
             }}
             style={{ ...S.input, flex:1 }} autoFocus />
           <div style={{ display:'flex', gap:6 }}>
             {COLORS.map(c => <div key={c} onClick={() => setNewProjColor(c)} style={{ width:22, height:22, borderRadius:'50%', background:c, cursor:'pointer', border:newProjColor===c?'3px solid white':'3px solid transparent', boxSizing:'border-box' }} />)}
           </div>
-          <button onClick={() => { proj.doAddProject(newProjName,newProjColor).then(()=>{ setNewProjName(''); setNewProjOpen(false); toast('Tema creado') }).catch(e=>toast(errMsg(e),'error')) }} style={S.btnPrimary}>Crear</button>
+          <button onClick={() => { proj.doAddProject(newProjName,newProjColor).then(project=>{ setNewProjName(''); setNewProjOpen(false); toast('Tema creado'); scrollToNewTema(project.id) }).catch(e=>toast(errMsg(e),'error')) }} style={S.btnPrimary}>Crear</button>
           <button onClick={() => setNewProjOpen(false)} style={S.btnSecondary}>Cancelar</button>
         </div>
       )}
@@ -178,6 +194,7 @@ export default function MeetingBoard({ meeting, onBack }) {
           key={project.id}
           project={project}
           filteredTasks={ptasks}
+          highlighted={project.id === highlightProjectId}
           hideMembers
           collapsed={collapsedProjects[project.id]}
           onToggleCollapse={id => setCollapsedProjects(c=>({...c,[id]:!c[id]}))}
