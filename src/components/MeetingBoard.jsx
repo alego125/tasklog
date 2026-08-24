@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useProjects } from '../hooks/useProjects.js'
 import { useToast } from '../hooks/useToast.js'
 import { api, isNetworkError } from '../hooks/useApi.js'
-import { S, COLORS, exportMeetingPrompt } from '../utils/helpers.js'
+import { S, COLORS, PRIORITY, exportMeetingPrompt } from '../utils/helpers.js'
 import ProjectCard from './ProjectCard.jsx'
 import Toast from './Toast.jsx'
 import { Confirm, EditProject, EditTask, EditComment, EditDueDateModal, EditCreatedAtModal, MoveNoteModal, MoveCommentModal, ParticipantsModal } from './Modals.jsx'
@@ -36,6 +36,7 @@ export default function MeetingBoard({ meeting, onBack }) {
   const [participantsOpen, setParticipantsOpen] = useState(false)
   const [exporting,     setExporting]     = useState(false)
   const [archivedView,  setArchivedView]  = useState(false)
+  const [filterPriorities, setFilterPriorities] = useState([])
 
   useEffect(() => {
     proj.loadProjects().then(() => {
@@ -48,6 +49,8 @@ export default function MeetingBoard({ meeting, onBack }) {
   }, [meeting.id])
 
   const showConfirm = (msg, action, opts={}) => setConfirm({ msg, action, ...opts })
+
+  const togglePriority = p => setFilterPriorities(prev => prev.includes(p) ? prev.filter(x=>x!==p) : [...prev, p])
 
   const doExportMinuta = async participants => {
     setParticipantsOpen(false)
@@ -102,6 +105,28 @@ export default function MeetingBoard({ meeting, onBack }) {
       </div>
 
       {!archivedView && <>
+      {/* Filtro por prioridad — exclusivo de esta vista, no afecta el resto de la app */}
+      <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', marginBottom:16 }}>
+        <span style={{ fontSize:12, color:'var(--text-faint)', fontWeight:600 }}>Filtrar por prioridad:</span>
+        {Object.entries(PRIORITY).map(([key, p]) => {
+          const active = filterPriorities.includes(key)
+          return (
+            <button key={key} onClick={() => togglePriority(key)}
+              style={{
+                display:'flex', alignItems:'center', gap:5, padding:'4px 12px', borderRadius:20, fontSize:12, fontWeight:600, cursor:'pointer',
+                border:`1px solid ${active ? p.color : 'var(--border-soft)'}`,
+                background: active ? `${p.color}22` : 'var(--bg-elevated)',
+                color: active ? p.color : 'var(--text-muted)',
+              }}>
+              {p.emoji} {p.label}
+            </button>
+          )
+        })}
+        {filterPriorities.length > 0 && (
+          <button onClick={() => setFilterPriorities([])} style={{ ...S.btnSecondary, padding:'4px 10px', fontSize:12 }}>Limpiar filtro</button>
+        )}
+      </div>
+
       {/* Nuevo tema */}
       {newProjOpen && (
         <div style={{ background:'var(--bg-elevated)', border:'1px solid var(--border-soft)', borderRadius:12, padding:14, marginBottom:16, display:'flex', gap:10, flexWrap:'wrap', alignItems:'center' }}>
@@ -126,11 +151,16 @@ export default function MeetingBoard({ meeting, onBack }) {
         <div style={{ textAlign:'center', color:'var(--text-faint)', fontSize:14, padding:40 }}>Todavía no hay temas cargados en esta reunión.</div>
       )}
 
-      {proj.sortedProjects.map(project => (
+      {proj.sortedProjects.map(project => {
+        const ptasks = filterPriorities.length > 0
+          ? project.tasks.filter(t => filterPriorities.includes(t.priority))
+          : project.tasks
+        if (filterPriorities.length > 0 && ptasks.length === 0) return null
+        return (
         <ProjectCard
           key={project.id}
           project={project}
-          filteredTasks={project.tasks}
+          filteredTasks={ptasks}
           hideMembers
           collapsed={collapsedProjects[project.id]}
           onToggleCollapse={id => setCollapsedProjects(c=>({...c,[id]:!c[id]}))}
@@ -179,7 +209,8 @@ export default function MeetingBoard({ meeting, onBack }) {
           onDeleteNote={proj.doDeleteProjectNote}
           onConfirm={(msg, action, opts) => showConfirm(msg, action, opts)}
         />
-      ))}
+        )
+      })}
       </>}
 
       {/* Temas archivados de esta reunión — no se mezclan con otras */}
