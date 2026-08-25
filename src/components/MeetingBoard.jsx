@@ -138,6 +138,20 @@ export default function MeetingBoard({ meeting, onBack }) {
             </button>
           )
         })}
+        {(() => {
+          const active = filterPriorities.includes('none')
+          return (
+            <button onClick={() => togglePriority('none')}
+              style={{
+                display:'flex', alignItems:'center', gap:5, padding:'4px 12px', borderRadius:20, fontSize:12, fontWeight:600, cursor:'pointer',
+                border:`1px solid ${active ? 'var(--text-muted)' : 'var(--border-soft)'}`,
+                background: active ? 'var(--bg-surface)' : 'var(--bg-elevated)',
+                color: active ? 'var(--text-secondary)' : 'var(--text-muted)',
+              }}>
+              ⚪ Sin prioridad
+            </button>
+          )
+        })()}
         {filterPriorities.length > 0 && (
           <button onClick={() => setFilterPriorities([])} style={{ ...S.btnSecondary, padding:'4px 10px', fontSize:12 }}>Limpiar filtro</button>
         )}
@@ -186,7 +200,7 @@ export default function MeetingBoard({ meeting, onBack }) {
 
       {proj.sortedProjects.map(project => {
         const ptasks = filterPriorities.length > 0
-          ? project.tasks.filter(t => filterPriorities.includes(t.priority))
+          ? project.tasks.filter(t => filterPriorities.includes(t.priority) || (filterPriorities.includes('none') && !t.priority))
           : project.tasks
         if (filterPriorities.length > 0 && ptasks.length === 0) return null
         return (
