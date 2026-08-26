@@ -23,7 +23,7 @@ export default function ProjectCard({
   // Tareas y notas mezcladas, ordenadas únicamente por fecha de registro
   // (más nueva primero) sin agrupar por estado — el color de cada tarjeta
   // ya indica si está vencida/por vencer.
-  const taskItems = filteredTasks.map(t => ({ ...t, _type:'task' }))
+  const taskItems = filteredTasks.map(t => ({ ...t, _type:'task', projectId: t.projectId ?? project.id }))
   const noteItems = showNotes
     ? [...(project.notes||[])].map(n => ({ ...n, _type:'note', projectId:project.id }))
     : []

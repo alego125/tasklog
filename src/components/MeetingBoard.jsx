@@ -68,6 +68,19 @@ export default function MeetingBoard({ meeting, onBack }) {
     }, 150)
   }
 
+  // Si al editar una tarea (p.ej. su fecha) el tema cambia de categoría de
+  // vencimiento, su tarjeta puede reordenarse y salir de la vista actual.
+  // Si eso pasa, hacemos scroll para que vuelva a quedar visible.
+  const keepTemaInView = pId => {
+    setTimeout(() => {
+      const el = document.getElementById('project-'+pId)
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      const visible = rect.top < window.innerHeight - 40 && rect.bottom > 100
+      if (!visible) el.scrollIntoView({ behavior:'smooth', block:'start' })
+    }, 150)
+  }
+
   const doExportMinuta = async participants => {
     setParticipantsOpen(false)
     setExporting(true)
@@ -87,10 +100,10 @@ export default function MeetingBoard({ meeting, onBack }) {
       {/* Modales */}
       {confirm       && <Confirm msg={confirm.msg} onOk={()=>{confirm.action();setConfirm(null)}} onCancel={()=>setConfirm(null)} title={confirm.title} okLabel={confirm.okLabel} okColor={confirm.okColor} />}
       {editProject   && <EditProject project={editProject} onSave={(name,color) => { proj.doSaveEditProject(editProject,name,color).then(()=>toast('Tema actualizado')).catch(e=>toast(errMsg(e),'error')); setEditProject(null) }} onClose={()=>setEditProject(null)} />}
-      {editTask      && <EditTask task={editTask.task} projects={proj.projects} onSave={form => { proj.doSaveEditTask(editTask.pId,editTask.task.id,form).then(()=>toast('Tarea actualizada')).catch(e=>toast(errMsg(e),'error')); setEditTask(null) }} onClose={()=>setEditTask(null)} />}
+      {editTask      && <EditTask task={editTask.task} projects={proj.projects} onSave={form => { const targetPId = form.project_id ? Number(form.project_id) : editTask.pId; proj.doSaveEditTask(editTask.pId,editTask.task.id,form).then(()=>{ toast('Tarea actualizada'); keepTemaInView(targetPId) }).catch(e=>toast(errMsg(e),'error')); setEditTask(null) }} onClose={()=>setEditTask(null)} />}
       {editComment   && <EditComment comment={editComment.comment} onSave={data => { proj.doSaveEditComment(editComment.pId,editComment.tId,editComment.comment.id,data).then(()=>toast('Nota actualizada')).catch(e=>toast(errMsg(e),'error')); setEditComment(null) }} onClose={()=>setEditComment(null)} />}
       {editNote      && <EditComment comment={editNote.note} onSave={data => { proj.doSaveEditNote(editNote.pId,editNote.note.id,data).then(()=>toast('Nota actualizada')).catch(e=>toast(errMsg(e),'error')); setEditNote(null) }} onClose={()=>setEditNote(null)} />}
-      {editDueDate   && <EditDueDateModal task={editDueDate.task} onSave={due_date => { proj.doSaveEditTask(editDueDate.pId,editDueDate.task.id,{title:editDueDate.task.title,responsible:editDueDate.task.responsible||'',due_date}).then(()=>toast('Fecha actualizada')).catch(e=>toast(errMsg(e),'error')); setEditDueDate(null) }} onClose={()=>setEditDueDate(null)} />}
+      {editDueDate   && <EditDueDateModal task={editDueDate.task} onSave={due_date => { proj.doSaveEditTask(editDueDate.pId,editDueDate.task.id,{title:editDueDate.task.title,responsible:editDueDate.task.responsible||'',due_date}).then(()=>{ toast('Fecha actualizada'); keepTemaInView(editDueDate.pId) }).catch(e=>toast(errMsg(e),'error')); setEditDueDate(null) }} onClose={()=>setEditDueDate(null)} />}
       {editCreatedAt && editCreatedAt.type==='task'    && <EditCreatedAtModal item={editCreatedAt.item} label={editCreatedAt.item.title} onSave={d => { proj.doSaveEditTask(editCreatedAt.pId,editCreatedAt.item.id,{title:editCreatedAt.item.title,responsible:editCreatedAt.item.responsible||'',due_date:editCreatedAt.item.due_date||'',created_at:d}).then(()=>toast('Fecha actualizada')).catch(e=>toast(errMsg(e),'error')); setEditCreatedAt(null) }} onClose={()=>setEditCreatedAt(null)} />}
       {editCreatedAt && editCreatedAt.type==='comment' && <EditCreatedAtModal item={editCreatedAt.item} label={editCreatedAt.item.text?.slice(0,60)} onSave={d => { proj.doSaveEditComment(editCreatedAt.pId,editCreatedAt.tId,editCreatedAt.item.id,{text:editCreatedAt.item.text,created_at:d}).then(()=>toast('Fecha actualizada')).catch(e=>toast(errMsg(e),'error')); setEditCreatedAt(null) }} onClose={()=>setEditCreatedAt(null)} />}
       {editCreatedAt && editCreatedAt.type==='note'    && <EditCreatedAtModal item={editCreatedAt.item} label={editCreatedAt.item.text?.slice(0,60)} onSave={d => { proj.doSaveEditNote(editCreatedAt.pId,editCreatedAt.item.id,{text:editCreatedAt.item.text,created_at:d}).then(()=>toast('Fecha actualizada')).catch(e=>toast(errMsg(e),'error')); setEditCreatedAt(null) }} onClose={()=>setEditCreatedAt(null)} />}
@@ -214,7 +227,7 @@ export default function MeetingBoard({ meeting, onBack }) {
           onToggleCollapse={id => setCollapsedProjects(c=>({...c,[id]:!c[id]}))}
           expanded={expanded}
           onExpand={setExpanded}
-          onToggleTask={proj.doToggle}
+          onToggleTask={id => { const pId = proj.allTasks.find(t=>t.id===id)?.projectId; proj.doToggle(id).then(() => { if (pId) keepTemaInView(pId) }).catch(e=>toast(errMsg(e),'error')) }}
           showNotes={true}
           newTaskFor={newTaskFor}
           onOpenNewTask={id => { setNewTaskFor(id); if(id) setNewTask({ title:'', responsible:'', due_date:'' }) }}
