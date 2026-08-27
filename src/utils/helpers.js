@@ -299,3 +299,71 @@ export function exportMeetingPrompt(meeting, temas, participants) {
   a.click()
   URL.revokeObjectURL(a.href)
 }
+
+// ── Listado de temas de una reunión, listo para compartir por email ──
+export function exportMeetingListing(meeting, temas) {
+  const fmtD = d => {
+    if (!d) return '—'
+    const parts = String(d).slice(0,10).split('-')
+    return parts.length === 3 ? parts[2]+'/'+parts[1]+'/'+parts[0] : String(d).slice(0,10)
+  }
+
+  const now = new Date()
+  const fecha = String(now.getDate()).padStart(2,'0')+'/'+String(now.getMonth()+1).padStart(2,'0')+'/'+now.getFullYear()
+  const allTasks = temas.flatMap(t => t.tasks)
+  const pending  = allTasks.filter(t => !t.done)
+  const done     = allTasks.filter(t => t.done)
+  const allNotes = temas.flatMap(t => t.notes||[])
+  const sep = '─'.repeat(60)
+
+  let lines = []
+  lines.push(`LISTADO DE TEMAS — ${meeting.name}`)
+  lines.push(`Generado el: ${fecha}`)
+  lines.push(``)
+  lines.push(`Temas: ${temas.length}  ·  Tareas: ${allTasks.length} (pendientes: ${pending.length}, finalizadas: ${done.length})  ·  Notas: ${allNotes.length}`)
+  lines.push(sep)
+
+  for (const tema of temas) {
+    lines.push(``)
+    lines.push(`TEMA: ${tema.name}`)
+    lines.push(sep)
+
+    const temaPending = (tema.tasks||[]).filter(t => !t.done)
+      .sort((a,b) => (a.due_date||'9999') < (b.due_date||'9999') ? -1 : 1)
+    const temaDone = (tema.tasks||[]).filter(t => t.done)
+
+    if (temaPending.length > 0 || temaDone.length > 0) {
+      lines.push(`Tareas:`)
+      for (const t of [...temaPending, ...temaDone]) {
+        const check = t.done ? '☑' : '☐'
+        const prio  = t.priority && PRIORITY[t.priority] ? ` [${PRIORITY[t.priority].label}]` : ''
+        const resp  = t.responsible ? `  Responsable: ${t.responsible}` : ''
+        const due   = t.due_date ? `  Vence: ${fmtD(t.due_date)}` : ''
+        lines.push(`  ${check} ${t.title}${prio}${resp}${due}`)
+        if (t.comments && t.comments.length > 0) {
+          for (const c of t.comments) {
+            lines.push(`      · [${fmtD(c.created_at)} — ${c.author||'Sin identificar'}]: ${c.text}`)
+          }
+        }
+      }
+    } else {
+      lines.push(`(sin tareas registradas)`)
+    }
+
+    if (tema.notes && tema.notes.length > 0) {
+      lines.push(``)
+      lines.push(`Notas:`)
+      for (const n of [...tema.notes].sort((a,b) => (a.created_at||'') < (b.created_at||'') ? -1 : 1)) {
+        lines.push(`  · [${fmtD(n.created_at)} — ${n.author||'Sin identificar'}]: ${n.text}`)
+      }
+    }
+  }
+
+  const text = lines.join('\n')
+  const blob = new Blob([text], { type:'text/plain;charset=utf-8' })
+  const a    = document.createElement('a')
+  a.href     = URL.createObjectURL(blob)
+  a.download = `listado_temas_${meeting.name.toLowerCase().replace(/[^a-z0-9]+/g,'_')}_${fecha.replace(/\//g,'-')}.txt`
+  a.click()
+  URL.revokeObjectURL(a.href)
+}
