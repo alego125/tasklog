@@ -354,7 +354,7 @@ export function exportMeetingListing(meeting, temas) {
       lines.push(``)
       lines.push(`Notas:`)
       for (const n of [...tema.notes].sort((a,b) => (a.created_at||'') < (b.created_at||'') ? -1 : 1)) {
-        lines.push(`  · [${fmtD(n.created_at)} — ${n.author||'Sin identificar'}]: ${n.text}`)
+        lines.push(`  · [${fmtD(n.created_at)}]: ${n.text}`)
       }
     }
   }
