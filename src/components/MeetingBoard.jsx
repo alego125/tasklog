@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useProjects } from '../hooks/useProjects.js'
 import { useToast } from '../hooks/useToast.js'
 import { api, isNetworkError } from '../hooks/useApi.js'
-import { S, COLORS, PRIORITY, exportMeetingPrompt } from '../utils/helpers.js'
+import { S, COLORS, PRIORITY, exportMeetingPrompt, exportMeetingListing } from '../utils/helpers.js'
 import ProjectCard from './ProjectCard.jsx'
 import Toast from './Toast.jsx'
 import { Confirm, EditProject, EditTask, EditComment, EditDueDateModal, EditCreatedAtModal, MoveNoteModal, MoveCommentModal, ParticipantsModal } from './Modals.jsx'
@@ -35,6 +35,7 @@ export default function MeetingBoard({ meeting, onBack }) {
   const [moveComment,   setMoveComment]   = useState(null)
   const [participantsOpen, setParticipantsOpen] = useState(false)
   const [exporting,     setExporting]     = useState(false)
+  const [exportingListing, setExportingListing] = useState(false)
   const [archivedView,  setArchivedView]  = useState(false)
   const [filterPriorities, setFilterPriorities] = useState([])
   const [highlightProjectId, setHighlightProjectId] = useState(null)
@@ -81,6 +82,19 @@ export default function MeetingBoard({ meeting, onBack }) {
     }, 150)
   }
 
+  const doExportListing = async () => {
+    setExportingListing(true)
+    try {
+      const { temas } = await api.getMeetingExport(meeting.id)
+      exportMeetingListing(meeting, temas)
+      toast('Listado descargado')
+    } catch(e) {
+      toast(errMsg(e), 'error')
+    } finally {
+      setExportingListing(false)
+    }
+  }
+
   const doExportMinuta = async participants => {
     setParticipantsOpen(false)
     setExporting(true)
@@ -125,6 +139,11 @@ export default function MeetingBoard({ meeting, onBack }) {
             {archivedView ? '← Volver a temas' : '📦 Ver temas archivados'}
           </button>
           {!archivedView && <button onClick={() => setNewProjOpen(v=>!v)} style={S.btnPrimary}>+ Nuevo Tema</button>}
+          {!archivedView && (
+            <button onClick={doExportListing} disabled={exportingListing} style={{ ...S.btnSecondary, opacity:exportingListing?0.6:1 }}>
+              {exportingListing ? '⏳ Generando...' : '📋 Descargar listado'}
+            </button>
+          )}
           {!archivedView && (
             <button onClick={() => setParticipantsOpen(true)} disabled={exporting} style={{ ...S.btnSecondary, opacity:exporting?0.6:1 }}>
               {exporting ? '⏳ Generando...' : '📄 Descargar prompt de minuta'}
