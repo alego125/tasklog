@@ -1,4 +1,4 @@
-import { S, getStatus, fmtDate, PRIORITY } from '../utils/helpers.js'
+import { S, getStatus, fmtDate, PRIORITY, exportProjectContent } from '../utils/helpers.js'
 import TaskItem from './TaskItem.jsx'
 
 export default function ProjectCard({
@@ -60,6 +60,7 @@ export default function ProjectCard({
           <button onClick={() => onNewProjNoteChange(project.id+'_open', !noteOpen)} style={{ background:'transparent', border:'1px solid var(--border)', color:'var(--text-secondary)', padding:'5px 12px', borderRadius:7, cursor:'pointer', fontSize:12, fontWeight:600 }}>+ Nota</button>
           <button onClick={() => onToggleCollapse(project.id)} title={isCollapsed?'Expandir':'Colapsar'} style={{ ...S.iconBtn, borderColor:`${project.color}44`, color:'var(--text-secondary)' }}>{isCollapsed?'▼':'▲'}</button>
           {!hideMembers && <button onClick={() => onMembersModal(project.id)} title="Gestionar miembros" style={{ ...S.iconBtn }}>👥</button>}
+          <button onClick={() => exportProjectContent(project)} title="Descargar contenido para IA" style={{ ...S.iconBtn }}>⬇️</button>
           <button onClick={() => onEditProject(project)} title="Editar proyecto" style={{ ...S.iconBtn, borderColor:`${project.color}66`, color:project.color }}>✏️</button>
           <button onClick={() => onConfirm(`¿Archivar "${project.name}"? Podrás recuperarlo desde "Archivados".`, () => onArchiveProject(project.id), { title:'📦 Confirmar archivado', okLabel:'Archivar', okColor:'#d97706' })} title="Archivar proyecto" style={{ ...S.iconBtn, borderColor:'#d9770633', color:'#f59e0b' }}>📦</button>
           <button onClick={() => onConfirm(`¿Eliminar "${project.name}" y TODAS sus tareas y notas?`, () => onDeleteProject(project.id))} style={{ ...S.iconBtn, borderColor:'#dc262633', color:'#ef4444', fontSize:15 }} title="Eliminar proyecto">🗑</button>

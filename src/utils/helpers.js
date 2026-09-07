@@ -367,3 +367,62 @@ export function exportMeetingListing(meeting, temas) {
   a.click()
   URL.revokeObjectURL(a.href)
 }
+
+// ── Contenido completo de un proyecto, para pasarle a una IA ──────
+export function exportProjectContent(project) {
+  const fmtD = d => {
+    if (!d) return '—'
+    const parts = String(d).slice(0,10).split('-')
+    return parts.length === 3 ? parts[2]+'/'+parts[1]+'/'+parts[0] : String(d).slice(0,10)
+  }
+
+  const now = new Date()
+  const fecha = String(now.getDate()).padStart(2,'0')+'/'+String(now.getMonth()+1).padStart(2,'0')+'/'+now.getFullYear()
+  const tasks   = project.tasks || []
+  const pending = tasks.filter(t => !t.done).sort((a,b) => (a.due_date||'9999') < (b.due_date||'9999') ? -1 : 1)
+  const done    = tasks.filter(t => t.done)
+  const notes   = project.notes || []
+  const sep = '─'.repeat(60)
+
+  let lines = []
+  lines.push(`CONTENIDO DEL PROYECTO — ${project.name}`)
+  lines.push(`Generado el: ${fecha}`)
+  lines.push(``)
+  lines.push(`Tareas: ${tasks.length} (pendientes: ${pending.length}, finalizadas: ${done.length})  ·  Notas: ${notes.length}`)
+  lines.push(sep)
+  lines.push(``)
+
+  if (pending.length > 0 || done.length > 0) {
+    lines.push(`Tareas:`)
+    for (const t of [...pending, ...done]) {
+      const check = t.done ? '☑' : '☐'
+      const prio  = t.priority && PRIORITY[t.priority] ? ` [${PRIORITY[t.priority].label}]` : ''
+      const resp  = t.responsible ? `  Responsable: ${t.responsible}` : ''
+      const due   = t.due_date ? `  Vence: ${fmtD(t.due_date)}` : ''
+      lines.push(`  ${check} ${t.title}${prio}${resp}${due}`)
+      if (t.comments && t.comments.length > 0) {
+        for (const c of t.comments) {
+          lines.push(`      · [${fmtD(c.created_at)} — ${c.author||'Sin identificar'}]: ${c.text}`)
+        }
+      }
+    }
+  } else {
+    lines.push(`(sin tareas registradas)`)
+  }
+
+  if (notes.length > 0) {
+    lines.push(``)
+    lines.push(`Notas:`)
+    for (const n of [...notes].sort((a,b) => (a.created_at||'') < (b.created_at||'') ? -1 : 1)) {
+      lines.push(`  · [${fmtD(n.created_at)} — ${n.author||'Sin identificar'}]: ${n.text}`)
+    }
+  }
+
+  const text = lines.join('\n')
+  const blob = new Blob([text], { type:'text/plain;charset=utf-8' })
+  const a    = document.createElement('a')
+  a.href     = URL.createObjectURL(blob)
+  a.download = `proyecto_${project.name.toLowerCase().replace(/[^a-z0-9]+/g,'_')}_${fecha.replace(/\//g,'-')}.txt`
+  a.click()
+  URL.revokeObjectURL(a.href)
+}
