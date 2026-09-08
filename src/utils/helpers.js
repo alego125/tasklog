@@ -398,8 +398,8 @@ export function exportProjectContent(project) {
       const check = t.done ? '☑' : '☐'
       const prio  = t.priority && PRIORITY[t.priority] ? ` [${PRIORITY[t.priority].label}]` : ''
       const resp  = t.responsible ? `  Responsable: ${t.responsible}` : ''
-      const due   = t.due_date ? `  Vence: ${fmtD(t.due_date)}` : ''
-      lines.push(`  ${check} ${t.title}${prio}${resp}${due}`)
+      const dates = `Creación: ${fmtD(t.created_at)} - Vencimiento: ${t.due_date ? fmtD(t.due_date) : 'No definida'}`
+      lines.push(`  ${check} ${dates} — ${t.title}${prio}${resp}`)
       if (t.comments && t.comments.length > 0) {
         for (const c of t.comments) {
           lines.push(`      · [${fmtD(c.created_at)} — ${c.author||'Sin identificar'}]: ${c.text}`)
@@ -414,7 +414,7 @@ export function exportProjectContent(project) {
     lines.push(``)
     lines.push(`Notas:`)
     for (const n of [...notes].sort((a,b) => (a.created_at||'') < (b.created_at||'') ? -1 : 1)) {
-      lines.push(`  · [${fmtD(n.created_at)} — ${n.author||'Sin identificar'}]: ${n.text}`)
+      lines.push(`  · [${fmtD(n.created_at)}]: ${n.text}`)
     }
   }
 
