@@ -1,77 +1,247 @@
-import { S, STATUS, getStatus, fmtDate, fmtSimpleDate, PRIORITY } from '../utils/helpers.js'
-
-export default function TaskItem({ task, expanded, onToggle, onExpand, onEdit, onDelete, onEditComment, onDeleteComment, onMoveComment, onAddComment, newComment, onNewCommentChange, onConfirm, onEditDueDate, onEditCreatedAt, showProject }) {
-  const status = getStatus(task.due_date, task.done)
-  const cfg    = STATUS[status]
-  const isExp  = expanded === task.id
-  // Más nuevas arriba
-  const sortedComments = [...task.comments].sort((a,b) => (b.created_at||'') < (a.created_at||'') ? -1 : 1)
-
+import {
+  S,
+  STATUS,
+  getStatus,
+  fmtDate,
+  fmtSimpleDate,
+  PRIORITY,
+} from '../utils/helpers.js'
+import Icon from './Icon.jsx'
+import ActionMenu from './ActionMenu.jsx'
+export default function TaskItem({
+  task,
+  expanded,
+  onToggle,
+  onExpand,
+  onEdit,
+  onDelete,
+  onEditComment,
+  onDeleteComment,
+  onMoveComment,
+  onAddComment,
+  newComment,
+  onNewCommentChange,
+  onConfirm,
+  onEditDueDate,
+  onEditCreatedAt,
+  showProject,
+}) {
+  const status = getStatus(task.due_date, task.done),
+    cfg = STATUS[status],
+    isExp = expanded === task.id
+  const sortedComments = [...(task.comments || [])].sort((a, b) =>
+    (b.created_at || '').localeCompare(a.created_at || ''),
+  )
   return (
-    <div id={`task-${task.id}`} style={{ borderTop:'1px solid var(--border)', background:isExp?cfg.bg:'transparent', transition:'background .2s' }}>
-      <div className="ft-task-row" style={{ padding:'11px 16px', display:'flex', alignItems:'center', gap:10, borderLeft:`3px solid ${cfg.border}` }}>
-        {/* Checkbox */}
-        <div
+    <div
+      id={`task-${task.id}`}
+      className={`task-item ${isExp ? 'expanded' : ''}`}
+      data-status={status}
+    >
+      <div className="ft-task-row">
+        <button
+          type="button"
+          className="task-checkbox"
+          role="checkbox"
+          aria-checked={task.done}
+          aria-label={`Completar ${task.title}`}
+          disabled={task._optimistic}
           onClick={() => onToggle(task.id)}
-          style={{ width:21, height:21, borderRadius:5, border:`2px solid ${cfg.badge}`, background:task.done?cfg.badge:'transparent', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0, fontSize:12, color:'#0f172a', fontWeight:900, transition:'all .15s' }}>
-          {task.done && '✓'}
-        </div>
-
-        {/* Title + meta */}
-        <div style={{ flex:1, minWidth:0 }}>
-          <div onClick={() => onExpand(isExp ? null : task.id)} style={{ fontWeight:600, fontSize:14, textDecoration:task.done?'line-through':'none', color:task.done?'var(--text-faint)':(status==='overdue'?cfg.badge:status==='warning'?cfg.badge:'var(--task-title)'), wordBreak:'break-word', overflowWrap:'break-word', cursor:'pointer', fontFamily:"'Plus Jakarta Sans',sans-serif" }} title={isExp?'Colapsar':'Expandir bitácora'}>
+        >
+          <span>{task.done && <Icon name="check" size={13} />}</span>
+        </button>
+        <div className="task-content">
+          <button
+            className="task-title text-control"
+            aria-expanded={isExp}
+            onClick={() => onExpand(isExp ? null : task.id)}
+            style={{
+              textDecoration: task.done ? 'line-through' : undefined,
+              color: task.done ? 'var(--text-muted)' : status === 'overdue' ? 'var(--task-overdue-ink)' : status === 'warning' ? 'var(--task-warning-ink)' : 'var(--task-title)',
+              fontWeight: status === 'overdue' || status === 'warning' ? 700 : undefined,
+            }}
+          >
             {task.title}
-          </div>
-          <div className="ft-task-meta" style={{ fontSize:11, color:'var(--text-muted)', marginTop:2, display:'flex', gap:10, flexWrap:'wrap' }}>
-            {showProject && <span style={{ color:task.projectColor, fontWeight:600 }}>📁 {task.projectName}</span>}
-            {task.priority && PRIORITY[task.priority] && <span style={{ color:PRIORITY[task.priority].color, fontWeight:600 }}>{PRIORITY[task.priority].emoji} {PRIORITY[task.priority].label}</span>}
-            {task.responsible && <span>👤 {task.responsible}</span>}
-            {task.due_date    && <span onClick={()=>onEditDueDate&&onEditDueDate(task)} style={{ cursor:'pointer', textDecoration:'underline dotted' }} title="Editar vencimiento">📅 Vence: {fmtSimpleDate(task.due_date)}</span>}
-<span onClick={()=>onEditCreatedAt&&onEditCreatedAt('task', null, task)} style={{ cursor:'pointer', textDecoration:'underline dotted' }} title="Editar fecha de registro">🗓 Registro: {fmtDate(task.created_at)}</span>
-            <span>💬 {task.comments.length} nota{task.comments.length!==1?'s':''}</span>
+          </button>
+          <div className="ft-task-meta">
+            {showProject && (
+              <span>
+                <Icon name="folder" size={12} />
+                {task.projectName}
+              </span>
+            )}
+            {task.priority && PRIORITY[task.priority] && (
+              <span
+                style={{
+                  color:
+                    task.priority === 'alta'
+                      ? 'var(--status-overdue)'
+                      : task.priority === 'media'
+                        ? 'var(--status-warning)'
+                        : 'var(--status-done)',
+                }}
+              >
+                {PRIORITY[task.priority].label}
+              </span>
+            )}
+            {task.responsible && (
+              <span>
+                <Icon name="user" size={12} />
+                {task.responsible}
+              </span>
+            )}
+            {task.due_date && (
+              <button
+                className="text-control task-date"
+                onClick={() => onEditDueDate?.(task)}
+                title="Editar vencimiento"
+              >
+                <Icon name="calendar" size={12} />
+                <span className="task-date-label">Vencimiento:</span>
+                {fmtSimpleDate(task.due_date)}
+              </button>
+            )}
+            <button
+              className="text-control task-date registration-date"
+              onClick={() => onEditCreatedAt?.('task', null, task)}
+              title="Editar fecha de registro"
+            >
+              <Icon name="clock" size={12} />
+              <span className="task-date-label">Registro:</span>
+              {fmtDate(task.created_at)}
+            </button>
+            <span>
+              <Icon name="message" size={12} />
+              {task.comments_count ?? task.comments?.length ?? 0}
+            </span>
           </div>
         </div>
-
-        {/* Badge */}
-        <div className="ft-task-badge status-badge" style={{ background:`${cfg.badge}22`, border:`1px solid ${cfg.badge}55`, color:cfg.badge, padding:'3px 9px', borderRadius:20, fontSize:11, fontWeight:600, whiteSpace:'nowrap', flexShrink:0 }}>
+        <span
+          className="status-badge"
+          style={{ '--status-color': cfg.badge, '--status-bg': cfg.bg }}
+        >
           {cfg.label}
-        </div>
-
-        {/* Actions */}
-        <div className="ft-task-actions" style={{ display:'flex', gap:5, flexShrink:0 }}>
-          <button onClick={() => onEdit(task)} style={S.iconBtn} title="Editar">✏️</button>
-          <button onClick={() => onConfirm(`¿Eliminar "${task.title}"?`, () => onDelete(task.projectId, task.id))} style={{ ...S.iconBtn, borderColor:'#dc262633' }} title="Eliminar">🗑️</button>
-          <button onClick={() => onExpand(isExp ? null : task.id)} style={{ ...S.iconBtn, fontSize:11 }}>{isExp?'▲':'▼'}</button>
+        </span>
+        <div className="ft-task-actions">
+          <button
+            className="icon-button"
+            aria-label={isExp ? 'Colapsar bitácora' : 'Expandir bitácora'}
+            aria-expanded={isExp}
+            onClick={() => onExpand(isExp ? null : task.id)}
+          >
+            <Icon name={isExp ? 'up' : 'down'} size={14} />
+          </button>
+          <ActionMenu
+            label={`Acciones de ${task.title}`}
+            items={[
+              {
+                label: 'Editar tarea',
+                icon: 'edit',
+                onClick: () => onEdit(task),
+              },
+              {
+                label: 'Editar vencimiento',
+                icon: 'calendar',
+                onClick: () => onEditDueDate?.(task),
+              },
+              {
+                label: 'Editar fecha de registro',
+                icon: 'clock',
+                onClick: () => onEditCreatedAt?.('task', null, task),
+              },
+              {
+                label: isExp ? 'Cerrar bitácora' : 'Abrir bitácora',
+                icon: 'message',
+                onClick: () => onExpand(isExp ? null : task.id),
+              },
+              {
+                label: 'Eliminar tarea',
+                icon: 'trash',
+                danger: true,
+                onClick: () =>
+                  onConfirm(`¿Eliminar "${task.title}"?`, () =>
+                    onDelete(task.projectId, task.id),
+                  ),
+              },
+            ]}
+          />
         </div>
       </div>
-
-      {/* Bitácora expandida */}
       {isExp && (
-        <div className="ft-task-comments" style={{ padding:'0 16px 14px 50px', borderLeft:`3px solid ${cfg.border}` }}>
-          <div style={{ fontSize:11, color:'var(--text-secondary)', fontWeight:700, marginBottom:8, textTransform:'uppercase', letterSpacing:1 }}>💬 Bitácora de la tarea</div>
-          {task.comments.length === 0 && <div style={{ fontSize:13, color:'var(--text-faint)', marginBottom:10 }}>Sin notas aún.</div>}
-          {sortedComments.map(c => (
-            <div key={c.id} style={{ background:'var(--bg-elevated)', border:'1px solid var(--border-soft)', borderRadius:8, padding:'9px 12px', marginBottom:7, display:'flex', gap:10, alignItems:'flex-start' }}>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:3 }}>{c.author||'—'} · <span onClick={()=>onEditCreatedAt&&onEditCreatedAt('comment', task.id, c)} style={{ cursor:'pointer', textDecoration:'underline dotted', color:'var(--text-secondary)' }} title="Editar fecha de registro">{fmtDate(c.created_at)}</span></div>
-                <div style={{ fontSize:13, color:'var(--text-content)' }}>{c.text}</div>
+        <div className="ft-task-comments">
+          <div className="section-label">Bitácora de la tarea</div>
+          {(task.comments_count ?? task.comments?.length ?? 0) === 0 && (
+            <p
+              style={{
+                fontSize: 12,
+                color: 'var(--text-muted)',
+                marginBottom: 12,
+              }}
+            >
+              Todavía no hay notas. Agregá la primera actualización.
+            </p>
+          )}
+          {sortedComments.map((c) => (
+            <div key={c.id} className="comment-card">
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="comment-meta">
+                  {c.author || '—'} ·{' '}
+                  <button
+                    className="text-control"
+                    title="Editar fecha de registro"
+                    onClick={() => onEditCreatedAt?.('comment', task.id, c)}
+                  >
+                    {fmtDate(c.created_at)}
+                  </button>
+                </div>
+                <div className="comment-text">{c.text}</div>
               </div>
-              <div style={{ display:'flex', gap:4 }}>
-                <button onClick={() => onMoveComment(c, task.projectId, task.id)} title="Mover a proyecto" style={{ ...S.iconBtn, borderColor:'var(--accent)44', color:'var(--accent)' }}>🔀</button>
-                <button onClick={() => onEditComment(task.projectId, task.id, c)} style={S.iconBtn} title="Editar">✏️</button>
-                <button onClick={() => onConfirm('¿Eliminar esta nota?', () => onDeleteComment(task.projectId, task.id, c.id))} style={{ ...S.iconBtn, borderColor:'#dc262633' }} title="Eliminar">🗑️</button>
-              </div>
+              <ActionMenu
+                label="Acciones de la nota"
+                items={[
+                  {
+                    label: 'Mover a proyecto',
+                    icon: 'move',
+                    onClick: () => onMoveComment(c, task.projectId, task.id),
+                  },
+                  {
+                    label: 'Editar nota',
+                    icon: 'edit',
+                    onClick: () => onEditComment(task.projectId, task.id, c),
+                  },
+                  {
+                    label: 'Eliminar nota',
+                    icon: 'trash',
+                    danger: true,
+                    onClick: () =>
+                      onConfirm('¿Eliminar esta nota?', () =>
+                        onDeleteComment(task.projectId, task.id, c.id),
+                      ),
+                  },
+                ]}
+              />
             </div>
           ))}
-          <div style={{ display:'flex', gap:8, marginTop:6 }}>
+          <div className="inline-form">
             <input
-              placeholder="Agregar nota..."
+              aria-label={`Nueva nota para ${task.title}`}
+              placeholder="Escribí una actualización…"
               value={newComment || ''}
-              onChange={e => onNewCommentChange(task.id, e.target.value)}
-              onKeyDown={e => e.key==='Enter' && onAddComment(task.projectId, task.id, newComment || '')}
-              style={{ ...S.input, flex:1 }}
+              onChange={(e) => onNewCommentChange(task.id, e.target.value)}
+              onKeyDown={(e) =>
+                e.key === 'Enter' &&
+                onAddComment(task.projectId, task.id, newComment || '')
+              }
+              style={{ ...S.input, flex: 1 }}
             />
-            <button onClick={() => onAddComment(task.projectId, task.id, newComment || '')} style={S.btnPrimary}>Agregar</button>
+            <button
+              style={S.btnPrimary}
+              onClick={() =>
+                onAddComment(task.projectId, task.id, newComment || '')
+              }
+            >
+              Agregar
+            </button>
           </div>
         </div>
       )}

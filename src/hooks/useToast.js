@@ -7,12 +7,12 @@ export function useToast() {
 
   const toast = useCallback((message, type = 'success', duration = 3500) => {
     const id = ++_id
-    setToasts(prev => [...prev, { id, message, type }])
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), duration)
+    setToasts((prev) => [...prev, { id, message, type }])
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), duration)
   }, [])
 
-  const dismiss = useCallback(id => {
-    setToasts(prev => prev.filter(t => t.id !== id))
+  const dismiss = useCallback((id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id))
   }, [])
 
   return { toasts, toast, dismiss }

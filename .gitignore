@@ -4,3 +4,7 @@ dist/
 .env
 .env.txt
 graphify-out/
+test-results/
+playwright-report/
+coverage/
+.env.*.local

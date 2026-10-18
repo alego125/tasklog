@@ -1,84 +1,129 @@
+import Icon from './Icon.jsx'
 import { useState, useEffect } from 'react'
 import { useProjects } from '../hooks/useProjects.js'
 import { useToast } from '../hooks/useToast.js'
 import { api, isNetworkError } from '../hooks/useApi.js'
-import { S, COLORS, PRIORITY, exportMeetingPrompt, exportMeetingListing } from '../utils/helpers.js'
+import { S, COLORS, PRIORITY } from '../utils/helpers.js'
+import {
+  exportMeetingPrompt,
+  exportMeetingListing,
+  exportProjectContent,
+} from '../utils/exports.js'
 import ProjectCard from './ProjectCard.jsx'
 import Toast from './Toast.jsx'
-import { Confirm, EditProject, EditTask, EditComment, EditDueDateModal, EditCreatedAtModal, MoveNoteModal, MoveCommentModal, ParticipantsModal } from './Modals.jsx'
+import {
+  Confirm,
+  EditProject,
+  EditTask,
+  EditComment,
+  EditDueDateModal,
+  EditCreatedAtModal,
+  MoveNoteModal,
+  MoveCommentModal,
+  ParticipantsModal,
+} from './Modals.jsx'
 
 export default function MeetingBoard({ meeting, onBack }) {
   const proj = useProjects(meeting.id)
   const { toasts, toast, dismiss } = useToast()
-  const errMsg = e => isNetworkError(e) || e?.message==='SIN_CONEXION'
-    ? '⚠️ Sin conexión con la base de datos. La información no fue guardada.'
-    : 'Error al guardar. Intentá nuevamente.'
+  const errMsg = (e) =>
+    isNetworkError(e) || e?.message === 'SIN_CONEXION'
+      ? 'Sin conexión con la base de datos. La información no fue guardada.'
+      : e?.message || 'Error al guardar. Intentá nuevamente.'
 
   const [collapsedProjects, setCollapsedProjects] = useState({})
-  const [expanded,          setExpanded]          = useState(null)
-  const [newComment,        setNewComment]        = useState({})
-  const [newProjNote,       setNewProjNote]       = useState({})
-  const [newTaskFor,        setNewTaskFor]        = useState(null)
-  const [newTask,           setNewTask]           = useState({ title:'', responsible:'', due_date:'' })
-  const [newProjOpen,       setNewProjOpen]       = useState(false)
-  const [newProjName,       setNewProjName]       = useState('')
-  const [newProjColor,      setNewProjColor]      = useState(COLORS[0])
+  const [expandingProjects, setExpandingProjects] = useState(false)
+  const [expanded, setExpanded] = useState(null)
+  const [newComment, setNewComment] = useState({})
+  const [newProjNote, setNewProjNote] = useState({})
+  const [newTaskFor, setNewTaskFor] = useState(null)
+  const [newTask, setNewTask] = useState({
+    title: '',
+    responsible: '',
+    due_date: '',
+  })
+  const [newProjOpen, setNewProjOpen] = useState(false)
+  const [newProjName, setNewProjName] = useState('')
+  const [newProjColor, setNewProjColor] = useState(COLORS[0])
 
-  const [editProject,   setEditProject]   = useState(null)
-  const [editTask,      setEditTask]      = useState(null)
-  const [editComment,   setEditComment]   = useState(null)
-  const [editNote,      setEditNote]      = useState(null)
-  const [editDueDate,   setEditDueDate]   = useState(null)
+  const [editProject, setEditProject] = useState(null)
+  const [editTask, setEditTask] = useState(null)
+  const [editComment, setEditComment] = useState(null)
+  const [editNote, setEditNote] = useState(null)
+  const [editDueDate, setEditDueDate] = useState(null)
   const [editCreatedAt, setEditCreatedAt] = useState(null)
-  const [confirm,       setConfirm]       = useState(null)
-  const [moveNote,      setMoveNote]      = useState(null)
-  const [moveComment,   setMoveComment]   = useState(null)
+  const [confirm, setConfirm] = useState(null)
+  const [moveNote, setMoveNote] = useState(null)
+  const [moveComment, setMoveComment] = useState(null)
   const [participantsOpen, setParticipantsOpen] = useState(false)
-  const [exporting,     setExporting]     = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [exportingListing, setExportingListing] = useState(false)
-  const [archivedView,  setArchivedView]  = useState(false)
+  const [archivedView, setArchivedView] = useState(false)
   const [filterPriorities, setFilterPriorities] = useState([])
   const [highlightProjectId, setHighlightProjectId] = useState(null)
 
   useEffect(() => {
     proj.loadProjects().then(() => {
-      setCollapsedProjects(prev => {
+      setCollapsedProjects((prev) => {
         const next = { ...prev }
-        proj.projects.forEach(p => { if (!(p.id in next)) next[p.id] = true })
+        proj.projects.forEach((p) => {
+          if (!(p.id in next)) next[p.id] = true
+        })
         return next
       })
     })
   }, [meeting.id])
 
-  const showConfirm = (msg, action, opts={}) => setConfirm({ msg, action, ...opts })
+  useEffect(() => {
+    setCollapsedProjects((prev) => {
+      const next = { ...prev }
+      for (const p of proj.projects) if (!(p.id in next)) next[p.id] = true
+      return next
+    })
+  }, [proj.projects])
+  const showConfirm = (msg, action, opts = {}) =>
+    setConfirm({
+      msg,
+      action: () =>
+        Promise.resolve()
+          .then(action)
+          .catch((e) => toast(errMsg(e), 'error')),
+      ...opts,
+    })
 
-  const togglePriority = p => setFilterPriorities(prev => prev.includes(p) ? prev.filter(x=>x!==p) : [...prev, p])
+  const togglePriority = (p) =>
+    setFilterPriorities((prev) =>
+      prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p],
+    )
 
   // ── Llevar a un tema recién creado hasta la vista ────────────
-  const scrollToNewTema = pId => {
+  const scrollToNewTema = (pId) => {
     // Un filtro por prioridad activo puede ocultar el tema recién creado
     // (todavía sin tareas), igual que pasa con los filtros en Proyectos.
     setArchivedView(false)
     setFilterPriorities([])
     setTimeout(() => {
-      setCollapsedProjects(c => ({ ...c, [pId]: false }))
-      const el = document.getElementById('project-'+pId)
-      if (el) el.scrollIntoView({ behavior:'smooth', block:'start' })
+      setCollapsedProjects((c) => ({ ...c, [pId]: false }))
+      const el = document.getElementById('project-' + pId)
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
       setHighlightProjectId(pId)
-      setTimeout(() => setHighlightProjectId(h => h===pId ? null : h), 2200)
+      setTimeout(
+        () => setHighlightProjectId((h) => (h === pId ? null : h)),
+        2200,
+      )
     }, 150)
   }
 
   // Si al editar una tarea (p.ej. su fecha) el tema cambia de categoría de
   // vencimiento, su tarjeta puede reordenarse y salir de la vista actual.
   // Si eso pasa, hacemos scroll para que vuelva a quedar visible.
-  const keepTemaInView = pId => {
+  const keepTemaInView = (pId) => {
     setTimeout(() => {
-      const el = document.getElementById('project-'+pId)
+      const el = document.getElementById('project-' + pId)
       if (!el) return
       const rect = el.getBoundingClientRect()
       const visible = rect.top < window.innerHeight - 40 && rect.bottom > 100
-      if (!visible) el.scrollIntoView({ behavior:'smooth', block:'start' })
+      if (!visible) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }, 150)
   }
 
@@ -88,21 +133,21 @@ export default function MeetingBoard({ meeting, onBack }) {
       const { temas } = await api.getMeetingExport(meeting.id)
       exportMeetingListing(meeting, temas)
       toast('Listado descargado')
-    } catch(e) {
+    } catch (e) {
       toast(errMsg(e), 'error')
     } finally {
       setExportingListing(false)
     }
   }
 
-  const doExportMinuta = async participants => {
+  const doExportMinuta = async (participants) => {
     setParticipantsOpen(false)
     setExporting(true)
     try {
       const { temas } = await api.getMeetingExport(meeting.id)
       exportMeetingPrompt(meeting, temas, participants)
       toast('Prompt de minuta descargado')
-    } catch(e) {
+    } catch (e) {
       toast(errMsg(e), 'error')
     } finally {
       setExporting(false)
@@ -112,212 +157,847 @@ export default function MeetingBoard({ meeting, onBack }) {
   return (
     <div>
       {/* Modales */}
-      {confirm       && <Confirm msg={confirm.msg} onOk={()=>{confirm.action();setConfirm(null)}} onCancel={()=>setConfirm(null)} title={confirm.title} okLabel={confirm.okLabel} okColor={confirm.okColor} />}
-      {editProject   && <EditProject project={editProject} onSave={(name,color) => { proj.doSaveEditProject(editProject,name,color).then(()=>toast('Tema actualizado')).catch(e=>toast(errMsg(e),'error')); setEditProject(null) }} onClose={()=>setEditProject(null)} />}
-      {editTask      && <EditTask task={editTask.task} projects={proj.projects} onSave={form => { const targetPId = form.project_id ? Number(form.project_id) : editTask.pId; proj.doSaveEditTask(editTask.pId,editTask.task.id,form).then(()=>{ toast('Tarea actualizada'); keepTemaInView(targetPId) }).catch(e=>toast(errMsg(e),'error')); setEditTask(null) }} onClose={()=>setEditTask(null)} />}
-      {editComment   && <EditComment comment={editComment.comment} onSave={data => { proj.doSaveEditComment(editComment.pId,editComment.tId,editComment.comment.id,data).then(()=>toast('Nota actualizada')).catch(e=>toast(errMsg(e),'error')); setEditComment(null) }} onClose={()=>setEditComment(null)} />}
-      {editNote      && <EditComment comment={editNote.note} onSave={data => { proj.doSaveEditNote(editNote.pId,editNote.note.id,data).then(()=>toast('Nota actualizada')).catch(e=>toast(errMsg(e),'error')); setEditNote(null) }} onClose={()=>setEditNote(null)} />}
-      {editDueDate   && <EditDueDateModal task={editDueDate.task} onSave={due_date => { proj.doSaveEditTask(editDueDate.pId,editDueDate.task.id,{title:editDueDate.task.title,responsible:editDueDate.task.responsible||'',due_date}).then(()=>{ toast('Fecha actualizada'); keepTemaInView(editDueDate.pId) }).catch(e=>toast(errMsg(e),'error')); setEditDueDate(null) }} onClose={()=>setEditDueDate(null)} />}
-      {editCreatedAt && editCreatedAt.type==='task'    && <EditCreatedAtModal item={editCreatedAt.item} label={editCreatedAt.item.title} onSave={d => { proj.doSaveEditTask(editCreatedAt.pId,editCreatedAt.item.id,{title:editCreatedAt.item.title,responsible:editCreatedAt.item.responsible||'',due_date:editCreatedAt.item.due_date||'',created_at:d}).then(()=>toast('Fecha actualizada')).catch(e=>toast(errMsg(e),'error')); setEditCreatedAt(null) }} onClose={()=>setEditCreatedAt(null)} />}
-      {editCreatedAt && editCreatedAt.type==='comment' && <EditCreatedAtModal item={editCreatedAt.item} label={editCreatedAt.item.text?.slice(0,60)} onSave={d => { proj.doSaveEditComment(editCreatedAt.pId,editCreatedAt.tId,editCreatedAt.item.id,{text:editCreatedAt.item.text,created_at:d}).then(()=>toast('Fecha actualizada')).catch(e=>toast(errMsg(e),'error')); setEditCreatedAt(null) }} onClose={()=>setEditCreatedAt(null)} />}
-      {editCreatedAt && editCreatedAt.type==='note'    && <EditCreatedAtModal item={editCreatedAt.item} label={editCreatedAt.item.text?.slice(0,60)} onSave={d => { proj.doSaveEditNote(editCreatedAt.pId,editCreatedAt.item.id,{text:editCreatedAt.item.text,created_at:d}).then(()=>toast('Fecha actualizada')).catch(e=>toast(errMsg(e),'error')); setEditCreatedAt(null) }} onClose={()=>setEditCreatedAt(null)} />}
-      {moveNote      && <MoveNoteModal note={moveNote.note} tasks={proj.allTasks.filter(t=>!t.done)} onMove={taskId => { proj.doMoveNoteToTask(moveNote.note,moveNote.pId,taskId,proj.allTasks).then(()=>toast('Nota movida a tarea')).catch(e=>toast(errMsg(e),'error')); setMoveNote(null) }} onClose={()=>setMoveNote(null)} />}
-      {moveComment   && <MoveCommentModal comment={moveComment.comment} projects={proj.projects} currentProjectId={moveComment.pId} onMove={projectId => { proj.doMoveCommentToProject(moveComment.comment,moveComment.pId,moveComment.tId,projectId).then(()=>toast('Nota movida al tema')).catch(e=>toast(errMsg(e),'error')); setMoveComment(null) }} onClose={()=>setMoveComment(null)} />}
-      {participantsOpen && <ParticipantsModal onClose={()=>setParticipantsOpen(false)} onGenerate={doExportMinuta} />}
+      {confirm && (
+        <Confirm
+          msg={confirm.msg}
+          onOk={() => {
+            confirm.action()
+            setConfirm(null)
+          }}
+          onCancel={() => setConfirm(null)}
+          title={confirm.title}
+          okLabel={confirm.okLabel}
+          okColor={confirm.okColor}
+        />
+      )}
+      {editProject && (
+        <EditProject
+          project={editProject}
+          onSave={(name, color) => {
+            proj
+              .doSaveEditProject(editProject, name, color)
+              .then(() => toast('Tema actualizado'))
+              .catch((e) => toast(errMsg(e), 'error'))
+            setEditProject(null)
+          }}
+          onClose={() => setEditProject(null)}
+        />
+      )}
+      {editTask && (
+        <EditTask
+          task={editTask.task}
+          projects={proj.projects}
+          onSave={(form) => {
+            const targetPId = form.project_id
+              ? Number(form.project_id)
+              : editTask.pId
+            proj
+              .doSaveEditTask(editTask.pId, editTask.task.id, form)
+              .then(() => {
+                toast('Tarea actualizada')
+                keepTemaInView(targetPId)
+              })
+              .catch((e) => toast(errMsg(e), 'error'))
+            setEditTask(null)
+          }}
+          onClose={() => setEditTask(null)}
+        />
+      )}
+      {editComment && (
+        <EditComment
+          comment={editComment.comment}
+          onSave={(data) => {
+            proj
+              .doSaveEditComment(
+                editComment.pId,
+                editComment.tId,
+                editComment.comment.id,
+                data,
+              )
+              .then(() => toast('Nota actualizada'))
+              .catch((e) => toast(errMsg(e), 'error'))
+            setEditComment(null)
+          }}
+          onClose={() => setEditComment(null)}
+        />
+      )}
+      {editNote && (
+        <EditComment
+          comment={editNote.note}
+          onSave={(data) => {
+            proj
+              .doSaveEditNote(editNote.pId, editNote.note.id, data)
+              .then(() => toast('Nota actualizada'))
+              .catch((e) => toast(errMsg(e), 'error'))
+            setEditNote(null)
+          }}
+          onClose={() => setEditNote(null)}
+        />
+      )}
+      {editDueDate && (
+        <EditDueDateModal
+          task={editDueDate.task}
+          onSave={(due_date) => {
+            proj
+              .doSaveEditTask(editDueDate.pId, editDueDate.task.id, {
+                title: editDueDate.task.title,
+                responsible: editDueDate.task.responsible || '',
+                due_date,
+              })
+              .then(() => {
+                toast('Fecha actualizada')
+                keepTemaInView(editDueDate.pId)
+              })
+              .catch((e) => toast(errMsg(e), 'error'))
+            setEditDueDate(null)
+          }}
+          onClose={() => setEditDueDate(null)}
+        />
+      )}
+      {editCreatedAt && editCreatedAt.type === 'task' && (
+        <EditCreatedAtModal
+          item={editCreatedAt.item}
+          label={editCreatedAt.item.title}
+          onSave={(d) => {
+            proj
+              .doSaveEditTask(editCreatedAt.pId, editCreatedAt.item.id, {
+                title: editCreatedAt.item.title,
+                responsible: editCreatedAt.item.responsible || '',
+                due_date: editCreatedAt.item.due_date || '',
+                created_at: d,
+              })
+              .then(() => toast('Fecha actualizada'))
+              .catch((e) => toast(errMsg(e), 'error'))
+            setEditCreatedAt(null)
+          }}
+          onClose={() => setEditCreatedAt(null)}
+        />
+      )}
+      {editCreatedAt && editCreatedAt.type === 'comment' && (
+        <EditCreatedAtModal
+          item={editCreatedAt.item}
+          label={editCreatedAt.item.text?.slice(0, 60)}
+          onSave={(d) => {
+            proj
+              .doSaveEditComment(
+                editCreatedAt.pId,
+                editCreatedAt.tId,
+                editCreatedAt.item.id,
+                { text: editCreatedAt.item.text, created_at: d },
+              )
+              .then(() => toast('Fecha actualizada'))
+              .catch((e) => toast(errMsg(e), 'error'))
+            setEditCreatedAt(null)
+          }}
+          onClose={() => setEditCreatedAt(null)}
+        />
+      )}
+      {editCreatedAt && editCreatedAt.type === 'note' && (
+        <EditCreatedAtModal
+          item={editCreatedAt.item}
+          label={editCreatedAt.item.text?.slice(0, 60)}
+          onSave={(d) => {
+            proj
+              .doSaveEditNote(editCreatedAt.pId, editCreatedAt.item.id, {
+                text: editCreatedAt.item.text,
+                created_at: d,
+              })
+              .then(() => toast('Fecha actualizada'))
+              .catch((e) => toast(errMsg(e), 'error'))
+            setEditCreatedAt(null)
+          }}
+          onClose={() => setEditCreatedAt(null)}
+        />
+      )}
+      {moveNote && (
+        <MoveNoteModal
+          note={moveNote.note}
+          tasks={proj.allTasks.filter((t) => !t.done)}
+          onMove={(taskId) => {
+            proj
+              .doMoveNoteToTask(
+                moveNote.note,
+                moveNote.pId,
+                taskId,
+                proj.allTasks,
+              )
+              .then(() => toast('Nota movida a tarea'))
+              .catch((e) => toast(errMsg(e), 'error'))
+            setMoveNote(null)
+          }}
+          onClose={() => setMoveNote(null)}
+        />
+      )}
+      {moveComment && (
+        <MoveCommentModal
+          comment={moveComment.comment}
+          projects={proj.projects}
+          currentProjectId={moveComment.pId}
+          onMove={(projectId) => {
+            proj
+              .doMoveCommentToProject(
+                moveComment.comment,
+                moveComment.pId,
+                moveComment.tId,
+                projectId,
+              )
+              .then(() => toast('Nota movida al tema'))
+              .catch((e) => toast(errMsg(e), 'error'))
+            setMoveComment(null)
+          }}
+          onClose={() => setMoveComment(null)}
+        />
+      )}
+      {participantsOpen && (
+        <ParticipantsModal
+          onClose={() => setParticipantsOpen(false)}
+          onGenerate={doExportMinuta}
+        />
+      )}
 
       {/* Header */}
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10, marginBottom:18 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          <button onClick={onBack} style={S.btnSecondary}>← Volver a Reuniones</button>
-          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <div style={{ width:9, height:9, borderRadius:'50%', background:meeting.color }} />
-            <div className="proj-title" style={{ fontSize:18 }}>{meeting.name}</div>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 10,
+          marginBottom: 12,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button onClick={onBack} style={S.btnSecondary}>
+            ← Volver a Reuniones
+          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div
+              style={{
+                width: 9,
+                height: 9,
+                borderRadius: '50%',
+                background: meeting.color,
+              }}
+            />
+            <div className="proj-title" style={{ fontSize: 18 }}>
+              {meeting.name}
+            </div>
           </div>
         </div>
-        <div style={{ display:'flex', gap:8 }}>
-          <button onClick={() => { if (!archivedView) proj.loadArchived(); setArchivedView(v => !v) }} style={S.btnSecondary}>
-            {archivedView ? '← Volver a temas' : '📦 Ver temas archivados'}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => {
+              if (!archivedView) proj.loadArchived()
+              setArchivedView((v) => !v)
+            }}
+            style={S.btnSecondary}
+          >
+            {archivedView ? '← Volver a temas' : 'Ver temas archivados'}
           </button>
-          {!archivedView && <button onClick={() => setNewProjOpen(v=>!v)} style={S.btnPrimary}>+ Nuevo Tema</button>}
           {!archivedView && (
-            <button onClick={doExportListing} disabled={exportingListing} style={{ ...S.btnSecondary, opacity:exportingListing?0.6:1 }}>
-              {exportingListing ? '⏳ Generando...' : '📋 Descargar listado'}
+            <button
+              onClick={() => setNewProjOpen((v) => !v)}
+              style={S.btnPrimary}
+            >
+              + Nuevo Tema
             </button>
           )}
           {!archivedView && (
-            <button onClick={() => setParticipantsOpen(true)} disabled={exporting} style={{ ...S.btnSecondary, opacity:exporting?0.6:1 }}>
+            <button
+              onClick={doExportListing}
+              disabled={exportingListing}
+              style={{ ...S.btnSecondary, opacity: exportingListing ? 0.6 : 1 }}
+            >
+              {exportingListing ? '⏳ Generando...' : 'Descargar listado'}
+            </button>
+          )}
+          {!archivedView && (
+            <button
+              onClick={() => setParticipantsOpen(true)}
+              disabled={exporting}
+              style={{ ...S.btnSecondary, opacity: exporting ? 0.6 : 1 }}
+            >
               {exporting ? '⏳ Generando...' : '📄 Descargar prompt de minuta'}
             </button>
           )}
         </div>
       </div>
 
-      {!archivedView && <>
-      {/* Filtro por prioridad — exclusivo de esta vista, no afecta el resto de la app */}
-      <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', marginBottom:16 }}>
-        <span style={{ fontSize:12, color:'var(--text-faint)', fontWeight:600 }}>Filtrar por prioridad:</span>
-        {Object.entries(PRIORITY).map(([key, p]) => {
-          const active = filterPriorities.includes(key)
-          return (
-            <button key={key} onClick={() => togglePriority(key)}
-              style={{
-                display:'flex', alignItems:'center', gap:5, padding:'4px 12px', borderRadius:20, fontSize:12, fontWeight:600, cursor:'pointer',
-                border:`1px solid ${active ? p.color : 'var(--border-soft)'}`,
-                background: active ? `${p.color}22` : 'var(--bg-elevated)',
-                color: active ? p.color : 'var(--text-muted)',
-              }}>
-              {p.emoji} {p.label}
-            </button>
-          )
-        })}
-        {(() => {
-          const active = filterPriorities.includes('none')
-          return (
-            <button onClick={() => togglePriority('none')}
-              style={{
-                display:'flex', alignItems:'center', gap:5, padding:'4px 12px', borderRadius:20, fontSize:12, fontWeight:600, cursor:'pointer',
-                border:`1px solid ${active ? 'var(--text-muted)' : 'var(--border-soft)'}`,
-                background: active ? 'var(--bg-surface)' : 'var(--bg-elevated)',
-                color: active ? 'var(--text-secondary)' : 'var(--text-muted)',
-              }}>
-              ⚪ Sin prioridad
-            </button>
-          )
-        })()}
-        {filterPriorities.length > 0 && (
-          <button onClick={() => setFilterPriorities([])} style={{ ...S.btnSecondary, padding:'4px 10px', fontSize:12 }}>Limpiar filtro</button>
-        )}
-      </div>
-
-      {/* Colapsar / Expandir todos los temas */}
-      {proj.sortedProjects.length > 0 && (
-        <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:10 }}>
-          <button
-            onClick={() => {
-              const allCollapsed = proj.sortedProjects.every(p => collapsedProjects[p.id])
-              const next = {}
-              if (!allCollapsed) proj.sortedProjects.forEach(p => { next[p.id] = true })
-              setCollapsedProjects(next)
+      {!archivedView && (
+        <>
+          {/* Filtro por prioridad — exclusivo de esta vista, no afecta el resto de la app */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              flexWrap: 'wrap',
+              marginBottom: 16,
             }}
-            style={{ ...S.btnSecondary, padding:'5px 12px', fontSize:12, display:'flex', alignItems:'center', gap:5 }}
           >
-            {proj.sortedProjects.every(p => collapsedProjects[p.id]) ? '▼ Expandir todos' : '▲ Colapsar todos'}
-          </button>
-        </div>
-      )}
-
-      {/* Nuevo tema */}
-      {newProjOpen && (
-        <div style={{ background:'var(--bg-elevated)', border:'1px solid var(--border-soft)', borderRadius:12, padding:14, marginBottom:16, display:'flex', gap:10, flexWrap:'wrap', alignItems:'center' }}>
-          <input placeholder="Nombre del tema..." value={newProjName} onChange={e=>setNewProjName(e.target.value)}
-            onKeyDown={e => {
-              if (e.key==='Enter' && newProjName.trim()) {
-                proj.doAddProject(newProjName, newProjColor).then(project => { setNewProjName(''); setNewProjOpen(false); toast('Tema creado'); scrollToNewTema(project.id) }).catch(e => toast(errMsg(e),'error'))
-              }
-            }}
-            style={{ ...S.input, flex:1 }} autoFocus />
-          <div style={{ display:'flex', gap:6 }}>
-            {COLORS.map(c => <div key={c} onClick={() => setNewProjColor(c)} style={{ width:22, height:22, borderRadius:'50%', background:c, cursor:'pointer', border:newProjColor===c?'3px solid white':'3px solid transparent', boxSizing:'border-box' }} />)}
+            <span
+              style={{
+                fontSize: 12,
+                color: 'var(--text-faint)',
+                fontWeight: 600,
+              }}
+            >
+              Filtrar por prioridad:
+            </span>
+            {Object.entries(PRIORITY).map(([key, p]) => {
+              const active = filterPriorities.includes(key)
+              return (
+                <button
+                  key={key}
+                  onClick={() => togglePriority(key)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    padding: '4px 12px',
+                    borderRadius: 20,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    border: `1px solid ${active ? p.color : 'var(--border-soft)'}`,
+                    background: active ? `${p.color}22` : 'var(--bg-elevated)',
+                    color: active ? p.color : 'var(--text-muted)',
+                  }}
+                >
+                  {p.emoji} {p.label}
+                </button>
+              )
+            })}
+            {(() => {
+              const active = filterPriorities.includes('none')
+              return (
+                <button
+                  onClick={() => togglePriority('none')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    padding: '4px 12px',
+                    borderRadius: 20,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    border: `1px solid ${active ? 'var(--text-muted)' : 'var(--border-soft)'}`,
+                    background: active
+                      ? 'var(--bg-surface)'
+                      : 'var(--bg-elevated)',
+                    color: active
+                      ? 'var(--text-secondary)'
+                      : 'var(--text-muted)',
+                  }}
+                >
+                  ⚪ Sin prioridad
+                </button>
+              )
+            })()}
+            {filterPriorities.length > 0 && (
+              <button
+                onClick={() => setFilterPriorities([])}
+                style={{ ...S.btnSecondary, padding: '4px 10px', fontSize: 12 }}
+              >
+                Limpiar filtro
+              </button>
+            )}
           </div>
-          <button onClick={() => { proj.doAddProject(newProjName,newProjColor).then(project=>{ setNewProjName(''); setNewProjOpen(false); toast('Tema creado'); scrollToNewTema(project.id) }).catch(e=>toast(errMsg(e),'error')) }} style={S.btnPrimary}>Crear</button>
-          <button onClick={() => setNewProjOpen(false)} style={S.btnSecondary}>Cancelar</button>
-        </div>
-      )}
 
-      {proj.loading && <div style={{ textAlign:'center', color:'var(--text-muted)', padding:30 }}>Cargando temas...</div>}
-      {proj.error && <div style={{ textAlign:'center', color:'#ef4444', padding:30 }}>{proj.error}</div>}
-      {!proj.loading && !proj.error && proj.sortedProjects.length === 0 && (
-        <div style={{ textAlign:'center', color:'var(--text-faint)', fontSize:14, padding:40 }}>Todavía no hay temas cargados en esta reunión.</div>
-      )}
+          {/* Colapsar / Expandir todos los temas */}
+          {proj.sortedProjects.length > 0 && (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                marginBottom: 10,
+              }}
+            >
+              <button
+                disabled={expandingProjects}
+                aria-busy={expandingProjects}
+                onClick={async () => {
+                  if (expandingProjects) return
+                  const projects = proj.sortedProjects
+                  const allCollapsed = projects.every(p => collapsedProjects[p.id])
+                  if (!allCollapsed) {
+                    setCollapsedProjects(prev => ({...prev, ...Object.fromEntries(projects.map(p => [p.id, true]))}))
+                    return
+                  }
+                  setExpandingProjects(true)
+                  try {
+                    await proj.ensureAllHistory()
+                    setCollapsedProjects(prev => ({...prev, ...Object.fromEntries(projects.map(p => [p.id, false]))}))
+                  } catch (e) {
+                    toast(errMsg(e), 'error')
+                  } finally {
+                    setExpandingProjects(false)
+                  }
+                }}
+                style={{
+                  ...S.btnSecondary,
+                  padding: '5px 12px',
+                  fontSize: 12,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                }}
+              >
+                {expandingProjects ? 'Cargando…' : proj.sortedProjects.every((p) => collapsedProjects[p.id])
+                  ? '▼ Expandir todos'
+                  : '▲ Colapsar todos'}
+              </button>
+            </div>
+          )}
 
-      {proj.sortedProjects.map(project => {
-        const ptasks = filterPriorities.length > 0
-          ? project.tasks.filter(t => filterPriorities.includes(t.priority) || (filterPriorities.includes('none') && !t.priority))
-          : project.tasks
-        if (filterPriorities.length > 0 && ptasks.length === 0) return null
-        return (
-        <ProjectCard
-          key={project.id}
-          project={project}
-          filteredTasks={ptasks}
-          highlighted={project.id === highlightProjectId}
-          hideMembers
-          collapsed={collapsedProjects[project.id]}
-          onToggleCollapse={id => setCollapsedProjects(c=>({...c,[id]:!c[id]}))}
-          expanded={expanded}
-          onExpand={setExpanded}
-          onToggleTask={id => { const pId = proj.allTasks.find(t=>t.id===id)?.projectId; proj.doToggle(id).then(() => { if (pId) keepTemaInView(pId) }).catch(e=>toast(errMsg(e),'error')) }}
-          showNotes={true}
-          newTaskFor={newTaskFor}
-          onOpenNewTask={id => { setNewTaskFor(id); if(id) setNewTask({ title:'', responsible:'', due_date:'' }) }}
-          newTask={newTask}
-          onNewTaskChange={setNewTask}
-          onAddTask={pId => {
-            const { due_day, due_month, due_year, ...rest } = newTask
-            const builtDue = (due_day && due_month)
-              ? (due_year||String(new Date().getFullYear())) + '-' + String(due_month).padStart(2,'0') + '-' + String(due_day).padStart(2,'0')
-              : ''
-            const taskData = { ...rest, due_date: builtDue }
-            setNewTask({ title:'', responsible:'', due_date:'', due_day:'', due_month:'', due_year:'' })
-            setNewTaskFor(null)
-            proj.doAddTask(pId, taskData)
-              .then(() => toast('Tarea agregada'))
-              .catch(e => toast(errMsg(e),'error'))
-          }}
-          newProjNote={newProjNote}
-          onNewProjNoteChange={(key, val) => setNewProjNote(n => ({ ...n, [key]: val }))}
-          onAddProjectNote={pId => {
-            proj.doAddProjectNote(pId, newProjNote[pId]||'')
-              .then(() => { setNewProjNote(n => ({ ...n, [pId]:'', [pId+'_open']:false })); toast('Nota agregada') })
-              .catch(e => toast(errMsg(e),'error'))
-          }}
-          onEditProject={setEditProject}
-          onDeleteProject={pId => proj.doDeleteProject(pId).then(()=>toast('Tema eliminado')).catch(e=>toast(errMsg(e),'error'))}
-          onArchiveProject={pId => proj.doArchiveProject(pId).then(()=>toast('Tema archivado','warning')).catch(e=>toast(errMsg(e),'error'))}
-          onEditTask={(pId, task) => setEditTask({ pId, task })}
-          onEditDueDate={(pId, task) => setEditDueDate({ pId, task })}
-          onEditCreatedAt={(type, pId, tId, item) => setEditCreatedAt({ type, pId, tId, item })}
-          onDeleteTask={proj.doDeleteTask}
-          onEditComment={(pId, tId, comment) => setEditComment({ pId, tId, comment })}
-          onDeleteComment={proj.doDeleteComment}
-          onMoveComment={(comment, pId, tId) => setMoveComment({ comment, pId, tId })}
-          onMoveNote={(note, pId) => setMoveNote({ note, pId })}
-          onAddComment={(pId, tId, text) => { setNewComment(p=>({...p,[tId]:''})); proj.doAddComment(pId, tId, text).then(() => toast('Nota agregada')).catch(e => { setNewComment(p=>({...p,[tId]:text})); toast(errMsg(e),'error') }) }}
-          newComment={newComment}
-          onNewCommentChange={(tId, val) => setNewComment(p=>({...p,[tId]:val}))}
-          onEditNote={(pId, note) => setEditNote({ pId, note })}
-          onDeleteNote={proj.doDeleteProjectNote}
-          onConfirm={(msg, action, opts) => showConfirm(msg, action, opts)}
-        />
-        )
-      })}
-      </>}
+          {/* Nuevo tema */}
+          {newProjOpen && (
+            <div
+              style={{
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border-soft)',
+                borderRadius: 12,
+                padding: 14,
+                marginBottom: 16,
+                display: 'flex',
+                gap: 10,
+                flexWrap: 'wrap',
+                alignItems: 'center',
+              }}
+            >
+              <input
+                placeholder="Nombre del tema..."
+                value={newProjName}
+                onChange={(e) => setNewProjName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newProjName.trim()) {
+                    proj
+                      .doAddProject(newProjName, newProjColor)
+                      .then((project) => {
+                        setNewProjName('')
+                        setNewProjOpen(false)
+                        toast('Tema creado')
+                        scrollToNewTema(project.id)
+                      })
+                      .catch((e) => toast(errMsg(e), 'error'))
+                  }
+                }}
+                style={{ ...S.input, flex: 1 }}
+                autoFocus
+              />
+              <div style={{ display: 'flex', gap: 6 }}>
+                {COLORS.map((c) => (
+                  <div
+                    key={c}
+                    onClick={() => setNewProjColor(c)}
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: '50%',
+                      background: c,
+                      cursor: 'pointer',
+                      border:
+                        newProjColor === c
+                          ? '3px solid white'
+                          : '3px solid transparent',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                ))}
+              </div>
+              <button
+                onClick={() => {
+                  proj
+                    .doAddProject(newProjName, newProjColor)
+                    .then((project) => {
+                      setNewProjName('')
+                      setNewProjOpen(false)
+                      toast('Tema creado')
+                      scrollToNewTema(project.id)
+                    })
+                    .catch((e) => toast(errMsg(e), 'error'))
+                }}
+                style={S.btnPrimary}
+              >
+                Crear
+              </button>
+              <button
+                onClick={() => setNewProjOpen(false)}
+                style={S.btnSecondary}
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
+
+          {proj.loading && (
+            <div
+              style={{
+                textAlign: 'center',
+                color: 'var(--text-muted)',
+                padding: 30,
+              }}
+            >
+              Cargando temas...
+            </div>
+          )}
+          {proj.error && (
+            <div
+              style={{
+                textAlign: 'center',
+                color: 'var(--status-overdue)',
+                padding: 30,
+              }}
+            >
+              {proj.error}
+            </div>
+          )}
+          {!proj.loading && !proj.error && proj.sortedProjects.length === 0 && (
+            <div
+              style={{
+                textAlign: 'center',
+                color: 'var(--text-faint)',
+                fontSize: 14,
+                padding: 40,
+              }}
+            >
+              Todavía no hay temas cargados en esta reunión.
+            </div>
+          )}
+
+          {proj.sortedProjects.map((project) => {
+            const ptasks =
+              filterPriorities.length > 0
+                ? project.tasks.filter(
+                    (t) =>
+                      filterPriorities.includes(t.priority) ||
+                      (filterPriorities.includes('none') && !t.priority),
+                  )
+                : project.tasks
+            if (filterPriorities.length > 0 && ptasks.length === 0) return null
+            return (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                filteredTasks={ptasks}
+                highlighted={project.id === highlightProjectId}
+                hideMembers
+                collapsed={collapsedProjects[project.id]}
+                onToggleCollapse={(id) => {
+                  if (collapsedProjects[id] === false)
+                    setCollapsedProjects((c) => ({ ...c, [id]: true }))
+                  else
+                    proj
+                      .ensureProjectHistory(id)
+                      .then(() =>
+                        setCollapsedProjects((c) => ({ ...c, [id]: false })),
+                      )
+                      .catch((e) => toast(errMsg(e), 'error'))
+                }}
+                onExportProject={(p) =>
+                  proj
+                    .ensureProjectHistory(p.id)
+                    .then(exportProjectContent)
+                    .catch((e) => toast(errMsg(e), 'error'))
+                }
+                expanded={expanded}
+                onExpand={(id) => {
+                  if (!id) setExpanded(null)
+                  else {
+                    const t = proj.allTasks.find((t) => t.id === id)
+                    proj
+                      .ensureProjectHistory(t.projectId)
+                      .then(() => setExpanded(id))
+                      .catch((e) => toast(errMsg(e), 'error'))
+                  }
+                }}
+                onToggleTask={(id) => {
+                  const pId = proj.allTasks.find((t) => t.id === id)?.projectId
+                  proj
+                    .doToggle(id)
+                    .then(() => {
+                      if (pId) keepTemaInView(pId)
+                    })
+                    .catch((e) => toast(errMsg(e), 'error'))
+                }}
+                showNotes={true}
+                newTaskFor={newTaskFor}
+                onOpenNewTask={(id) => {
+                  setNewTaskFor(id)
+                  if (id)
+                    setNewTask({ title: '', responsible: '', due_date: '' })
+                }}
+                newTask={newTask}
+                onNewTaskChange={setNewTask}
+                onAddTask={(pId) => {
+                  const { due_day, due_month, due_year, ...rest } = newTask
+                  const builtDue =
+                    due_day && due_month
+                      ? (due_year || String(new Date().getFullYear())) +
+                        '-' +
+                        String(due_month).padStart(2, '0') +
+                        '-' +
+                        String(due_day).padStart(2, '0')
+                      : ''
+                  const taskData = { ...rest, due_date: builtDue }
+                  proj
+                    .doAddTask(pId, taskData)
+                    .then(() => {
+                      setNewTask({
+                        title: '',
+                        responsible: '',
+                        due_date: '',
+                        due_day: '',
+                        due_month: '',
+                        due_year: '',
+                      })
+                      setNewTaskFor(null)
+                      toast('Tarea agregada')
+                    })
+                    .catch((e) => toast(errMsg(e), 'error'))
+                }}
+                newProjNote={newProjNote}
+                onNewProjNoteChange={(key, val) =>
+                  setNewProjNote((n) => ({ ...n, [key]: val }))
+                }
+                onAddProjectNote={(pId) => {
+                  proj
+                    .doAddProjectNote(pId, newProjNote[pId] || '')
+                    .then(() => {
+                      setNewProjNote((n) => ({
+                        ...n,
+                        [pId]: '',
+                        [pId + '_open']: false,
+                      }))
+                      toast('Nota agregada')
+                    })
+                    .catch((e) => toast(errMsg(e), 'error'))
+                }}
+                onEditProject={setEditProject}
+                onDeleteProject={(pId) =>
+                  proj
+                    .doDeleteProject(pId)
+                    .then(() => toast('Tema eliminado'))
+                    .catch((e) => toast(errMsg(e), 'error'))
+                }
+                onArchiveProject={(pId) =>
+                  proj
+                    .doArchiveProject(pId)
+                    .then(() => toast('Tema archivado', 'warning'))
+                    .catch((e) => toast(errMsg(e), 'error'))
+                }
+                onEditTask={(pId, task) => setEditTask({ pId, task })}
+                onEditDueDate={(pId, task) => setEditDueDate({ pId, task })}
+                onEditCreatedAt={(type, pId, tId, item) =>
+                  setEditCreatedAt({ type, pId, tId, item })
+                }
+                onDeleteTask={proj.doDeleteTask}
+                onEditComment={(pId, tId, comment) =>
+                  setEditComment({ pId, tId, comment })
+                }
+                onDeleteComment={proj.doDeleteComment}
+                onMoveComment={(comment, pId, tId) =>
+                  setMoveComment({ comment, pId, tId })
+                }
+                onMoveNote={(note, pId) => setMoveNote({ note, pId })}
+                onAddComment={(pId, tId, text) => {
+                  setNewComment((p) => ({ ...p, [tId]: '' }))
+                  proj
+                    .doAddComment(pId, tId, text)
+                    .then(() => toast('Nota agregada'))
+                    .catch((e) => {
+                      setNewComment((p) => ({ ...p, [tId]: text }))
+                      toast(errMsg(e), 'error')
+                    })
+                }}
+                newComment={newComment}
+                onNewCommentChange={(tId, val) =>
+                  setNewComment((p) => ({ ...p, [tId]: val }))
+                }
+                onEditNote={(pId, note) => setEditNote({ pId, note })}
+                onDeleteNote={proj.doDeleteProjectNote}
+                onConfirm={(msg, action, opts) =>
+                  showConfirm(msg, action, opts)
+                }
+              />
+            )
+          })}
+        </>
+      )}
 
       {/* Temas archivados de esta reunión — no se mezclan con otras */}
       {archivedView && (
         <div>
-          {proj.loadingArchived && <div style={{ textAlign:'center', color:'var(--text-muted)', padding:30 }}>Cargando...</div>}
-          {!proj.loadingArchived && proj.archivedProjects.length === 0 && (
-            <div style={{ textAlign:'center', color:'var(--text-faint)', fontSize:14, padding:40 }}>No hay temas archivados en esta reunión.</div>
+          {proj.archiveError && (
+            <div role="alert">
+              {proj.archiveError}{' '}
+              <button onClick={proj.loadArchived}>Reintentar</button>
+            </div>
           )}
-          {proj.archivedProjects.map(project => (
-            <div key={project.id} style={{ background:'var(--bg-surface)', border:'1px solid var(--border-soft)', borderRadius:14, marginBottom:12, overflow:'hidden', opacity:0.85 }}>
-              <div style={{ borderLeft:`4px solid ${project.color}`, padding:'12px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', background:`linear-gradient(90deg,${project.color}11,transparent)` }}>
-                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                  <div style={{ width:9, height:9, borderRadius:'50%', background:project.color }} />
-                  <span style={{ fontWeight:700, fontSize:15, color:'var(--text-secondary)' }}>{project.name}</span>
-                  <span style={{ background:'var(--bg-elevated)', border:'1px solid var(--border-soft)', borderRadius:20, padding:'1px 9px', fontSize:11, color:'var(--text-faint)' }}>{project.tasks.length} tarea{project.tasks.length!==1?'s':''} · {project.notes?.length||0} nota{(project.notes?.length||0)!==1?'s':''}</span>
-                  <span style={{ background:'#451a03', border:'1px solid #92400e', borderRadius:20, padding:'1px 9px', fontSize:11, color:'#fbbf24' }}>📦 Archivado</span>
+          {proj.loadingArchived && (
+            <div
+              style={{
+                textAlign: 'center',
+                color: 'var(--text-muted)',
+                padding: 30,
+              }}
+            >
+              Cargando...
+            </div>
+          )}
+          {!proj.loadingArchived && proj.archivedProjects.length === 0 && (
+            <div
+              style={{
+                textAlign: 'center',
+                color: 'var(--text-faint)',
+                fontSize: 14,
+                padding: 40,
+              }}
+            >
+              No hay temas archivados en esta reunión.
+            </div>
+          )}
+          {proj.archivedProjects.map((project) => (
+            <div
+              key={project.id}
+              style={{
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border-soft)',
+                borderRadius: 14,
+                marginBottom: 12,
+                overflow: 'hidden',
+                opacity: 0.85,
+              }}
+            >
+              <div
+                style={{
+                  borderLeft: `4px solid ${project.color}`,
+                  padding: '12px 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  background: `linear-gradient(90deg,${project.color}11,transparent)`,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div
+                    style={{
+                      width: 9,
+                      height: 9,
+                      borderRadius: '50%',
+                      background: project.color,
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontWeight: 700,
+                      fontSize: 15,
+                      color: 'var(--text-secondary)',
+                    }}
+                  >
+                    {project.name}
+                  </span>
+                  <span
+                    style={{
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border-soft)',
+                      borderRadius: 20,
+                      padding: '1px 9px',
+                      fontSize: 11,
+                      color: 'var(--text-faint)',
+                    }}
+                  >
+                    {project.tasks.length} tarea
+                    {project.tasks.length !== 1 ? 's' : ''} ·{' '}
+                    {project.notes?.length || 0} nota
+                    {(project.notes?.length || 0) !== 1 ? 's' : ''}
+                  </span>
+                  <span
+                    style={{
+                      background: '#451a03',
+                      border: '1px solid #92400e',
+                      borderRadius: 20,
+                      padding: '1px 9px',
+                      fontSize: 11,
+                      color: '#fbbf24',
+                    }}
+                  >
+                    <Icon name="archive" size={15} /> Archivado
+                  </span>
                 </div>
-                <div style={{ display:'flex', gap:7 }}>
-                  <button onClick={() => showConfirm(`¿Restaurar "${project.name}" a esta reunión?`, () => proj.doUnarchiveProject(project.id), { title:'↩ Confirmar restauración', okLabel:'Restaurar', okColor:'#059669' })} style={{ background:'#065f46', border:'1px solid #059669', color:'#34d399', padding:'6px 14px', borderRadius:7, cursor:'pointer', fontSize:12, fontWeight:600 }}>↩ Restaurar</button>
-                  <button onClick={() => showConfirm(`¿Eliminar "${project.name}" y TODAS sus tareas y notas? Esta acción no se puede deshacer.`, () => proj.doDeleteProject(project.id).then(()=>toast('Tema eliminado')).catch(e=>toast(errMsg(e),'error')))} style={{ ...S.iconBtn, borderColor:'#dc262633', color:'#ef4444' }} title="Eliminar permanentemente">🗑</button>
+                <div style={{ display: 'flex', gap: 7 }}>
+                  <button
+                    onClick={() =>
+                      showConfirm(
+                        `¿Restaurar "${project.name}" a esta reunión?`,
+                        () => proj.doUnarchiveProject(project.id),
+                        {
+                          title: '↩ Confirmar restauración',
+                          okLabel: 'Restaurar',
+                          okColor: '#059669',
+                        },
+                      )
+                    }
+                    style={{
+                      background: '#065f46',
+                      border: '1px solid #059669',
+                      color: '#34d399',
+                      padding: '6px 14px',
+                      borderRadius: 7,
+                      cursor: 'pointer',
+                      fontSize: 12,
+                      fontWeight: 600,
+                    }}
+                  >
+                    ↩ Restaurar
+                  </button>
+                  <button
+                    onClick={() =>
+                      showConfirm(
+                        `¿Eliminar "${project.name}" y TODAS sus tareas y notas? Esta acción no se puede deshacer.`,
+                        () =>
+                          proj
+                            .doDeleteProject(project.id)
+                            .then(() => toast('Tema eliminado'))
+                            .catch((e) => toast(errMsg(e), 'error')),
+                      )
+                    }
+                    style={{
+                      ...S.iconBtn,
+                      borderColor: '#dc262633',
+                      color: 'var(--status-overdue)',
+                    }}
+                    title="Eliminar permanentemente"
+                  >
+                    <Icon name="trash" size={15} />
+                  </button>
                 </div>
               </div>
-              <div style={{ padding:'8px 16px', fontSize:12, color:'var(--text-faint)', display:'flex', gap:16, borderTop:'1px solid var(--border)' }}>
-                <span>📌 {project.tasks.filter(t=>!t.done).length} pendiente{project.tasks.filter(t=>!t.done).length!==1?'s':''}</span>
-                <span>✅ {project.tasks.filter(t=>t.done).length} completada{project.tasks.filter(t=>t.done).length!==1?'s':''}</span>
-                <span>📝 {project.notes?.length||0} nota{(project.notes?.length||0)!==1?'s':''}</span>
+              <div
+                style={{
+                  padding: '8px 16px',
+                  fontSize: 12,
+                  color: 'var(--text-faint)',
+                  display: 'flex',
+                  gap: 16,
+                  borderTop: '1px solid var(--border)',
+                }}
+              >
+                <span>
+                  <Icon name="tasks" size={15} />{' '}
+                  {project.tasks.filter((t) => !t.done).length} pendiente
+                  {project.tasks.filter((t) => !t.done).length !== 1 ? 's' : ''}
+                </span>
+                <span>
+                  <Icon name="check" size={15} />{' '}
+                  {project.tasks.filter((t) => t.done).length} completada
+                  {project.tasks.filter((t) => t.done).length !== 1 ? 's' : ''}
+                </span>
+                <span>
+                  <Icon name="note" size={15} /> {project.notes?.length || 0}{' '}
+                  nota{(project.notes?.length || 0) !== 1 ? 's' : ''}
+                </span>
               </div>
             </div>
           ))}
