@@ -15,6 +15,7 @@ export default function Toast({ toasts, onDismiss }) {
         return (
           <div
             key={t.id}
+            role={t.type === "error" ? "alert" : "status"}
             style={{
               background: s.bg,
               border: `1px solid ${s.border}`,
@@ -31,6 +32,7 @@ export default function Toast({ toasts, onDismiss }) {
             <span style={{ fontSize:16, flexShrink:0, marginTop:1 }}>{s.icon}</span>
             <span style={{ fontSize:13, color: s.color, flex:1, lineHeight:1.5 }}>{t.message}</span>
             <button
+              aria-label="Cerrar notificación"
               onClick={() => onDismiss(t.id)}
               style={{ background:'transparent', border:'none', color:'#64748b', cursor:'pointer', fontSize:16, padding:0, flexShrink:0, lineHeight:1 }}
             >✕</button>

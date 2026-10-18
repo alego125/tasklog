@@ -1,36 +1,108 @@
+import Icon from './Icon.jsx'
+import { activateOnKeyboard } from '../utils/accessibility.js'
+import Dialog from './Dialog.jsx'
 import { useState } from 'react'
-import { fmtDate, PRIORITY } from '../utils/helpers.js'
+import { fmtDate, PRIORITY, localDate } from '../utils/helpers.js'
 
 const S = {
-  input: { background:'var(--input-bg)', border:'1px solid var(--border-soft)', color:'var(--text-primary)', padding:'8px 12px', borderRadius:8, fontSize:13, outline:'none', boxSizing:'border-box', width:'100%' },
-  btnPrimary:   { background:'var(--btn-primary)', border:'none', color:'var(--btn-primary-text)', padding:'8px 16px', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:600 },
-  btnSecondary: { background:'var(--bg-elevated)', border:'1px solid var(--border-soft)', color:'var(--text-secondary)', padding:'8px 14px', borderRadius:8, cursor:'pointer', fontSize:13 },
-  btnDanger:    { background:'#dc2626', border:'none', color:'white', padding:'8px 16px', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:600 },
-  label: { fontSize:13, color:'var(--text-secondary)', display:'flex', flexDirection:'column', gap:4 },
+  input: {
+    background: 'var(--input-bg)',
+    border: '1px solid var(--border-soft)',
+    color: 'var(--text-primary)',
+    padding: '8px 12px',
+    borderRadius: 8,
+    fontSize: 13,
+    minHeight: 42,
+    outline: 'none',
+    boxSizing: 'border-box',
+    width: '100%',
+  },
+  btnPrimary: {
+    background: 'var(--btn-primary)',
+    border: 'none',
+    color: 'var(--btn-primary-text)',
+    padding: '8px 16px',
+    borderRadius: 8,
+    cursor: 'pointer',
+    minHeight: 42,
+    fontSize: 13,
+    fontWeight: 600,
+  },
+  btnSecondary: {
+    background: 'var(--bg-elevated)',
+    border: '1px solid var(--border-soft)',
+    color: 'var(--text-secondary)',
+    padding: '8px 14px',
+    borderRadius: 8,
+    cursor: 'pointer',
+    minHeight: 42,
+    fontSize: 13,
+  },
+  btnDanger: {
+    background: '#dc2626',
+    border: 'none',
+    color: 'white',
+    padding: '8px 16px',
+    borderRadius: 8,
+    cursor: 'pointer',
+    minHeight: 42,
+    fontSize: 13,
+    fontWeight: 600,
+  },
+  label: {
+    fontSize: 13,
+    color: 'var(--text-secondary)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+  },
 }
 
-const COLORS = ['#7a9e7e','#c4784a','#4a8ea0','#9a7a5a','#887ab0','#4a8a70','#b07840','#7a8a4a','#4a6e4e','#a07060']
+const COLORS = [
+  '#7a9e7e',
+  '#c4784a',
+  '#4a8ea0',
+  '#9a7a5a',
+  '#887ab0',
+  '#4a8a70',
+  '#b07840',
+  '#7a8a4a',
+  '#4a6e4e',
+  '#a07060',
+]
 
-function Backdrop({ onClose, children }) {
+function Backdrop({ onClose, children, label }) {
   return (
-    <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(44,38,32,0.45)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center' }}>
-      <div onClick={e=>e.stopPropagation()} style={{ background:'var(--bg-surface)', border:'1px solid var(--border-soft)', borderRadius:14, padding:28, width:'100%', maxWidth:480, boxShadow:'0 30px 80px #0009' }}>
-        {children}
-      </div>
-    </div>
+    <Dialog onClose={onClose} label={label}>
+      {children}
+    </Dialog>
   )
 }
 
 export function Confirm({ msg, onOk, onCancel, title, okLabel, okColor }) {
   const btnStyle = { ...S.btnDanger, background: okColor || '#dc2626' }
   return (
-    <Backdrop onClose={onCancel}>
-      <div onKeyDown={e=>e.key==='Enter'&&onOk()} tabIndex={-1} style={{ outline:'none' }}>
-        <div className="proj-title" style={{ fontSize:16, marginBottom:8 }}>{title || '⚠️ Confirmar eliminación'}</div>
-        <div style={{ fontSize:14, color:'var(--text-secondary)', marginBottom:24 }}>{msg}</div>
-        <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
-          <button onClick={onCancel} style={S.btnSecondary}>Cancelar</button>
-          <button onClick={onOk} autoFocus style={btnStyle}>{okLabel || 'Eliminar'}</button>
+    <Backdrop onClose={onCancel} label={title || 'Confirmar eliminación'}>
+      <div>
+        <div className="proj-title" style={{ fontSize: 16, marginBottom: 8 }}>
+          {title || 'Confirmar eliminación'}
+        </div>
+        <div
+          style={{
+            fontSize: 14,
+            color: 'var(--text-secondary)',
+            marginBottom: 24,
+          }}
+        >
+          {msg}
+        </div>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button onClick={onCancel} autoFocus style={S.btnSecondary}>
+            Cancelar
+          </button>
+          <button onClick={onOk} style={btnStyle}>
+            {okLabel || 'Eliminar'}
+          </button>
         </div>
       </div>
     </Backdrop>
@@ -38,95 +110,259 @@ export function Confirm({ msg, onOk, onCancel, title, okLabel, okColor }) {
 }
 
 export function EditProject({ project, onSave, onClose }) {
-  const [name, setName]   = useState(project.name)
+  const [name, setName] = useState(project.name)
   const [color, setColor] = useState(project.color)
   return (
-    <Backdrop onClose={onClose}>
-      <div className="proj-title" style={{ fontSize:16, marginBottom:18 }}>✏️ Editar proyecto</div>
-      <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-        <label style={S.label}>Nombre del proyecto
-          <input value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>e.key==='Enter'&&name.trim()&&onSave(name,color)} style={S.input} autoFocus />
+    <Backdrop onClose={onClose} label="Editar proyecto">
+      <div className="proj-title" style={{ fontSize: 16, marginBottom: 18 }}>
+        <Icon name="edit" size={15} /> Editar proyecto
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <label style={S.label}>
+          Nombre del proyecto
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) =>
+              e.key === 'Enter' && name.trim() && onSave(name, color)
+            }
+            style={S.input}
+            autoFocus
+          />
         </label>
-        <label style={S.label}>Color
-          <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginTop:4 }}>
-            {COLORS.map(c=>(
-              <div key={c} onClick={()=>setColor(c)} style={{ width:26, height:26, borderRadius:'50%', background:c, cursor:'pointer', border:color===c?'3px solid white':'3px solid transparent', boxSizing:'border-box', transition:'border .15s' }} />
+        <label style={S.label}>
+          Color
+          <div
+            style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}
+          >
+            {COLORS.map((c) => (
+              <button
+                type="button"
+                aria-label={`Color ${c}`}
+                aria-pressed={color === c}
+                key={c}
+                onClick={() => setColor(c)}
+                style={{
+                  width: 26,
+                  height: 26,
+                  borderRadius: '50%',
+                  background: c,
+                  cursor: 'pointer',
+                  border:
+                    color === c ? '3px solid white' : '3px solid transparent',
+                  boxSizing: 'border-box',
+                  transition: 'border .15s',
+                }}
+              />
             ))}
           </div>
         </label>
       </div>
-      <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:22 }}>
-        <button onClick={onClose} style={S.btnSecondary}>Cancelar</button>
-        <button onClick={()=>name.trim()&&onSave(name, color)} style={S.btnPrimary}>Guardar</button>
+      <div
+        style={{
+          display: 'flex',
+          gap: 10,
+          justifyContent: 'flex-end',
+          marginTop: 22,
+        }}
+      >
+        <button onClick={onClose} style={S.btnSecondary}>
+          Cancelar
+        </button>
+        <button
+          onClick={() => name.trim() && onSave(name, color)}
+          style={S.btnPrimary}
+        >
+          Guardar
+        </button>
       </div>
     </Backdrop>
   )
 }
 
-// Aplica la misma corrección de -3hs que fmtDate para mostrar la fecha local correcta
 function toLocalDate(d) {
   if (!d) return ''
-  if (String(d).includes('T') || String(d).includes(' ')) {
-    const date = new Date(String(d).replace(' ', 'T') + (String(d).includes('Z') ? '' : 'Z'))
-    date.setHours(date.getHours() - 3)
-    return date.toISOString().slice(0, 10)
-  }
-  return String(d).slice(0, 10)
+  return localDate(d)
 }
 
 export function EditTask({ task, projects, onSave, onClose }) {
   const currentYear = new Date().getFullYear()
   const parseDue = (d) => {
-    if (!d) return { day:'', month:'', year:String(currentYear) }
-    const parts = String(d).slice(0,10).split('-')
-    return { year:parts[0]||String(currentYear), month:parts[1]||'', day:parts[2]||'' }
+    if (!d) return { day: '', month: '', year: String(currentYear) }
+    const parts = String(d).slice(0, 10).split('-')
+    return {
+      year: parts[0] || String(currentYear),
+      month: parts[1] || '',
+      day: parts[2] || '',
+    }
   }
   const [f, setF] = useState({
-    title:       task.title,
-    responsible: task.responsible||'',
-    project_id:  task.projectId || task.project_id,
-    priority:    task.priority||'',
+    title: task.title,
+    responsible: task.responsible || '',
+    project_id: task.projectId || task.project_id,
+    priority: task.priority || '',
   })
   const [due, setDue] = useState(parseDue(task.due_date))
-  const inputNum = (max, val, setter) => setter(val.replace(/\D/g,'').slice(0, max <= 31 ? 2 : 4))
+  const inputNum = (max, val, setter) =>
+    setter(val.replace(/\D/g, '').slice(0, max <= 31 ? 2 : 4))
   const buildDueDate = () => {
     if (!due.day && !due.month) return ''
-    return (due.year||String(currentYear)) + '-' + due.month.padStart(2,'0') + '-' + due.day.padStart(2,'0')
+    return (
+      (due.year || String(currentYear)) +
+      '-' +
+      due.month.padStart(2, '0') +
+      '-' +
+      due.day.padStart(2, '0')
+    )
   }
   const save = () => f.title && onSave({ ...f, due_date: buildDueDate() })
   return (
-    <Backdrop onClose={onClose}>
-      <div className="proj-title" style={{ fontSize:16, marginBottom:18 }}>✏️ Editar tarea</div>
-      <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-        <label style={S.label}>Descripción tarea *<input value={f.title} onChange={e=>setF(p=>({...p,title:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&save()} style={S.input} autoFocus /></label>
-        <label style={S.label}>Responsable <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span><input value={f.responsible} onChange={e=>setF(p=>({...p,responsible:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&save()} style={S.input} /></label>
-        <label style={S.label}>Prioridad <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional)</span>
-          <select value={f.priority} onChange={e=>setF(p=>({...p,priority:e.target.value}))} style={{ ...S.input, cursor:'pointer' }}>
+    <Backdrop onClose={onClose} label="Editar tarea">
+      <div className="proj-title" style={{ fontSize: 16, marginBottom: 18 }}>
+        <Icon name="edit" size={15} /> Editar tarea
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <label style={S.label}>
+          Descripción tarea *
+          <input
+            value={f.title}
+            onChange={(e) => setF((p) => ({ ...p, title: e.target.value }))}
+            onKeyDown={(e) => e.key === 'Enter' && save()}
+            style={S.input}
+            autoFocus
+          />
+        </label>
+        <label style={S.label}>
+          Responsable{' '}
+          <span style={{ color: 'var(--text-faint)', fontSize: 11 }}>
+            (opcional)
+          </span>
+          <input
+            value={f.responsible}
+            onChange={(e) =>
+              setF((p) => ({ ...p, responsible: e.target.value }))
+            }
+            onKeyDown={(e) => e.key === 'Enter' && save()}
+            style={S.input}
+          />
+        </label>
+        <label style={S.label}>
+          Prioridad{' '}
+          <span style={{ color: 'var(--text-faint)', fontSize: 11 }}>
+            (opcional)
+          </span>
+          <select
+            value={f.priority}
+            onChange={(e) => setF((p) => ({ ...p, priority: e.target.value }))}
+            style={{ ...S.input, cursor: 'pointer' }}
+          >
             <option value="">Sin prioridad</option>
-            {Object.entries(PRIORITY).map(([key,pr]) => <option key={key} value={key}>{pr.emoji} {pr.label}</option>)}
+            {Object.entries(PRIORITY).map(([key, pr]) => (
+              <option key={key} value={key}>
+                {pr.emoji} {pr.label}
+              </option>
+            ))}
           </select>
         </label>
         {projects && projects.length > 1 && (
-          <label style={S.label}>Proyecto
-            <select value={f.project_id} onChange={e=>setF(p=>({...p,project_id:Number(e.target.value)}))} style={{ ...S.input, cursor:'pointer' }}>
-              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          <label style={S.label}>
+            Proyecto
+            <select
+              value={f.project_id}
+              onChange={(e) =>
+                setF((p) => ({ ...p, project_id: Number(e.target.value) }))
+              }
+              style={{ ...S.input, cursor: 'pointer' }}
+            >
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
             </select>
           </label>
         )}
-        <label style={S.label}>Fecha de vencimiento <span style={{color:'var(--text-faint)',fontSize:11}}>(opcional — dejá vacío para quitar)</span>
-          <div style={{ display:'flex', gap:8, alignItems:'center', marginTop:4 }}>
-            <input value={due.day}   onChange={e=>inputNum(31,  e.target.value, v=>setDue(p=>({...p,day:v})))}   onKeyDown={e=>e.key==='Enter'&&save()} placeholder="DD"   maxLength={2} style={{ ...S.input, width:64, textAlign:'center' }} />
-            <span style={{color:'var(--text-muted)',fontSize:16}}>/</span>
-            <input value={due.month} onChange={e=>inputNum(12,  e.target.value, v=>setDue(p=>({...p,month:v})))} onKeyDown={e=>e.key==='Enter'&&save()} placeholder="MM"   maxLength={2} style={{ ...S.input, width:64, textAlign:'center' }} />
-            <span style={{color:'var(--text-muted)',fontSize:16}}>/</span>
-            <input value={due.year}  onChange={e=>inputNum(9999,e.target.value, v=>setDue(p=>({...p,year:v})))}  onKeyDown={e=>e.key==='Enter'&&save()} placeholder="AAAA" maxLength={4} style={{ ...S.input, width:88, textAlign:'center' }} />
-            {(due.day||due.month) && <button onClick={()=>setDue({day:'',month:'',year:String(currentYear)})} style={{ ...S.btnSecondary, padding:'6px 10px', fontSize:12 }}>✕</button>}
+        <label style={S.label}>
+          Fecha de vencimiento{' '}
+          <span style={{ color: 'var(--text-faint)', fontSize: 11 }}>
+            (opcional — dejá vacío para quitar)
+          </span>
+          <div
+            style={{
+              display: 'flex',
+              gap: 8,
+              alignItems: 'center',
+              marginTop: 4,
+            }}
+          >
+            <input
+              value={due.day}
+              onChange={(e) =>
+                inputNum(31, e.target.value, (v) =>
+                  setDue((p) => ({ ...p, day: v })),
+                )
+              }
+              onKeyDown={(e) => e.key === 'Enter' && save()}
+              aria-label="Día de vencimiento"
+              placeholder="DD"
+              maxLength={2}
+              style={{ ...S.input, width: 64, textAlign: 'center' }}
+            />
+            <span style={{ color: 'var(--text-muted)', fontSize: 16 }}>/</span>
+            <input
+              value={due.month}
+              onChange={(e) =>
+                inputNum(12, e.target.value, (v) =>
+                  setDue((p) => ({ ...p, month: v })),
+                )
+              }
+              onKeyDown={(e) => e.key === 'Enter' && save()}
+              aria-label="Mes de vencimiento"
+              placeholder="MM"
+              maxLength={2}
+              style={{ ...S.input, width: 64, textAlign: 'center' }}
+            />
+            <span style={{ color: 'var(--text-muted)', fontSize: 16 }}>/</span>
+            <input
+              value={due.year}
+              onChange={(e) =>
+                inputNum(9999, e.target.value, (v) =>
+                  setDue((p) => ({ ...p, year: v })),
+                )
+              }
+              onKeyDown={(e) => e.key === 'Enter' && save()}
+              aria-label="Año de vencimiento"
+              placeholder="AAAA"
+              maxLength={4}
+              style={{ ...S.input, width: 88, textAlign: 'center' }}
+            />
+            {(due.day || due.month) && (
+              <button
+                onClick={() =>
+                  setDue({ day: '', month: '', year: String(currentYear) })
+                }
+                style={{ ...S.btnSecondary, padding: '6px 10px', fontSize: 12 }}
+              >
+                <Icon name="close" size={15} />
+              </button>
+            )}
           </div>
         </label>
       </div>
-      <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:20 }}>
-        <button onClick={onClose} style={S.btnSecondary}>Cancelar</button>
-        <button onClick={save} style={S.btnPrimary}>Guardar</button>
+      <div
+        style={{
+          display: 'flex',
+          gap: 10,
+          justifyContent: 'flex-end',
+          marginTop: 20,
+        }}
+      >
+        <button onClick={onClose} style={S.btnSecondary}>
+          Cancelar
+        </button>
+        <button onClick={save} style={S.btnPrimary}>
+          Guardar
+        </button>
       </div>
     </Backdrop>
   )
@@ -135,68 +371,202 @@ export function EditTask({ task, projects, onSave, onClose }) {
 export function EditComment({ comment, onSave, onClose }) {
   const [text, setText] = useState(comment.text)
   return (
-    <Backdrop onClose={onClose}>
-      <div className="proj-title" style={{ fontSize:16, marginBottom:14 }}>✏️ Editar nota</div>
-      <textarea value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==='Enter'&&e.ctrlKey&&onSave({text})} placeholder="Ctrl+Enter para guardar" rows={4} autoFocus style={{ ...S.input, resize:'vertical', lineHeight:1.6 }} />
-      <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:14 }}>
-        <button onClick={onClose} style={S.btnSecondary}>Cancelar</button>
-        <button onClick={()=>onSave({text})} style={S.btnPrimary}>Guardar</button>
+    <Backdrop onClose={onClose} label="Editar nota">
+      <div className="proj-title" style={{ fontSize: 16, marginBottom: 14 }}>
+        <Icon name="edit" size={15} /> Editar nota
+      </div>
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && e.ctrlKey && onSave({ text })}
+        placeholder="Ctrl+Enter para guardar"
+        rows={4}
+        autoFocus
+        style={{ ...S.input, resize: 'vertical', lineHeight: 1.6 }}
+      />
+      <div
+        style={{
+          display: 'flex',
+          gap: 10,
+          justifyContent: 'flex-end',
+          marginTop: 14,
+        }}
+      >
+        <button onClick={onClose} style={S.btnSecondary}>
+          Cancelar
+        </button>
+        <button onClick={() => onSave({ text })} style={S.btnPrimary}>
+          Guardar
+        </button>
       </div>
     </Backdrop>
   )
 }
 
-
 export function EditDueDateModal({ task, onSave, onClose }) {
   const currentYear = new Date().getFullYear()
   const parseDue = (d) => {
-    if (!d) return { day:'', month:'', year: String(currentYear) }
-    const parts = String(d).slice(0,10).split('-')
-    return { year: parts[0]||String(currentYear), month: parts[1]||'', day: parts[2]||'' }
+    if (!d) return { day: '', month: '', year: String(currentYear) }
+    const parts = String(d).slice(0, 10).split('-')
+    return {
+      year: parts[0] || String(currentYear),
+      month: parts[1] || '',
+      day: parts[2] || '',
+    }
   }
   const [due, setDue] = useState(parseDue(task.due_date))
-  const inputNum = (max, val, setter) => setter(val.replace(/\D/g,'').slice(0, max <= 12 ? 2 : max <= 31 ? 2 : 4))
+  const inputNum = (max, val, setter) =>
+    setter(val.replace(/\D/g, '').slice(0, max <= 12 ? 2 : max <= 31 ? 2 : 4))
   const buildDueDate = () => {
     if (!due.day && !due.month) return ''
-    return (due.year||String(currentYear)) + '-' + due.month.padStart(2,'0') + '-' + due.day.padStart(2,'0')
+    return (
+      (due.year || String(currentYear)) +
+      '-' +
+      due.month.padStart(2, '0') +
+      '-' +
+      due.day.padStart(2, '0')
+    )
   }
   const save = () => onSave(buildDueDate())
   return (
-    <Backdrop onClose={onClose}>
-      <div style={{ fontSize:16, fontWeight:700, marginBottom:6 }}>📅 Fecha de vencimiento</div>
-      <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:18 }}>{task.title}</div>
-      <label style={S.label}>Vencimiento <span style={{color:'var(--text-faint)',fontSize:11}}>(dejá vacío para quitar)</span>
-        <div style={{ display:'flex', gap:8, alignItems:'center', marginTop:4 }}>
-          <input value={due.day}   onChange={e=>inputNum(31,  e.target.value, v=>setDue(p=>({...p,day:v})))}   onKeyDown={e=>e.key==='Enter'&&save()} placeholder="DD"   maxLength={2} style={{ ...S.input, width:64, textAlign:'center' }} />
-          <span style={{color:'var(--text-muted)',fontSize:16}}>/</span>
-          <input value={due.month} onChange={e=>inputNum(12,  e.target.value, v=>setDue(p=>({...p,month:v})))} onKeyDown={e=>e.key==='Enter'&&save()} placeholder="MM"   maxLength={2} style={{ ...S.input, width:64, textAlign:'center' }} />
-          <span style={{color:'var(--text-muted)',fontSize:16}}>/</span>
-          <input value={due.year}  onChange={e=>inputNum(9999,e.target.value, v=>setDue(p=>({...p,year:v})))}  onKeyDown={e=>e.key==='Enter'&&save()} placeholder="AAAA" maxLength={4} style={{ ...S.input, width:88, textAlign:'center' }} />
+    <Backdrop onClose={onClose} label="Editar vencimiento">
+      <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>
+        <Icon name="calendar" size={15} /> Fecha de vencimiento
+      </div>
+      <div
+        style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 18 }}
+      >
+        {task.title}
+      </div>
+      <label style={S.label}>
+        Vencimiento{' '}
+        <span style={{ color: 'var(--text-faint)', fontSize: 11 }}>
+          (dejá vacío para quitar)
+        </span>
+        <div
+          style={{
+            display: 'flex',
+            gap: 8,
+            alignItems: 'center',
+            marginTop: 4,
+          }}
+        >
+          <input
+            value={due.day}
+            onChange={(e) =>
+              inputNum(31, e.target.value, (v) =>
+                setDue((p) => ({ ...p, day: v })),
+              )
+            }
+            onKeyDown={(e) => e.key === 'Enter' && save()}
+            aria-label="Día de vencimiento"
+            placeholder="DD"
+            maxLength={2}
+            style={{ ...S.input, width: 64, textAlign: 'center' }}
+          />
+          <span style={{ color: 'var(--text-muted)', fontSize: 16 }}>/</span>
+          <input
+            value={due.month}
+            onChange={(e) =>
+              inputNum(12, e.target.value, (v) =>
+                setDue((p) => ({ ...p, month: v })),
+              )
+            }
+            onKeyDown={(e) => e.key === 'Enter' && save()}
+            aria-label="Mes de vencimiento"
+            placeholder="MM"
+            maxLength={2}
+            style={{ ...S.input, width: 64, textAlign: 'center' }}
+          />
+          <span style={{ color: 'var(--text-muted)', fontSize: 16 }}>/</span>
+          <input
+            value={due.year}
+            onChange={(e) =>
+              inputNum(9999, e.target.value, (v) =>
+                setDue((p) => ({ ...p, year: v })),
+              )
+            }
+            onKeyDown={(e) => e.key === 'Enter' && save()}
+            aria-label="Año de vencimiento"
+            placeholder="AAAA"
+            maxLength={4}
+            style={{ ...S.input, width: 88, textAlign: 'center' }}
+          />
         </div>
       </label>
       {(due.day || due.month) && (
-        <button onClick={()=>setDue({day:'',month:'',year:String(currentYear)})} style={{ ...S.btnSecondary, marginTop:10, fontSize:12, padding:'4px 10px' }}>✕ Quitar fecha</button>
+        <button
+          onClick={() =>
+            setDue({ day: '', month: '', year: String(currentYear) })
+          }
+          style={{
+            ...S.btnSecondary,
+            marginTop: 10,
+            fontSize: 12,
+            padding: '4px 10px',
+          }}
+        >
+          <Icon name="close" size={15} /> Quitar fecha
+        </button>
       )}
-      <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:20 }}>
-        <button onClick={onClose} style={S.btnSecondary}>Cancelar</button>
-        <button onClick={save} style={S.btnPrimary}>Guardar</button>
+      <div
+        style={{
+          display: 'flex',
+          gap: 10,
+          justifyContent: 'flex-end',
+          marginTop: 20,
+        }}
+      >
+        <button onClick={onClose} style={S.btnSecondary}>
+          Cancelar
+        </button>
+        <button onClick={save} style={S.btnPrimary}>
+          Guardar
+        </button>
       </div>
     </Backdrop>
   )
 }
 
 export function EditCreatedAtModal({ item, label, onSave, onClose }) {
-  const [date, setDate] = useState(item.created_at ? toLocalDate(item.created_at) : '')
+  const [date, setDate] = useState(
+    item.created_at ? toLocalDate(item.created_at) : '',
+  )
   return (
-    <Backdrop onClose={onClose}>
-      <div style={{ fontSize:16, fontWeight:700, marginBottom:6 }}>🗓 Fecha de registro</div>
-      <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:18 }}>{label}</div>
-      <label style={S.label}>Fecha de registro
-        <input type="date" value={date} onChange={e=>setDate(e.target.value)} onKeyDown={e=>e.key==='Enter'&&onSave(date)} style={{ ...S.input, marginTop:4 }} autoFocus />
+    <Backdrop onClose={onClose} label="Editar fecha de registro">
+      <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>
+        <Icon name="calendar" size={15} /> Fecha de registro
+      </div>
+      <div
+        style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 18 }}
+      >
+        {label}
+      </div>
+      <label style={S.label}>
+        Fecha de registro
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && onSave(date)}
+          style={{ ...S.input, marginTop: 4 }}
+          autoFocus
+        />
       </label>
-      <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:20 }}>
-        <button onClick={onClose} style={S.btnSecondary}>Cancelar</button>
-        <button onClick={()=>onSave(date)} style={S.btnPrimary}>Guardar</button>
+      <div
+        style={{
+          display: 'flex',
+          gap: 10,
+          justifyContent: 'flex-end',
+          marginTop: 20,
+        }}
+      >
+        <button onClick={onClose} style={S.btnSecondary}>
+          Cancelar
+        </button>
+        <button onClick={() => onSave(date)} style={S.btnPrimary}>
+          Guardar
+        </button>
       </div>
     </Backdrop>
   )
@@ -204,99 +574,356 @@ export function EditCreatedAtModal({ item, label, onSave, onClose }) {
 export function MoveNoteModal({ note, tasks, onMove, onClose }) {
   const [selectedTask, setSelectedTask] = useState('')
   return (
-    <Backdrop onClose={onClose}>
-      <div className="proj-title" style={{ fontSize:16, marginBottom:8 }}>🔀 Mover nota a tarea</div>
-      <div style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:16 }}>Seleccioná la tarea donde querés mover esta nota de bitácora:</div>
-      <div style={{ background:'var(--bg-elevated)', borderRadius:8, padding:'10px 12px', marginBottom:16, fontSize:13, color:'var(--text-secondary)', fontStyle:'italic' }}>"{note.text}"</div>
-      <select value={selectedTask} onChange={e=>setSelectedTask(e.target.value)} style={{ ...S.input, marginBottom:20, cursor:'pointer' }}>
+    <Backdrop onClose={onClose} label="Mover nota a tarea">
+      <div className="proj-title" style={{ fontSize: 16, marginBottom: 8 }}>
+        <Icon name="move" size={15} /> Mover nota a tarea
+      </div>
+      <div
+        style={{
+          fontSize: 13,
+          color: 'var(--text-secondary)',
+          marginBottom: 16,
+        }}
+      >
+        Seleccioná la tarea donde querés mover esta nota de bitácora:
+      </div>
+      <div
+        style={{
+          background: 'var(--bg-elevated)',
+          borderRadius: 8,
+          padding: '10px 12px',
+          marginBottom: 16,
+          fontSize: 13,
+          color: 'var(--text-secondary)',
+          fontStyle: 'italic',
+        }}
+      >
+        "{note.text}"
+      </div>
+      <select
+        value={selectedTask}
+        onChange={(e) => setSelectedTask(e.target.value)}
+        style={{ ...S.input, marginBottom: 20, cursor: 'pointer' }}
+      >
         <option value="">-- Seleccioná una tarea --</option>
-        {tasks.map(t=><option key={t.id} value={t.id}>{t.title}</option>)}
+        {tasks.map((t) => (
+          <option key={t.id} value={t.id}>
+            {t.title}
+          </option>
+        ))}
       </select>
-      <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
-        <button onClick={onClose} style={S.btnSecondary}>Cancelar</button>
-        <button onClick={()=>selectedTask&&onMove(Number(selectedTask))} style={S.btnPrimary} disabled={!selectedTask}>Mover</button>
+      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+        <button onClick={onClose} style={S.btnSecondary}>
+          Cancelar
+        </button>
+        <button
+          onClick={() => selectedTask && onMove(Number(selectedTask))}
+          style={S.btnPrimary}
+          disabled={!selectedTask}
+        >
+          Mover
+        </button>
       </div>
     </Backdrop>
   )
 }
 
-export function MoveCommentModal({ comment, projects, currentProjectId, onMove, onClose }) {
+export function MoveCommentModal({
+  comment,
+  projects,
+  currentProjectId,
+  onMove,
+  onClose,
+}) {
   const [selectedProject, setSelectedProject] = useState('')
   return (
-    <Backdrop onClose={onClose}>
-      <div className="proj-title" style={{ fontSize:16, marginBottom:8 }}>🔀 Mover nota a proyecto</div>
-      <div style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:16 }}>Esta nota pasará a la bitácora del proyecto seleccionado:</div>
-      <div style={{ background:'var(--bg-elevated)', borderRadius:8, padding:'10px 12px', marginBottom:16, fontSize:13, color:'var(--text-secondary)', fontStyle:'italic' }}>"{comment.text}"</div>
-      <select value={selectedProject} onChange={e=>setSelectedProject(e.target.value)} style={{ ...S.input, marginBottom:20, cursor:'pointer' }}>
+    <Backdrop onClose={onClose} label="Mover nota a proyecto">
+      <div className="proj-title" style={{ fontSize: 16, marginBottom: 8 }}>
+        <Icon name="move" size={15} /> Mover nota a proyecto
+      </div>
+      <div
+        style={{
+          fontSize: 13,
+          color: 'var(--text-secondary)',
+          marginBottom: 16,
+        }}
+      >
+        Esta nota pasará a la bitácora del proyecto seleccionado:
+      </div>
+      <div
+        style={{
+          background: 'var(--bg-elevated)',
+          borderRadius: 8,
+          padding: '10px 12px',
+          marginBottom: 16,
+          fontSize: 13,
+          color: 'var(--text-secondary)',
+          fontStyle: 'italic',
+        }}
+      >
+        "{comment.text}"
+      </div>
+      <select
+        value={selectedProject}
+        onChange={(e) => setSelectedProject(e.target.value)}
+        style={{ ...S.input, marginBottom: 20, cursor: 'pointer' }}
+      >
         <option value="">-- Seleccioná un proyecto --</option>
-        {projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+        {projects.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.name}
+          </option>
+        ))}
       </select>
-      <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
-        <button onClick={onClose} style={S.btnSecondary}>Cancelar</button>
-        <button onClick={()=>selectedProject&&onMove(Number(selectedProject))} style={S.btnPrimary} disabled={!selectedProject}>Mover</button>
+      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+        <button onClick={onClose} style={S.btnSecondary}>
+          Cancelar
+        </button>
+        <button
+          onClick={() => selectedProject && onMove(Number(selectedProject))}
+          style={S.btnPrimary}
+          disabled={!selectedProject}
+        >
+          Mover
+        </button>
       </div>
     </Backdrop>
   )
 }
 
-export function TaskNotesModal({ task, onClose, onAddComment, newComment, onNewCommentChange, onEditComment, onDeleteComment, onMoveComment, onConfirm, onEditCreatedAt }) {
-  const sortedComments = [...task.comments].sort((a,b) => (b.created_at||'') < (a.created_at||'') ? -1 : 1)
+export function TaskNotesModal({
+  task,
+  onClose,
+  onAddComment,
+  newComment,
+  onNewCommentChange,
+  onEditComment,
+  onDeleteComment,
+  onMoveComment,
+  onConfirm,
+  onEditCreatedAt,
+}) {
+  const sortedComments = [...task.comments].sort((a, b) =>
+    (b.created_at || '') < (a.created_at || '') ? -1 : 1,
+  )
   return (
-    <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(44,38,32,0.45)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
-      <div onClick={e=>e.stopPropagation()} style={{ background:'var(--bg-surface)', border:'1px solid var(--border-soft)', borderRadius:14, padding:24, width:'100%', maxWidth:520, maxHeight:'85vh', display:'flex', flexDirection:'column', boxShadow:'0 30px 80px #0009' }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:4 }}>
-          <div style={{ minWidth:0 }}>
-            <div className="proj-title" style={{ fontSize:16, wordBreak:'break-word' }}>💬 {task.title}</div>
-            {task.projectName && <div style={{ fontSize:12, color:task.projectColor||'var(--text-muted)', marginTop:2 }}>📁 {task.projectName}</div>}
+    <Dialog
+      onClose={onClose}
+      label={`Notas de ${task.title}`}
+      style={{ maxWidth: 520, display: 'flex', flexDirection: 'column' }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: 4,
+        }}
+      >
+        <div style={{ minWidth: 0 }}>
+          <div
+            className="proj-title"
+            style={{ fontSize: 16, wordBreak: 'break-word' }}
+          >
+            <Icon name="message" size={15} /> {task.title}
           </div>
-          <button onClick={onClose} style={{ background:'transparent', border:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:18, lineHeight:1, flexShrink:0 }}>✕</button>
+          {task.projectName && (
+            <div
+              style={{
+                fontSize: 12,
+                color: task.projectColor || 'var(--text-muted)',
+                marginTop: 2,
+              }}
+            >
+              <Icon name="folder" size={15} /> {task.projectName}
+            </div>
+          )}
         </div>
-        <div style={{ flex:1, overflowY:'auto', marginTop:14, marginBottom:14 }}>
-          {sortedComments.length === 0 && <div style={{ fontSize:13, color:'var(--text-faint)', padding:'16px 0' }}>Sin notas aún.</div>}
-          {sortedComments.map(c => (
-            <div key={c.id} style={{ background:'var(--bg-elevated)', border:'1px solid var(--border-soft)', borderRadius:8, padding:'9px 12px', marginBottom:7, display:'flex', gap:10, alignItems:'flex-start' }}>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:3 }}>{c.author||'—'} · <span onClick={()=>onEditCreatedAt&&onEditCreatedAt('comment', task.id, c)} style={{ cursor:'pointer', textDecoration:'underline dotted', color:'var(--text-secondary)' }} title="Editar fecha de registro">{fmtDate(c.created_at)}</span></div>
-                <div style={{ fontSize:13, color:'var(--text-content)', wordBreak:'break-word' }}>{c.text}</div>
+        <button
+          onClick={onClose}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: 'var(--text-muted)',
+            cursor: 'pointer',
+            fontSize: 18,
+            lineHeight: 1,
+            flexShrink: 0,
+          }}
+        >
+          <Icon name="close" size={15} />
+        </button>
+      </div>
+      <div
+        style={{ flex: 1, overflowY: 'auto', marginTop: 14, marginBottom: 14 }}
+      >
+        {sortedComments.length === 0 && (
+          <div
+            style={{
+              fontSize: 13,
+              color: 'var(--text-faint)',
+              padding: '16px 0',
+            }}
+          >
+            Sin notas aún.
+          </div>
+        )}
+        {sortedComments.map((c) => (
+          <div
+            key={c.id}
+            style={{
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border-soft)',
+              borderRadius: 8,
+              padding: '9px 12px',
+              marginBottom: 7,
+              display: 'flex',
+              gap: 10,
+              alignItems: 'flex-start',
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: 'var(--text-muted)',
+                  marginBottom: 3,
+                }}
+              >
+                {c.author || '—'} ·{' '}
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={activateOnKeyboard}
+                  onClick={() =>
+                    onEditCreatedAt && onEditCreatedAt('comment', task.id, c)
+                  }
+                  style={{
+                    cursor: 'pointer',
+                    textDecoration: 'underline dotted',
+                    color: 'var(--text-secondary)',
+                  }}
+                  title="Editar fecha de registro"
+                >
+                  {fmtDate(c.created_at)}
+                </span>
               </div>
-              <div style={{ display:'flex', gap:4, flexShrink:0 }}>
-                <button onClick={() => onMoveComment(c, task.projectId, task.id)} title="Mover a proyecto" style={{ ...S.btnSecondary, padding:'3px 7px', fontSize:12 }}>🔀</button>
-                <button onClick={() => onEditComment(task.projectId, task.id, c)} title="Editar" style={{ ...S.btnSecondary, padding:'3px 7px', fontSize:12 }}>✏️</button>
-                <button onClick={() => onConfirm('¿Eliminar esta nota?', () => onDeleteComment(task.projectId, task.id, c.id))} title="Eliminar" style={{ ...S.btnSecondary, padding:'3px 7px', fontSize:12, borderColor:'#dc262633' }}>🗑️</button>
+              <div
+                style={{
+                  fontSize: 13,
+                  color: 'var(--text-content)',
+                  wordBreak: 'break-word',
+                }}
+              >
+                {c.text}
               </div>
             </div>
-          ))}
-        </div>
-        <div style={{ display:'flex', gap:8 }}>
-          <input
-            placeholder="Agregar nota..."
-            value={newComment || ''}
-            onChange={e => onNewCommentChange(task.id, e.target.value)}
-            onKeyDown={e => e.key==='Enter' && onAddComment(task.projectId, task.id, newComment || '')}
-            style={S.input}
-            autoFocus
-          />
-          <button onClick={() => onAddComment(task.projectId, task.id, newComment || '')} style={S.btnPrimary}>Agregar</button>
-        </div>
+            <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+              <button
+                onClick={() => onMoveComment(c, task.projectId, task.id)}
+                title="Mover a proyecto"
+                style={{ ...S.btnSecondary, padding: '3px 7px', fontSize: 12 }}
+              >
+                <Icon name="move" size={15} />
+              </button>
+              <button
+                onClick={() => onEditComment(task.projectId, task.id, c)}
+                title="Editar"
+                style={{ ...S.btnSecondary, padding: '3px 7px', fontSize: 12 }}
+              >
+                <Icon name="edit" size={15} />
+              </button>
+              <button
+                onClick={() =>
+                  onConfirm('¿Eliminar esta nota?', () =>
+                    onDeleteComment(task.projectId, task.id, c.id),
+                  )
+                }
+                title="Eliminar"
+                style={{
+                  ...S.btnSecondary,
+                  padding: '3px 7px',
+                  fontSize: 12,
+                  borderColor: '#dc262633',
+                }}
+              >
+                <Icon name="trash" size={15} />
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
-    </div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input
+          placeholder="Agregar nota..."
+          value={newComment || ''}
+          onChange={(e) => onNewCommentChange(task.id, e.target.value)}
+          onKeyDown={(e) =>
+            e.key === 'Enter' &&
+            onAddComment(task.projectId, task.id, newComment || '')
+          }
+          style={S.input}
+          autoFocus
+        />
+        <button
+          onClick={() =>
+            onAddComment(task.projectId, task.id, newComment || '')
+          }
+          style={S.btnPrimary}
+        >
+          Agregar
+        </button>
+      </div>
+    </Dialog>
   )
 }
 
 export function ParticipantsModal({ onClose, onGenerate }) {
   const [text, setText] = useState('')
   const generate = () => {
-    const participants = text.split('\n').map(s => s.trim()).filter(Boolean)
+    const participants = text
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean)
     onGenerate(participants)
   }
   return (
-    <Backdrop onClose={onClose}>
-      <div className="proj-title" style={{ fontSize:16, marginBottom:8 }}>👥 Participantes de la reunión</div>
-      <div style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:12 }}>Uno por línea (opcional). Se incluyen en el prompt de la minuta.</div>
-      <textarea value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==='Enter'&&e.ctrlKey&&generate()} rows={6} placeholder={'Juan Pérez\nMaría López'} style={{ ...S.input, resize:'vertical', lineHeight:1.6 }} autoFocus />
-      <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:16 }}>
-        <button onClick={onClose} style={S.btnSecondary}>Cancelar</button>
-        <button onClick={generate} style={S.btnPrimary}>📄 Generar y descargar</button>
+    <Backdrop onClose={onClose} label="Generar informe">
+      <div className="proj-title" style={{ fontSize: 16, marginBottom: 8 }}>
+        <Icon name="users" size={15} /> Participantes de la reunión
+      </div>
+      <div
+        style={{
+          fontSize: 13,
+          color: 'var(--text-secondary)',
+          marginBottom: 12,
+        }}
+      >
+        Uno por línea (opcional). Se incluyen en el prompt de la minuta.
+      </div>
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && e.ctrlKey && generate()}
+        rows={6}
+        placeholder={'Juan Pérez\nMaría López'}
+        style={{ ...S.input, resize: 'vertical', lineHeight: 1.6 }}
+        autoFocus
+      />
+      <div
+        style={{
+          display: 'flex',
+          gap: 10,
+          justifyContent: 'flex-end',
+          marginTop: 16,
+        }}
+      >
+        <button onClick={onClose} style={S.btnSecondary}>
+          Cancelar
+        </button>
+        <button onClick={generate} style={S.btnPrimary}>
+          📄 Generar y descargar
+        </button>
       </div>
     </Backdrop>
   )

@@ -1,0 +1,509 @@
+import { STATUS, PRIORITY } from './helpers.js'
+import { getStatus, fmtDate, fmtSimpleDate } from './dates.js'
+
+// ── Excel export ──────────────────────────────────────────────────
+export function exportExcel(projects) {
+  const esc = (v) =>
+    String(v ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+  const cell = (v, type = 'String') => `<Cell><Data ss:Type="${type}">${esc(v)}</Data></Cell>`
+  const row = (cells) => `<Row>${cells.join('')}</Row>`
+  const sheets = []
+
+  sheets.push(
+    `<Worksheet ss:Name="Proyectos"><Table>${[
+      row([
+        cell('ID'),
+        cell('Nombre'),
+        cell('Color'),
+        cell('Fecha creación'),
+        cell('Tareas totales'),
+        cell('Completadas'),
+        cell('Notas'),
+      ]),
+      ...projects.map((p) =>
+        row([
+          cell(p.id, 'Number'),
+          cell(p.name),
+          cell(p.color),
+          cell(fmtDate(p.created_at)),
+          cell(p.tasks.length, 'Number'),
+          cell(p.tasks.filter((t) => t.done).length, 'Number'),
+          cell(p.notes?.length || 0, 'Number'),
+        ])
+      ),
+    ].join('')}</Table></Worksheet>`
+  )
+
+  sheets.push(
+    `<Worksheet ss:Name="Tareas"><Table>${[
+      row([
+        cell('ID'),
+        cell('Proyecto'),
+        cell('Título'),
+        cell('Responsable'),
+        cell('Fecha registro'),
+        cell('Vencimiento'),
+        cell('Estado'),
+        cell('Completada'),
+        cell('Fecha completado'),
+        cell('Comentarios'),
+      ]),
+      ...projects.flatMap((p) =>
+        p.tasks.map((t) =>
+          row([
+            cell(t.id, 'Number'),
+            cell(p.name),
+            cell(t.title),
+            cell(t.responsible || ''),
+            cell(fmtDate(t.created_at)),
+            cell(fmtSimpleDate(t.due_date)),
+            cell(STATUS[getStatus(t.due_date, t.done)].label),
+            cell(t.done ? 'Sí' : 'No'),
+            cell(t.done_at || ''),
+            cell(t.comments.length, 'Number'),
+          ])
+        )
+      ),
+    ].join('')}</Table></Worksheet>`
+  )
+
+  sheets.push(
+    `<Worksheet ss:Name="Notas de Proyecto"><Table>${[
+      row([cell('ID'), cell('Proyecto'), cell('Autor'), cell('Fecha'), cell('Nota')]),
+      ...projects.flatMap((p) =>
+        (p.notes || []).map((n) =>
+          row([
+            cell(n.id, 'Number'),
+            cell(p.name),
+            cell(n.author || ''),
+            cell(fmtDate(n.created_at)),
+            cell(n.text),
+          ])
+        )
+      ),
+    ].join('')}</Table></Worksheet>`
+  )
+
+  sheets.push(
+    `<Worksheet ss:Name="Comentarios"><Table>${[
+      row([
+        cell('ID'),
+        cell('Proyecto'),
+        cell('Tarea'),
+        cell('Autor'),
+        cell('Fecha'),
+        cell('Comentario'),
+      ]),
+      ...projects.flatMap((p) =>
+        p.tasks.flatMap((t) =>
+          t.comments.map((c) =>
+            row([
+              cell(c.id, 'Number'),
+              cell(p.name),
+              cell(t.title),
+              cell(c.author || ''),
+              cell(fmtDate(c.created_at)),
+              cell(c.text),
+            ])
+          )
+        )
+      ),
+    ].join('')}</Table></Worksheet>`
+  )
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<?mso-application progid="Excel.Sheet"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Styles><Style ss:ID="Default"><Font ss:Bold="0"/></Style></Styles>${sheets.join('')}</Workbook>`
+  const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = `TaskLog_${new Date().toISOString().split('T')[0]}.xls`
+  a.click()
+  URL.revokeObjectURL(a.href)
+}
+
+// ── AI Report Prompt export ──────────────────────────────────────
+export function exportReportPrompt(projects) {
+  const fmtD = (d) => {
+    if (!d) return '—'
+    const parts = String(d).slice(0, 10).split('-')
+    return parts.length === 3 ? parts[2] + '/' + parts[1] + '/' + parts[0] : String(d).slice(0, 10)
+  }
+  const statusLabel = (due, done) =>
+    ({
+      done: 'Completada',
+      overdue: 'VENCIDA',
+      warning: 'Por vencer (próximos 3 días)',
+      ok: due ? 'A tiempo' : 'Sin fecha de vencimiento',
+    })[getStatus(due, done)]
+
+  const now = new Date()
+  const fecha =
+    String(now.getDate()).padStart(2, '0') +
+    '/' +
+    String(now.getMonth() + 1).padStart(2, '0') +
+    '/' +
+    now.getFullYear()
+  const activeProjects = projects.filter((p) => !p.archived)
+
+  let lines = []
+  lines.push(`PROMPT PARA GENERACIÓN DE INFORME — TASKLOG`)
+  lines.push(`Fecha de generación: ${fecha}`)
+  lines.push(``)
+  lines.push(`---`)
+  lines.push(``)
+  lines.push(
+    `Sos un asistente de gestión de proyectos. A continuación te proporciono los datos actuales de todos los proyectos activos de la aplicación TaskLog. Tu tarea es generar un informe ejecutivo completo, visualmente organizado y fácil de leer, que incluya:`
+  )
+  lines.push(``)
+  lines.push(`1. Un resumen general del estado de todos los proyectos`)
+  lines.push(`2. Un análisis detallado de cada proyecto con sus tareas, responsables y estado`)
+  lines.push(`3. Alertas de tareas vencidas o por vencer`)
+  lines.push(`4. Un resumen de las notas y bitácoras más relevantes`)
+  lines.push(`5. Conclusiones y recomendaciones de acción inmediata`)
+  lines.push(``)
+  lines.push(
+    `Usá formato Markdown con encabezados, tablas, listas y emojis para que sea visualmente agradable.`
+  )
+  lines.push(``)
+  lines.push(`---`)
+  lines.push(``)
+  lines.push(`## DATOS DE LOS PROYECTOS`)
+  lines.push(``)
+  lines.push(`Total de proyectos activos: ${activeProjects.length}`)
+  lines.push(``)
+
+  for (const p of activeProjects) {
+    const pending = p.tasks.filter((t) => !t.done)
+    const done = p.tasks.filter((t) => t.done)
+    const overdue = pending.filter((t) => statusLabel(t.due_date, t.done) === 'VENCIDA')
+    const warning = pending.filter((t) => statusLabel(t.due_date, t.done).startsWith('Por vencer'))
+
+    lines.push(`### PROYECTO: ${p.name}`)
+    lines.push(`- Tareas pendientes: ${pending.length}`)
+    lines.push(`- Tareas completadas: ${done.length}`)
+    lines.push(`- Tareas vencidas: ${overdue.length}`)
+    lines.push(`- Tareas por vencer (próx. 3 días): ${warning.length}`)
+    lines.push(`- Notas del proyecto: ${p.notes?.length || 0}`)
+    lines.push(``)
+
+    if (p.tasks.length > 0) {
+      lines.push(`#### Tareas:`)
+      for (const t of p.tasks) {
+        lines.push(``)
+        lines.push(`  TAREA: ${t.title}`)
+        lines.push(`  - Estado: ${statusLabel(t.due_date, t.done)}`)
+        lines.push(`  - Responsable: ${t.responsible || '—'}`)
+        lines.push(`  - Fecha de registro: ${fmtD(t.created_at)}`)
+        lines.push(`  - Fecha de vencimiento: ${t.due_date ? fmtD(t.due_date) : '—'}`)
+        if (t.comments && t.comments.length > 0) {
+          lines.push(
+            `  - Bitácora (${t.comments.length} entrada${t.comments.length !== 1 ? 's' : ''}):`
+          )
+          for (const c of t.comments) {
+            lines.push(`    [${fmtD(c.created_at)} — ${c.author || '—'}]: ${c.text}`)
+          }
+        }
+      }
+      lines.push(``)
+    }
+
+    if (p.notes && p.notes.length > 0) {
+      lines.push(`#### Notas del proyecto:`)
+      for (const n of p.notes) {
+        lines.push(`  [${fmtD(n.created_at)} — ${n.author || '—'}]: ${n.text}`)
+      }
+      lines.push(``)
+    }
+
+    lines.push(`---`)
+    lines.push(``)
+  }
+
+  lines.push(`FIN DE LOS DATOS. Generá el informe ahora.`)
+
+  const text = lines.join('\n')
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = `tasklog_prompt_informe_${fecha.replace(/\//g, '-')}.txt`
+  a.click()
+  URL.revokeObjectURL(a.href)
+}
+
+// ── Prompt de minuta de reunión ────────────────────────────────────
+export function exportMeetingPrompt(meeting, temas, participants) {
+  const fmtD = (d) => {
+    if (!d) return '—'
+    const parts = String(d).slice(0, 10).split('-')
+    return parts.length === 3 ? parts[2] + '/' + parts[1] + '/' + parts[0] : String(d).slice(0, 10)
+  }
+
+  const now = new Date()
+  const fecha =
+    String(now.getDate()).padStart(2, '0') +
+    '/' +
+    String(now.getMonth() + 1).padStart(2, '0') +
+    '/' +
+    now.getFullYear()
+  const allTasks = temas.flatMap((t) => t.tasks)
+  const pending = allTasks.filter((t) => !t.done)
+  const done = allTasks.filter((t) => t.done)
+
+  let lines = []
+  lines.push(`ACTA DE REUNIÓN — ${meeting.name}`)
+  lines.push(`Documento generado el: ${fecha}`)
+  lines.push(``)
+  lines.push(`---`)
+  lines.push(``)
+  lines.push(
+    `Actuá como un asistente ejecutivo especializado en la redacción de actas de reunión corporativas. A continuación se detalla el registro completo de temas tratados en la reunión "${meeting.name}" (de carácter periódico; puede incluir tanto temas de encuentros anteriores como los incorporados en el más reciente). Redactá un acta formal y profesional, en tercera persona y con lenguaje técnico-administrativo, que respete la siguiente estructura:`
+  )
+  lines.push(``)
+  lines.push(`1. ENCABEZADO — Nombre de la reunión, fecha del acta y nómina de participantes.`)
+  lines.push(
+    `2. OBJETIVO DE LA REUNIÓN — Inferido a partir de los temas tratados, si no está indicado explícitamente.`
+  )
+  lines.push(
+    `3. DESARROLLO — Para cada tema: descripción del asunto, decisiones o acuerdos alcanzados, y su estado actual (en curso / finalizado).`
+  )
+  lines.push(
+    `4. CUADRO DE COMPROMISOS — Tabla con columnas: Compromiso, Responsable, Prioridad, Fecha límite, Estado. Ordenada de mayor a menor prioridad.`
+  )
+  lines.push(`5. CONCLUSIONES — Síntesis de los resultados principales de la reunión.`)
+  lines.push(`6. SEGUIMIENTO — Puntos pendientes a tratar en el próximo encuentro.`)
+  lines.push(``)
+  lines.push(`Requisitos de redacción y formato:`)
+  lines.push(`- Registro formal, en tercera persona, sin coloquialismos ni lenguaje informal.`)
+  lines.push(
+    `- Formato Markdown con encabezados y tablas; evitar el uso de emojis salvo que aporten claridad genuina.`
+  )
+  lines.push(
+    `- El documento debe quedar listo para adjuntarse o pegarse directamente en una comunicación corporativa por correo electrónico.`
+  )
+  lines.push(``)
+  lines.push(`---`)
+  lines.push(``)
+  lines.push(`## PARTICIPANTES`)
+  if (participants && participants.length) {
+    participants.forEach((p) => lines.push(`- ${p}`))
+  } else {
+    lines.push(`(sin especificar)`)
+  }
+  lines.push(``)
+  lines.push(`## RESUMEN EJECUTIVO`)
+  lines.push(`- Temas tratados: ${temas.length}`)
+  lines.push(`- Compromisos y tareas totales: ${allTasks.length}`)
+  lines.push(`- Pendientes: ${pending.length}`)
+  lines.push(`- Finalizados: ${done.length}`)
+  lines.push(``)
+  lines.push(`---`)
+  lines.push(``)
+  lines.push(`## DETALLE DE TEMAS TRATADOS`)
+  lines.push(``)
+
+  for (const tema of temas) {
+    lines.push(`### TEMA: ${tema.name}`)
+    lines.push(``)
+
+    if (tema.tasks.length > 0) {
+      for (const t of tema.tasks) {
+        lines.push(`  COMPROMISO/TAREA: ${t.title}`)
+        lines.push(`  - Estado: ${t.done ? 'Finalizado' : 'Pendiente'}`)
+        lines.push(
+          `  - Prioridad: ${t.priority && PRIORITY[t.priority] ? PRIORITY[t.priority].label : 'Sin definir'}`
+        )
+        lines.push(`  - Responsable: ${t.responsible || 'Sin asignar'}`)
+        lines.push(`  - Fecha de registro: ${fmtD(t.created_at)}`)
+        lines.push(`  - Fecha límite: ${t.due_date ? fmtD(t.due_date) : 'No definida'}`)
+        if (t.comments && t.comments.length > 0) {
+          lines.push(`  - Observaciones (${t.comments.length}):`)
+          for (const c of t.comments) {
+            lines.push(`    [${fmtD(c.created_at)} — ${c.author || 'Sin identificar'}]: ${c.text}`)
+          }
+        }
+        lines.push(``)
+      }
+    } else {
+      lines.push(`  (sin compromisos ni tareas registrados)`)
+      lines.push(``)
+    }
+
+    if (tema.notes && tema.notes.length > 0) {
+      lines.push(`  Observaciones generales del tema:`)
+      for (const n of tema.notes) {
+        lines.push(`    [${fmtD(n.created_at)} — ${n.author || 'Sin identificar'}]: ${n.text}`)
+      }
+      lines.push(``)
+    }
+
+    lines.push(`---`)
+    lines.push(``)
+  }
+
+  lines.push(
+    `FIN DEL REGISTRO DE DATOS. Redactá el acta de reunión a continuación, siguiendo la estructura y los requisitos indicados.`
+  )
+
+  const text = lines.join('\n')
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = `acta_reunion_${meeting.name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_${fecha.replace(/\//g, '-')}.txt`
+  a.click()
+  URL.revokeObjectURL(a.href)
+}
+
+// ── Listado de temas de una reunión, listo para compartir por email ──
+export function exportMeetingListing(meeting, temas) {
+  const fmtD = (d) => {
+    if (!d) return '—'
+    const parts = String(d).slice(0, 10).split('-')
+    return parts.length === 3 ? parts[2] + '/' + parts[1] + '/' + parts[0] : String(d).slice(0, 10)
+  }
+
+  const now = new Date()
+  const fecha =
+    String(now.getDate()).padStart(2, '0') +
+    '/' +
+    String(now.getMonth() + 1).padStart(2, '0') +
+    '/' +
+    now.getFullYear()
+  const allTasks = temas.flatMap((t) => t.tasks)
+  const pending = allTasks.filter((t) => !t.done)
+  const done = allTasks.filter((t) => t.done)
+  const allNotes = temas.flatMap((t) => t.notes || [])
+  const sep = '─'.repeat(60)
+
+  let lines = []
+  lines.push(`LISTADO DE TEMAS — ${meeting.name}`)
+  lines.push(`Generado el: ${fecha}`)
+  lines.push(``)
+  lines.push(
+    `Temas: ${temas.length}  ·  Tareas: ${allTasks.length} (pendientes: ${pending.length}, finalizadas: ${done.length})  ·  Notas: ${allNotes.length}`
+  )
+  lines.push(sep)
+
+  for (const tema of temas) {
+    lines.push(``)
+    lines.push(`TEMA: ${tema.name}`)
+    lines.push(sep)
+
+    const temaPending = (tema.tasks || [])
+      .filter((t) => !t.done)
+      .sort((a, b) => ((a.due_date || '9999') < (b.due_date || '9999') ? -1 : 1))
+    const temaDone = (tema.tasks || []).filter((t) => t.done)
+
+    if (temaPending.length > 0 || temaDone.length > 0) {
+      lines.push(`Tareas:`)
+      for (const t of [...temaPending, ...temaDone]) {
+        const check = t.done ? '☑' : '☐'
+        const prio = t.priority && PRIORITY[t.priority] ? ` [${PRIORITY[t.priority].label}]` : ''
+        const resp = t.responsible ? `  Responsable: ${t.responsible}` : ''
+        const due = t.due_date ? `  Vence: ${fmtD(t.due_date)}` : ''
+        lines.push(`  ${check} ${t.title}${prio}${resp}${due}`)
+        if (t.comments && t.comments.length > 0) {
+          for (const c of t.comments) {
+            lines.push(
+              `      · [${fmtD(c.created_at)} — ${c.author || 'Sin identificar'}]: ${c.text}`
+            )
+          }
+        }
+      }
+    } else {
+      lines.push(`(sin tareas registradas)`)
+    }
+
+    if (tema.notes && tema.notes.length > 0) {
+      lines.push(``)
+      lines.push(`Notas:`)
+      for (const n of [...tema.notes].sort((a, b) =>
+        (a.created_at || '') < (b.created_at || '') ? -1 : 1
+      )) {
+        lines.push(`  · [${fmtD(n.created_at)}]: ${n.text}`)
+      }
+    }
+  }
+
+  const text = lines.join('\n')
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = `listado_temas_${meeting.name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_${fecha.replace(/\//g, '-')}.txt`
+  a.click()
+  URL.revokeObjectURL(a.href)
+}
+
+// ── Contenido completo de un proyecto, para pasarle a una IA ──────
+export function exportProjectContent(project) {
+  const fmtD = (d) => {
+    if (!d) return '—'
+    const parts = String(d).slice(0, 10).split('-')
+    return parts.length === 3 ? parts[2] + '/' + parts[1] + '/' + parts[0] : String(d).slice(0, 10)
+  }
+
+  const now = new Date()
+  const fecha =
+    String(now.getDate()).padStart(2, '0') +
+    '/' +
+    String(now.getMonth() + 1).padStart(2, '0') +
+    '/' +
+    now.getFullYear()
+  const tasks = project.tasks || []
+  const pending = tasks
+    .filter((t) => !t.done)
+    .sort((a, b) => ((a.due_date || '9999') < (b.due_date || '9999') ? -1 : 1))
+  const done = tasks.filter((t) => t.done)
+  const notes = project.notes || []
+  const sep = '─'.repeat(60)
+
+  let lines = []
+  lines.push(`CONTENIDO DEL PROYECTO — ${project.name}`)
+  lines.push(`Generado el: ${fecha}`)
+  lines.push(``)
+  lines.push(
+    `Tareas: ${tasks.length} (pendientes: ${pending.length}, finalizadas: ${done.length})  ·  Notas: ${notes.length}`
+  )
+  lines.push(sep)
+  lines.push(``)
+
+  if (pending.length > 0 || done.length > 0) {
+    lines.push(`Tareas:`)
+    for (const t of [...pending, ...done]) {
+      const check = t.done ? '☑' : '☐'
+      const prio = t.priority && PRIORITY[t.priority] ? ` [${PRIORITY[t.priority].label}]` : ''
+      const resp = t.responsible ? `  Responsable: ${t.responsible}` : ''
+      const dates = `Creación: ${fmtD(t.created_at)} - Vencimiento: ${t.due_date ? fmtD(t.due_date) : 'No definida'}`
+      lines.push(`  ${check} ${dates} — ${t.title}${prio}${resp}`)
+      if (t.comments && t.comments.length > 0) {
+        for (const c of t.comments) {
+          lines.push(
+            `      · [${fmtD(c.created_at)} — ${c.author || 'Sin identificar'}]: ${c.text}`
+          )
+        }
+      }
+    }
+  } else {
+    lines.push(`(sin tareas registradas)`)
+  }
+
+  if (notes.length > 0) {
+    lines.push(``)
+    lines.push(`Notas:`)
+    for (const n of [...notes].sort((a, b) =>
+      (a.created_at || '') < (b.created_at || '') ? -1 : 1
+    )) {
+      lines.push(`  · [${fmtD(n.created_at)}]: ${n.text}`)
+    }
+  }
+
+  const text = lines.join('\n')
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = `proyecto_${project.name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_${fecha.replace(/\//g, '-')}.txt`
+  a.click()
+  URL.revokeObjectURL(a.href)
+}

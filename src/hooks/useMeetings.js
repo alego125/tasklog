@@ -1,66 +1,62 @@
-import { useState, useCallback } from 'react'
+import { useArchivedCollection } from './useArchivedCollection.js'
 import { api } from './useApi.js'
-
+import { useSyncedCollection } from './useSyncedCollection.js'
 export function useMeetings() {
-  const [meetings,         setMeetings]         = useState([])
-  const [loading,          setLoading]          = useState(true)
-  const [error,            setError]            = useState(null)
-  const [archivedMeetings, setArchivedMeetings] = useState([])
-  const [loadingArchived,  setLoadingArchived]  = useState(false)
-
-  const loadMeetings = useCallback(async () => {
-    if (!localStorage.getItem('ft_token')) { setLoading(false); return }
-    try {
-      setLoading(true); setError(null)
-      setMeetings(await api.getMeetings())
-    } catch {
-      setError('No se pudo conectar con el servidor.')
-    } finally { setLoading(false) }
-  }, [])
-
-  const loadArchivedMeetings = async () => {
-    setLoadingArchived(true)
-    try { setArchivedMeetings(await api.getArchivedMeetings()) }
-    finally { setLoadingArchived(false) }
-  }
-
-  const doAddMeeting = async (name, color) => {
-    if (!name.trim()) return
-    const meeting = await api.createMeeting(name, color)
-    setMeetings(prev => [...prev, meeting])
-    return meeting
-  }
-
-  const doSaveEditMeeting = async (meeting, name, color) => {
-    const prevVals = { name: meeting.name, color: meeting.color }
-    setMeetings(ms => ms.map(m => m.id===meeting.id ? { ...m, name, color } : m))
-    try { await api.updateMeeting(meeting.id, name, color) }
-    catch(e) { setMeetings(ms => ms.map(m => m.id===meeting.id ? { ...m, ...prevVals } : m)); throw e }
-  }
-
-  const doArchiveMeeting = async mId => {
-    const snapshot = meetings
-    setMeetings(prev => prev.filter(m => m.id !== mId))
-    try { await api.archiveMeeting(mId) }
-    catch(e) { setMeetings(snapshot); throw e }
-  }
-
-  const doUnarchiveMeeting = async mId => {
-    const meeting = await api.unarchiveMeeting(mId)
-    setArchivedMeetings(prev => prev.filter(m => m.id !== mId))
-    setMeetings(prev => [...prev, meeting])
-  }
-
-  const doDeleteMeeting = async mId => {
-    const snapshot = meetings
-    setMeetings(prev => prev.filter(m => m.id !== mId))
-    try { await api.deleteMeeting(mId) }
-    catch(e) { setMeetings(snapshot); throw e }
-  }
-
+  const state = useSyncedCollection(() => api.getMeetings())
+  const archived = useArchivedCollection(() => api.getArchivedMeetings())
+  const {
+    items: archivedMeetings,
+    setItems: setArchivedMeetings,
+    loading: loadingArchived,
+    error: archiveError,
+    load: loadArchivedMeetings,
+  } = archived
+  const replace = (items, m) => items.map((x) => (x.id === m.id ? m : x))
+  const doAddMeeting = (name, color) =>
+    state.mutate(
+      () => api.createMeeting(name.trim(), color),
+      (items, m) => [...items, m]
+    )
+  const doSaveEditMeeting = (meeting, name, color) =>
+    state.mutate(() => api.updateMeeting(meeting.id, name, color), replace)
+  const doArchiveMeeting = (id) =>
+    state.mutate(
+      () => api.archiveMeeting(id),
+      (items) => items.filter((m) => m.id !== id)
+    )
+  const doUnarchiveMeeting = (id) =>
+    state.mutate(
+      async () => {
+        const m = await api.unarchiveMeeting(id)
+        setArchivedMeetings((prev) => prev.filter((x) => x.id !== id))
+        return m
+      },
+      (items, m) => [...items, m]
+    )
+  const doDeleteMeeting = (id) =>
+    state.mutate(
+      async () => {
+        const r = await api.deleteMeeting(id)
+        setArchivedMeetings((prev) => prev.filter((x) => x.id !== id))
+        return r
+      },
+      (items) => items.filter((m) => m.id !== id)
+    )
   return {
-    meetings, setMeetings, loading, error, archivedMeetings, loadingArchived,
-    loadMeetings, loadArchivedMeetings,
-    doAddMeeting, doSaveEditMeeting, doArchiveMeeting, doUnarchiveMeeting, doDeleteMeeting,
+    meetings: state.items,
+    setMeetings: state.setItems,
+    loading: state.loading,
+    error: state.error,
+    pending: state.pending,
+    archivedMeetings,
+    loadingArchived,
+    archiveError,
+    loadMeetings: state.load,
+    loadArchivedMeetings,
+    doAddMeeting,
+    doSaveEditMeeting,
+    doArchiveMeeting,
+    doUnarchiveMeeting,
+    doDeleteMeeting,
   }
 }
