@@ -114,9 +114,7 @@ export default function MeetingBoard({ meeting, onBack }) {
     }, 150)
   }
 
-  // Si al editar una tarea (p.ej. su fecha) el tema cambia de categoría de
-  // vencimiento, su tarjeta puede reordenarse y salir de la vista actual.
-  // Si eso pasa, hacemos scroll para que vuelva a quedar visible.
+  // Al marcar una tarea, el tema puede reordenarse y quedar fuera de la vista.
   const keepTemaInView = (pId) => {
     setTimeout(() => {
       const el = document.getElementById('project-' + pId)
@@ -188,15 +186,9 @@ export default function MeetingBoard({ meeting, onBack }) {
           task={editTask.task}
           projects={proj.projects}
           onSave={(form) => {
-            const targetPId = form.project_id
-              ? Number(form.project_id)
-              : editTask.pId
             proj
               .doSaveEditTask(editTask.pId, editTask.task.id, form)
-              .then(() => {
-                toast('Tarea actualizada')
-                keepTemaInView(targetPId)
-              })
+              .then(() => toast('Tarea actualizada'))
               .catch((e) => toast(errMsg(e), 'error'))
             setEditTask(null)
           }}
@@ -244,10 +236,7 @@ export default function MeetingBoard({ meeting, onBack }) {
                 responsible: editDueDate.task.responsible || '',
                 due_date,
               })
-              .then(() => {
-                toast('Fecha actualizada')
-                keepTemaInView(editDueDate.pId)
-              })
+              .then(() => toast('Fecha actualizada'))
               .catch((e) => toast(errMsg(e), 'error'))
             setEditDueDate(null)
           }}

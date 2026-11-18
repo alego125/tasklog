@@ -495,10 +495,17 @@ test('keyboard saves task dates and notes and closes their editors', async ({ pa
   const dueDate = page.getByRole('dialog', { name: 'Editar vencimiento' })
   const day = dueDate.getByRole('textbox', { name: 'Día de vencimiento' })
   await day.fill('24')
+  const scrollPosition = await page.evaluate(() => {
+    document.body.style.minHeight = '300vh'
+    window.scrollTo({ top: window.innerHeight, behavior: 'instant' })
+    return window.scrollY
+  })
+  expect(scrollPosition).toBeGreaterThan(0)
   await day.press('Enter')
   await expect(dueDate).toHaveCount(0)
   await expect(page.getByText('Fecha actualizada', { exact: true })).toBeVisible()
   await expect(dueDateTrigger).toBeFocused()
+  expect(await page.evaluate(() => window.scrollY)).toBe(scrollPosition)
 
   await page.locator('.registration-date').click()
   const registration = page.getByRole('dialog', { name: 'Editar fecha de registro' })
