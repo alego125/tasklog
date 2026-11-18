@@ -71,9 +71,9 @@ const COLORS = [
   '#a07060',
 ]
 
-function Backdrop({ onClose, children, label }) {
+function Backdrop({ onClose, children, label, onSubmit }) {
   return (
-    <Dialog onClose={onClose} label={label}>
+    <Dialog onClose={onClose} label={label} onSubmit={onSubmit}>
       {children}
     </Dialog>
   )
@@ -113,7 +113,11 @@ export function EditProject({ project, onSave, onClose }) {
   const [name, setName] = useState(project.name)
   const [color, setColor] = useState(project.color)
   return (
-    <Backdrop onClose={onClose} label="Editar proyecto">
+    <Backdrop
+      onClose={onClose}
+      label="Editar proyecto"
+      onSubmit={() => name.trim() && onSave(name, color)}
+    >
       <div className="proj-title" style={{ fontSize: 16, marginBottom: 18 }}>
         <Icon name="edit" size={15} /> Editar proyecto
       </div>
@@ -123,9 +127,6 @@ export function EditProject({ project, onSave, onClose }) {
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) =>
-              e.key === 'Enter' && name.trim() && onSave(name, color)
-            }
             style={S.input}
             autoFocus
           />
@@ -166,13 +167,10 @@ export function EditProject({ project, onSave, onClose }) {
           marginTop: 22,
         }}
       >
-        <button onClick={onClose} style={S.btnSecondary}>
+        <button type="button" onClick={onClose} style={S.btnSecondary}>
           Cancelar
         </button>
-        <button
-          onClick={() => name.trim() && onSave(name, color)}
-          style={S.btnPrimary}
-        >
+        <button type="submit" style={S.btnPrimary}>
           Guardar
         </button>
       </div>
@@ -217,7 +215,7 @@ export function EditTask({ task, projects, onSave, onClose }) {
   }
   const save = () => f.title && onSave({ ...f, due_date: buildDueDate() })
   return (
-    <Backdrop onClose={onClose} label="Editar tarea">
+    <Backdrop onClose={onClose} label="Editar tarea" onSubmit={save}>
       <div className="proj-title" style={{ fontSize: 16, marginBottom: 18 }}>
         <Icon name="edit" size={15} /> Editar tarea
       </div>
@@ -227,7 +225,6 @@ export function EditTask({ task, projects, onSave, onClose }) {
           <input
             value={f.title}
             onChange={(e) => setF((p) => ({ ...p, title: e.target.value }))}
-            onKeyDown={(e) => e.key === 'Enter' && save()}
             style={S.input}
             autoFocus
           />
@@ -242,7 +239,6 @@ export function EditTask({ task, projects, onSave, onClose }) {
             onChange={(e) =>
               setF((p) => ({ ...p, responsible: e.target.value }))
             }
-            onKeyDown={(e) => e.key === 'Enter' && save()}
             style={S.input}
           />
         </label>
@@ -302,7 +298,6 @@ export function EditTask({ task, projects, onSave, onClose }) {
                   setDue((p) => ({ ...p, day: v })),
                 )
               }
-              onKeyDown={(e) => e.key === 'Enter' && save()}
               aria-label="Día de vencimiento"
               placeholder="DD"
               maxLength={2}
@@ -316,7 +311,6 @@ export function EditTask({ task, projects, onSave, onClose }) {
                   setDue((p) => ({ ...p, month: v })),
                 )
               }
-              onKeyDown={(e) => e.key === 'Enter' && save()}
               aria-label="Mes de vencimiento"
               placeholder="MM"
               maxLength={2}
@@ -330,7 +324,6 @@ export function EditTask({ task, projects, onSave, onClose }) {
                   setDue((p) => ({ ...p, year: v })),
                 )
               }
-              onKeyDown={(e) => e.key === 'Enter' && save()}
               aria-label="Año de vencimiento"
               placeholder="AAAA"
               maxLength={4}
@@ -338,6 +331,7 @@ export function EditTask({ task, projects, onSave, onClose }) {
             />
             {(due.day || due.month) && (
               <button
+                type="button"
                 onClick={() =>
                   setDue({ day: '', month: '', year: String(currentYear) })
                 }
@@ -357,10 +351,10 @@ export function EditTask({ task, projects, onSave, onClose }) {
           marginTop: 20,
         }}
       >
-        <button onClick={onClose} style={S.btnSecondary}>
+        <button type="button" onClick={onClose} style={S.btnSecondary}>
           Cancelar
         </button>
-        <button onClick={save} style={S.btnPrimary}>
+        <button type="submit" style={S.btnPrimary}>
           Guardar
         </button>
       </div>
@@ -371,14 +365,23 @@ export function EditTask({ task, projects, onSave, onClose }) {
 export function EditComment({ comment, onSave, onClose }) {
   const [text, setText] = useState(comment.text)
   return (
-    <Backdrop onClose={onClose} label="Editar nota">
+    <Backdrop
+      onClose={onClose}
+      label="Editar nota"
+      onSubmit={() => onSave({ text })}
+    >
       <div className="proj-title" style={{ fontSize: 16, marginBottom: 14 }}>
         <Icon name="edit" size={15} /> Editar nota
       </div>
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && e.ctrlKey && onSave({ text })}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && e.ctrlKey && !e.nativeEvent.isComposing) {
+            e.preventDefault()
+            e.currentTarget.form.requestSubmit()
+          }
+        }}
         placeholder="Ctrl+Enter para guardar"
         rows={4}
         autoFocus
@@ -392,10 +395,10 @@ export function EditComment({ comment, onSave, onClose }) {
           marginTop: 14,
         }}
       >
-        <button onClick={onClose} style={S.btnSecondary}>
+        <button type="button" onClick={onClose} style={S.btnSecondary}>
           Cancelar
         </button>
-        <button onClick={() => onSave({ text })} style={S.btnPrimary}>
+        <button type="submit" style={S.btnPrimary}>
           Guardar
         </button>
       </div>
@@ -429,7 +432,7 @@ export function EditDueDateModal({ task, onSave, onClose }) {
   }
   const save = () => onSave(buildDueDate())
   return (
-    <Backdrop onClose={onClose} label="Editar vencimiento">
+    <Backdrop onClose={onClose} label="Editar vencimiento" onSubmit={save}>
       <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>
         <Icon name="calendar" size={15} /> Fecha de vencimiento
       </div>
@@ -458,7 +461,6 @@ export function EditDueDateModal({ task, onSave, onClose }) {
                 setDue((p) => ({ ...p, day: v })),
               )
             }
-            onKeyDown={(e) => e.key === 'Enter' && save()}
             aria-label="Día de vencimiento"
             placeholder="DD"
             maxLength={2}
@@ -472,7 +474,6 @@ export function EditDueDateModal({ task, onSave, onClose }) {
                 setDue((p) => ({ ...p, month: v })),
               )
             }
-            onKeyDown={(e) => e.key === 'Enter' && save()}
             aria-label="Mes de vencimiento"
             placeholder="MM"
             maxLength={2}
@@ -486,7 +487,6 @@ export function EditDueDateModal({ task, onSave, onClose }) {
                 setDue((p) => ({ ...p, year: v })),
               )
             }
-            onKeyDown={(e) => e.key === 'Enter' && save()}
             aria-label="Año de vencimiento"
             placeholder="AAAA"
             maxLength={4}
@@ -496,6 +496,7 @@ export function EditDueDateModal({ task, onSave, onClose }) {
       </label>
       {(due.day || due.month) && (
         <button
+          type="button"
           onClick={() =>
             setDue({ day: '', month: '', year: String(currentYear) })
           }
@@ -517,10 +518,10 @@ export function EditDueDateModal({ task, onSave, onClose }) {
           marginTop: 20,
         }}
       >
-        <button onClick={onClose} style={S.btnSecondary}>
+        <button type="button" onClick={onClose} style={S.btnSecondary}>
           Cancelar
         </button>
-        <button onClick={save} style={S.btnPrimary}>
+        <button type="submit" style={S.btnPrimary}>
           Guardar
         </button>
       </div>
@@ -533,7 +534,11 @@ export function EditCreatedAtModal({ item, label, onSave, onClose }) {
     item.created_at ? toLocalDate(item.created_at) : '',
   )
   return (
-    <Backdrop onClose={onClose} label="Editar fecha de registro">
+    <Backdrop
+      onClose={onClose}
+      label="Editar fecha de registro"
+      onSubmit={() => onSave(date)}
+    >
       <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>
         <Icon name="calendar" size={15} /> Fecha de registro
       </div>
@@ -548,7 +553,6 @@ export function EditCreatedAtModal({ item, label, onSave, onClose }) {
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && onSave(date)}
           style={{ ...S.input, marginTop: 4 }}
           autoFocus
         />
@@ -561,10 +565,10 @@ export function EditCreatedAtModal({ item, label, onSave, onClose }) {
           marginTop: 20,
         }}
       >
-        <button onClick={onClose} style={S.btnSecondary}>
+        <button type="button" onClick={onClose} style={S.btnSecondary}>
           Cancelar
         </button>
-        <button onClick={() => onSave(date)} style={S.btnPrimary}>
+        <button type="submit" style={S.btnPrimary}>
           Guardar
         </button>
       </div>

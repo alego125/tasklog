@@ -466,3 +466,61 @@ test('navigation counts projects with overdue pending tasks and hides zero', asy
   await page.getByRole('button', { name: 'Menú principal' }).click()
   await expect(page.locator('.nav-overdue-count')).toHaveCount(0)
 })
+
+test('keyboard saves task dates and notes and closes their editors', async ({ page }) => {
+  await mockApi(page)
+  const workspace = project(alice)
+  workspace.notes = [{ id: 1, text: 'Original note', created_at: workspace.created_at }]
+  const updates = []
+  await page.route(/\/api\/(projects(?:\/1)?|tasks\/1|project-notes\/1)$/, async (route) => {
+    const request = route.request()
+    const path = new URL(request.url()).pathname
+    if (request.method() === 'PUT') {
+      const changes = request.postDataJSON()
+      updates.push(changes)
+      const item = path.endsWith('/tasks/1') ? workspace.tasks[0] : workspace.notes[0]
+      Object.assign(item, changes)
+      return route.fulfill({ json: item })
+    }
+    return route.fulfill({
+      json: path.endsWith('/projects') ? { items: [workspace], nextCursor: null } : workspace,
+    })
+  })
+  await page.goto('/')
+  await login(page)
+  await page.getByRole('button', { name: workspace.name, exact: true }).click()
+
+  const dueDateTrigger = page.getByTitle('Editar vencimiento', { exact: true })
+  await dueDateTrigger.click()
+  const dueDate = page.getByRole('dialog', { name: 'Editar vencimiento' })
+  const day = dueDate.getByRole('textbox', { name: 'Día de vencimiento' })
+  await day.fill('24')
+  await day.press('Enter')
+  await expect(dueDate).toHaveCount(0)
+  await expect(page.getByText('Fecha actualizada', { exact: true })).toBeVisible()
+  await expect(dueDateTrigger).toBeFocused()
+
+  await page.locator('.registration-date').click()
+  const registration = page.getByRole('dialog', { name: 'Editar fecha de registro' })
+  const date = registration.getByLabel('Fecha de registro')
+  await date.fill('2026-10-21')
+  await date.press('Enter')
+  await expect(registration).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Acciones de la nota' }).click()
+  await page.getByRole('menuitem', { name: 'Editar nota' }).click()
+  const note = page.getByRole('dialog', { name: 'Editar nota' })
+  const text = note.getByRole('textbox')
+  await text.fill('Updated note')
+  await text.press('Enter')
+  await page.keyboard.insertText('second line')
+  await expect(note).toBeVisible()
+  await text.press('Control+Enter')
+  await expect(note).toHaveCount(0)
+  await expect(page.getByText('Updated note second line', { exact: true })).toBeVisible()
+  expect(updates).toEqual([
+    expect.objectContaining({ due_date: '2026-12-24' }),
+    expect.objectContaining({ created_at: '2026-10-21' }),
+    { text: 'Updated note\nsecond line' },
+  ])
+})

@@ -1,6 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-export default function Dialog({ onClose, children, label = 'Editar datos', style }) {
+export default function Dialog({
+  onClose,
+  children,
+  label = 'Editar datos',
+  style,
+  onSubmit,
+}) {
   const ref = useRef(null)
   const close = useRef(onClose)
   close.current = onClose
@@ -13,6 +19,7 @@ export default function Dialog({ onClose, children, label = 'Editar datos', styl
       previous?.focus?.()
     }
   }, [])
+  const Content = onSubmit ? 'form' : 'div'
   return createPortal(
     <dialog
       ref={ref}
@@ -26,9 +33,21 @@ export default function Dialog({ onClose, children, label = 'Editar datos', styl
         if (e.target === e.currentTarget) close.current()
       }}
     >
-      <div className="ft-modal-inner" style={style} onClick={(e) => e.stopPropagation()}>
+      <Content
+        className="ft-modal-inner"
+        style={style}
+        onClick={(e) => e.stopPropagation()}
+        onSubmit={
+          onSubmit &&
+          ((e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onSubmit()
+          })
+        }
+      >
         {children}
-      </div>
+      </Content>
     </dialog>,
     document.body
   )
